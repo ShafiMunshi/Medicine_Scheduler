@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:medicine_app/repository/auth/auth_repository.dart';
 import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
+import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
 import 'package:provider/provider.dart';
 
 void main() {
@@ -17,7 +19,7 @@ void main() {
     statusBarIconBrightness: Brightness.light,
     // statusBarColor: Colors.white, // status bar color
   ));
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -27,7 +29,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-        providers: [],
+        providers: [
+          Provider<AuthRepository>(create: (_) => AuthRepository()),
+          ChangeNotifierProvider<AuthViewModels>(
+              create: (_) => AuthViewModels(context.read())),
+          // ChangeNotifierProvider<AuthViewModels>(
+          //     create: (_) => AuthViewModels(context.read())),
+        ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),
             minTextAdapt: true,

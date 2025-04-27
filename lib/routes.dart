@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:medicine_app/screens/add_medicine/view/add_medicine_view.dart';
 import 'package:medicine_app/screens/home/home_view.dart';
-import 'package:medicine_app/screens/medicine/add_medicine_view.dart';
 import 'package:medicine_app/screens/auth/sign_in_page.dart';
 import 'package:medicine_app/screens/profile/profile_view.dart';
 import 'package:medicine_app/screens/schedule/view/schedule_view.dart';
