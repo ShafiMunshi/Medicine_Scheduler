@@ -6,14 +6,21 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:medicine_app/app/screens/medicine/my_medicine_view.dart';
+import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/screens/add_medicine/components/date_picker.dart';
-import 'package:medicine_app/screens/add_medicine/view/scanning_text_page.dart';
-import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/app/screens/add_medicine/components/date_picker.dart';
+import 'package:medicine_app/app/screens/add_medicine/view/scanning_text_page.dart';
+import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/widgets/common/widget.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:path/path.dart' as p;
+import 'dart:io';
 
 class AddMedicineScreen extends StatefulWidget {
   static const String routeName = '/add_medicine_screen';
@@ -23,12 +30,11 @@ class AddMedicineScreen extends StatefulWidget {
   _AddMedicineScreenState createState() => _AddMedicineScreenState();
 }
 
-enum RepeatVariation { timely, days, weekly, monthly }
-
 class _AddMedicineScreenState extends State<AddMedicineScreen> {
   final dosageController = TextEditingController();
   final medicineNameController = TextEditingController();
   final availMedicineController = TextEditingController();
+
   int availableMedicine = 30;
   int days = 10;
   bool isBeforeMeal = true;
@@ -40,10 +46,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
 
   // Repeat state variable
   Map<String, dynamic> repeat = {};
-  List<DateTime> _selectedDateInRepeat = [];
-  List<String> _selectedWeekDaysRepeat = [];
-  int _repeatAfterDay = 1;
-  RepeatVariation repeatVariation = RepeatVariation.days;
+  List<DateTime> _selectedMonthlyDateInRepeat = []; // Date in month
+  List<String> _selectedWeekDaysRepeat = []; // for week days
+  final repeatAfterDayController = TextEditingController(text: '1');
+  RepeatVariation repeatVariation = RepeatVariation.day;
 
   // Schedule Time
   Map<String, TimeOfDay> scheduleTime = {};
@@ -77,6 +83,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     dosageController.dispose();
     medicineNameController.dispose();
     availMedicineController.dispose();
+    repeatAfterDayController.dispose();
     super.dispose();
   }
 
@@ -140,7 +147,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             medicationDosageSelector(),
             const SizedBox(height: 16),
 
-            // Repeat
+            // Repeat Section
             Text('Repeat', style: secondaryTextStyle()),
             const SizedBox(height: 8),
             repeatSection(),
@@ -149,7 +156,9 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
               repeatWeeklySection(),
             if (repeatVariation == RepeatVariation.monthly)
               MultiDatePicker(
-                onDatesSelected: (dates) {},
+                onDatesSelected: (dates) {
+                  _selectedMonthlyDateInRepeat = dates;
+                },
               ),
             if (repeatVariation == RepeatVariation.weekly ||
                 repeatVariation == RepeatVariation.monthly)
@@ -167,7 +176,6 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             const SizedBox(height: 16),
 
             // Schedule Checkboxes
-
             scheduleTimeSelector(),
             addMoreScheduleBtn(),
 
@@ -178,48 +186,154 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             const SizedBox(height: 24),
 
             // Cancel and Add Medicine Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.red.withValues(alpha: .05),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      side:
-                          BorderSide(color: Colors.red.withValues(alpha: .05)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.r),
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(color: Colors.red, fontSize: 16),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.r),
-                      ),
-                    ),
-                    child: const Text(
-                      'Add Medicine',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            Consumer<MedicineViewmodels>(builder: (context, vm, child) {
+              if (vm.isLoading) return CircularProgressIndicator();
+              return saveOrCancelBtn(context);
+            }),
+            //))
           ],
+        ),
+      ),
+    );
+  }
+
+  Row saveOrCancelBtn(BuildContext context) {
+    return Row(
+      children: [
+        _bottomBtn(context, ontap: () {
+          Navigator.pop(context);
+        }, title: 'Cancel', color: Colors.red),
+        const SizedBox(width: 16),
+        _bottomBtn(
+          context,
+          ontap: () async {
+            String? permanentImagePath;
+            if (_capturedImage != null) {
+              // Show loading indicator while copying?
+              permanentImagePath =
+                  await _copyImageToPermanentStorage(_capturedImage);
+              if (permanentImagePath == null) {
+                // Handle the error - maybe show a snackbar and don't proceed?
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Failed to save image. Please try again.')));
+                return; // Stop the save process
+              }
+            }
+
+            final dosage = int.parse(dosageController.text);
+            final dosageUnit = isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;
+            final availableQuantity = int.parse(availMedicineController.text);
+            final medicineName = medicineNameController.text;
+            final mealTiming =
+                isBeforeMeal ? MealTiming.before : MealTiming.after;
+            final repeatMap = switch (repeatVariation) {
+              RepeatVariation.day => {
+                  'type': 'days',
+                  'day': int.parse(repeatAfterDayController.text),
+                },
+              RepeatVariation.weekly => {
+                  'type': 'weekly',
+                  'days': _selectedWeekDaysRepeat
+                },
+              RepeatVariation.timely => {
+                  'type': 'timely',
+                  'dayTime': '',
+                },
+              RepeatVariation.monthly => {
+                  'type': 'monthly',
+                  'days':
+                      _selectedMonthlyDateInRepeat.map((e) => e.day).toList()
+                }
+            };
+
+            final newScheduleTimes = <String, String>{};
+            scheduleTime.forEach((key, value) {
+              newScheduleTimes[key] = MedicineSchedule.timeOfDayToString(value);
+            });
+
+            final newMedicine = MedicineModel(
+              medicineName: medicineName,
+              dosage: dosage,
+              dosageUnit: dosageUnit,
+              availableQuantity: availableQuantity,
+              mealTiming: mealTiming,
+              repeatMap: repeatMap,
+              repeatVariation: repeatVariation,
+              imagePath: permanentImagePath,
+              createdAt: DateTime.now(),
+              modifiedAt: DateTime.now(),
+              startDate: startDate,
+              endDate: endDate,
+              scheduleTimes: newScheduleTimes,
+            );
+
+            final viewModel = context.read<MedicineViewmodels>();
+
+            await viewModel.add_medicine(newMedicine);
+            // Optionally navigate back or show success message
+            if (mounted) {
+              // Check if the widget is still in the tree
+              // Navigator.pop(context); // Example: Go back after saving
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //     SnackBar(content: Text('Medicine added successfully!')));
+            }
+          },
+          title: 'Add Medicine',
+          color: AppColors.primaryColor,
+        ),
+      ],
+    );
+  }
+
+  Future<String?> _copyImageToPermanentStorage(XFile? imageFile) async {
+    if (imageFile == null) return null;
+
+    try {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String fileName =
+          p.basename(imageFile.path); // Get the original filename
+      final String permanentPath = p.join(
+          appDocDir.path, 'medicine_images', fileName); // Create a subfolder
+
+      // Ensure the directory exists
+      final Directory permanentDir = Directory(p.dirname(permanentPath));
+      if (!await permanentDir.exists()) {
+        await permanentDir.create(recursive: true);
+      }
+
+      // Copy the file
+      final File sourceFile = File(imageFile.path);
+      await sourceFile.copy(permanentPath);
+
+      print('Image copied to: $permanentPath'); // For debugging
+      return permanentPath; // Return the new, permanent path
+    } catch (e) {
+      print('Error copying image: $e');
+      // Handle error appropriately (e.g., show a message to the user)
+      return null; // Indicate failure
+    }
+  }
+
+  Expanded _bottomBtn(
+    BuildContext context, {
+    required VoidCallback ontap,
+    required String title,
+    required Color color,
+  }) {
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: ontap,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: color.withValues(alpha: .05),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          side: BorderSide(color: color.withValues(alpha: .05)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.r),
+          ),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(color: color, fontSize: 16),
         ),
       ),
     );
@@ -384,9 +498,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
           Text('Every After', style: boldTextStyle(size: 16)),
         10.horizontalSpace,
         switch (repeatVariation) {
-          RepeatVariation.days => SizedBox(
+          RepeatVariation.day => SizedBox(
               width: 50,
               child: TextField(
+                controller: repeatAfterDayController,
                 decoration: fieldDecor('0'),
                 textAlign: TextAlign.center,
                 keyboardType: TextInputType.number,
@@ -432,9 +547,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                     repeat = {};
 
                     switch (repeatVariation) {
-                      case RepeatVariation.days:
+                      case RepeatVariation.day:
                         repeat['type'] = 'days';
-                        repeat['day'] = '1';
+                        repeat['day'] =
+                            int.parse(repeatAfterDayController.text);
                         break;
                       case RepeatVariation.weekly:
                         repeat['type'] = 'weekly';
@@ -444,7 +560,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                         break;
                       case RepeatVariation.monthly:
                         repeat['type'] = 'monthly';
-                        repeat['day'] = '1';
+
                         break;
                     }
                   }
@@ -452,7 +568,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
               },
               items: [
                 DropdownMenuItem(
-                  value: RepeatVariation.days,
+                  value: RepeatVariation.day,
                   child: Text('Day'),
                 ),
                 DropdownMenuItem(

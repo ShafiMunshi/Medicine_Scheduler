@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:medicine_app/repository/auth/auth_repository.dart';
+import 'package:medicine_app/app/data/repository/auth_repository.dart';
+import 'package:medicine_app/app/data/repository/medicine_repository.dart';
+import 'package:medicine_app/app/data/source/db_service_isar.dart';
+import 'package:medicine_app/app/data/source/db_service_sqflite.dart';
+import 'package:medicine_app/app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/routes.dart';
-import 'package:medicine_app/screens/top_screen_view.dart';
-import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
+import 'package:medicine_app/app/screens/top_screen_view.dart';
+import 'package:medicine_app/app/viewmodels/viewmodels_auth.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -19,6 +24,11 @@ void main() {
     statusBarIconBrightness: Brightness.light,
     // statusBarColor: Colors.white, // status bar color
   ));
+
+  await MySharedPref.init();
+  await LocalDatabaseService().init();
+  // await LocalDatabaseService().clear();
+
   runApp(MyApp());
 }
 
@@ -30,11 +40,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
-          Provider<AuthRepository>(create: (_) => AuthRepository()),
+          ChangeNotifierProvider<LocalDatabaseService>(
+              create: (context) => LocalDatabaseService()),
+          Provider<AuthRepository>(create: (context) => AuthRepository()),
+          Provider<MedicineRepository>(
+              create: (context) => MedicineRepository(context.read())),
           ChangeNotifierProvider<AuthViewModels>(
-              create: (_) => AuthViewModels(context.read())),
-          // ChangeNotifierProvider<AuthViewModels>(
-          //     create: (_) => AuthViewModels(context.read())),
+              create: (context) => AuthViewModels(context.read())),
+          ChangeNotifierProvider<MedicineViewmodels>(
+              create: (context) => MedicineViewmodels(context.read())),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),

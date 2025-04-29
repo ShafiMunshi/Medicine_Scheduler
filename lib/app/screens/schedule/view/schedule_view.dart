@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class ScheduleView extends StatelessWidget {

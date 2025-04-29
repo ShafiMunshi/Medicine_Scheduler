@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/screens/add_medicine/view/add_medicine_view.dart';
-import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/app/screens/add_medicine/view/add_medicine_view.dart';
+import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:provider/provider.dart';
 
-class MedicineView extends StatelessWidget {
+class MyMedicineView extends StatefulWidget {
   static const String routeName = '/my_medicine_view';
-  const MedicineView({super.key});
+  const MyMedicineView({super.key});
+
+  @override
+  State<MyMedicineView> createState() => _MyMedicineViewState();
+}
+
+class _MyMedicineViewState extends State<MyMedicineView> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MedicineViewmodels>().get_all_medicine();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,17 +45,35 @@ class MedicineView extends StatelessWidget {
           onPressed: () {
             Navigator.pushNamed(context, AddMedicineScreen.routeName);
           }),
-      body: ListView.builder(
-        itemCount: 3,
-        shrinkWrap: true,
-        itemBuilder: (BuildContext context, int index) {
-          return medicineWidget();
-        },
-      ).paddingAll(12),
+      body: Consumer<MedicineViewmodels>(builder: (context, vm, child) {
+        if (vm.isLoading) return Center(child: CircularProgressIndicator());
+        if (vm.medicines.isEmpty) {
+          return Center(
+            child: Text("No Medicine Found"),
+          );
+        }
+        return ListView.builder(
+          itemCount: vm.medicines.length,
+          shrinkWrap: true,
+          itemBuilder: (BuildContext context, int index) {
+            final medicine = vm.medicines[index];
+
+            return medicineWidget(
+                medicineName: medicine.medicineName,
+                timeLeft: '5',
+                availableMedicine: '2');
+          },
+        ).paddingAll(12);
+      }),
     );
   }
 
-  Container medicineWidget() {
+  Container medicineWidget({
+    required String medicineName,
+    required String timeLeft,
+    required String availableMedicine,
+    String? imagePath,
+  }) {
     return Container(
       padding: EdgeInsets.all(12),
       margin: EdgeInsets.only(bottom: 8),
@@ -60,7 +93,7 @@ class MedicineView extends StatelessWidget {
               12.horizontalSpace,
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
-                  'Napa (500mg)',
+                  medicineName,
                   style: boldTextStyle(size: 15),
                 ),
                 Text(
