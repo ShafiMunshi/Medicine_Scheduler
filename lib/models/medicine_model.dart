@@ -1,6 +1,9 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // Needed for TimeOfDay
 import 'package:isar/isar.dart';
+import 'package:medicine_app/widgets/common/common_fn.dart';
 
 part 'medicine_model.g.dart';
 
@@ -14,6 +17,7 @@ enum MealTiming {
 enum DosageUnit { pcs, cup }
 
 @embedded
+// Stores the day count which will be repeated every after that day.
 class RepeatVariationDays {
   String? day; // Changed to nullable
   RepeatVariationDays({this.day}); // Optional parameter
@@ -39,8 +43,8 @@ class RepeatVariationMonth {
 
 @embedded
 class MedicineSchedule {
-  String? dayTimeName; // Changed to nullable
-  String? timeString; // Changed to nullable
+  String? dayTimeName; // Changed to nullable -- Morning , AfterNoon, Noon
+  String? timeString; // Changed to nullable -- 8:00 , 1:00, 6:00
 
   MedicineSchedule({this.dayTimeName, this.timeString}); // Optional parameters
 
@@ -55,63 +59,63 @@ class MedicineSchedule {
       timeString: timeOfDayToString(time),
     );
   }
-
-  static String timeOfDayToString(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  static TimeOfDay? stringToTimeOfDay(String? timeString) {
-    if (timeString == null) return null;
-    try {
-      final parts = timeString.split(':');
-      if (parts.length != 2) return null;
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-      if (hour == null ||
-          minute == null ||
-          hour < 0 ||
-          hour > 23 ||
-          minute < 0 ||
-          minute > 59) {
-        return null;
-      }
-      return TimeOfDay(hour: hour, minute: minute);
-    } catch (e) {
-      print("Error parsing time string '$timeString': $e");
-      return null;
-    }
-  }
 }
 
 @collection
 class MedicineModel {
   Id? id = Isar.autoIncrement;
   final String medicineName;
+
+  /// Medicine Image picture path
+  final String? imagePath;
+
+  /// how dose user need to take per time
   final int dosage;
+
+  /// Will he take that dose based on Pcs/Cup
   @enumerated
   final DosageUnit dosageUnit;
+
+  /// For the first time, it assign the total available quantity the user have.
   final int availableQuantity;
+
+  ///  before eat / after eat
   @enumerated
   final MealTiming mealTiming;
 
+  /// how the medicine will repeated - Daily / Weekly / Monthly , returns enum
   @enumerated
   final RepeatVariation repeatVariation;
+
+  /// ignore this to use any data from the map. This map is used to show data conditionally in [Add New Medicine Page] then add to ISAR
   @ignore
   final Map<String, dynamic> repeatMap;
+
+  /// repeat every after [day] , if it's 1,that means it will be repeated everyday
   RepeatVariationDays? repeatVariationDays;
+
+  /// only repeat on which weekdays [Saturday, Sunday, Monday, etc.. ]
   RepeatVariationWeek? repeatVariationWeek;
+
+  /// only repeat on the date of that Month
   RepeatVariationMonth? repeatVariationMonth;
+
+  ///This data is not using---
   RepeatVariationTimes? repeatVariationTime;
 
+  /// This won't be used anywhere, it's just used to replicate the , Morning, Noon [MedicineSchedule]  just for the Add New. Medicine Page to then save to ISAR
   @ignore
   final Map<String, String> scheduleTimes;
 
+  /// On the dayTime when when this medicine will be taken by user [Morning , 8:00]
   List<MedicineSchedule>? medicineScheduleList;
+
+  /// when the medicine will be started
   final DateTime startDate;
+
+  /// when the medicine will be end
   final DateTime? endDate;
-  final String? imagePath;
+
   final DateTime createdAt;
   final DateTime modifiedAt;
 
@@ -139,9 +143,8 @@ class MedicineModel {
         scheduleTimes = scheduleTimes ?? {} {
     medicineScheduleList = medicineScheduleList ?? [];
     this.scheduleTimes.forEach((key, value) {
-      if (MedicineSchedule.stringToTimeOfDay(value) == null && kDebugMode) {
-        print(
-            "Warning: Invalid time format '$value' in scheduleTimes for key '$key'");
+      if (stringToTimeOfDay(value) == null && kDebugMode) {
+        log("Warning: Invalid time format '$value' in scheduleTimes for key '$key'");
       }
       medicineScheduleList!
           .add(MedicineSchedule(dayTimeName: key, timeString: value));
@@ -164,33 +167,6 @@ class MedicineModel {
         repeatVariationMonth =
             RepeatVariationMonth(days: repeatMap?['days']?.cast<String>());
         break;
-    }
-  }
-
-  String timeOfDayToString(TimeOfDay time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
-  }
-
-  TimeOfDay? stringToTimeOfDay(String timeString) {
-    try {
-      final parts = timeString.split(':');
-      if (parts.length != 2) return null;
-      final hour = int.tryParse(parts[0]);
-      final minute = int.tryParse(parts[1]);
-      if (hour == null ||
-          minute == null ||
-          hour < 0 ||
-          hour > 23 ||
-          minute < 0 ||
-          minute > 59) {
-        return null;
-      }
-      return TimeOfDay(hour: hour, minute: minute);
-    } catch (e) {
-      print("Error parsing time string '$timeString': $e");
-      return null;
     }
   }
 }

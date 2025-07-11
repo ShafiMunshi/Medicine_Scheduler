@@ -4,8 +4,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/app/screens/add_medicine/view/add_medicine_view.dart';
+import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/models/medicine_model.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 
@@ -43,7 +44,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
             color: white,
           ),
           onPressed: () {
-            Navigator.pushNamed(context, AddMedicineScreen.routeName);
+            Navigator.pushNamed(context, AddNewMedicineScreen.routeName);
           }),
       body: Consumer<MedicineViewmodels>(builder: (context, vm, child) {
         if (vm.isLoading) return Center(child: CircularProgressIndicator());
@@ -61,7 +62,9 @@ class _MyMedicineViewState extends State<MyMedicineView> {
             return medicineWidget(
                 medicineName: medicine.medicineName,
                 timeLeft: '5',
-                availableMedicine: '2');
+                availableMedicine: '2',
+                index: index,
+                imagePath: medicine.imagePath);
           },
         ).paddingAll(12);
       }),
@@ -72,6 +75,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     required String medicineName,
     required String timeLeft,
     required String availableMedicine,
+    required int index,
     String? imagePath,
   }) {
     return Container(
@@ -88,8 +92,8 @@ class _MyMedicineViewState extends State<MyMedicineView> {
               SizedBox(
                   height: 84.w,
                   width: 84.w,
-                  child:
-                      Image.asset('assets/images/napa.png', fit: BoxFit.cover)),
+                  child: Image.asset(imagePath ?? getRandomMedicineImage(index),
+                      fit: BoxFit.cover)),
               12.horizontalSpace,
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
@@ -252,4 +256,28 @@ class _MyMedicineViewState extends State<MyMedicineView> {
       ],
     );
   }
+
+  String getRandomMedicineImage(int index) {
+    final rand = index % 3 + 1;
+    return 'assets/images/medicine_$rand.png';
+  }
+
+  // TODO: this function calculate the remaining time when user will take the pill / cups on nearest time.. 
+  getRemainingTimeToTakeNearestMedicine(MedicineModel model) {
+    model.medicineScheduleList;
+
+  }
+
+  // Calculate from how much days go and how much medicine user has taken... 
+  getHowMuchMedicineLeft(){}
+  // TODO: create a function which will return the nearest period when user will take medicine.. 
+
+
+
+
+
+
+
+
+
 }

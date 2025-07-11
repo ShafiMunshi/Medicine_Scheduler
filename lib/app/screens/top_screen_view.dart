@@ -3,7 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/app/screens/home/home_view.dart';
-import 'package:medicine_app/app/screens/medicine/my_medicine_view.dart';
+import 'package:medicine_app/app/screens/my_medicine/my_medicine_view.dart';
 import 'package:medicine_app/app/screens/profile/profile_view.dart';
 import 'package:medicine_app/app/screens/schedule/view/schedule_view.dart';
 import 'package:nb_utils/nb_utils.dart';

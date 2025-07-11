@@ -6,42 +6,36 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:medicine_app/app/screens/medicine/my_medicine_view.dart';
-import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
-import 'package:medicine_app/config/app_styles.dart';
-import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/app/screens/add_medicine/components/date_picker.dart';
 import 'package:medicine_app/app/screens/add_medicine/view/scanning_text_page.dart';
 import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/config/app_styles.dart';
+import 'package:medicine_app/config/custom/custom_snackber.dart';
+import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:medicine_app/widgets/common/widget.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:path/path.dart' as p;
-import 'dart:io';
 
-class AddMedicineScreen extends StatefulWidget {
+class AddNewMedicineScreen extends StatefulWidget {
   static const String routeName = '/add_medicine_screen';
-  const AddMedicineScreen({super.key});
+  const AddNewMedicineScreen({super.key});
 
   @override
-  _AddMedicineScreenState createState() => _AddMedicineScreenState();
+  _AddNewMedicineScreenState createState() => _AddNewMedicineScreenState();
 }
 
-class _AddMedicineScreenState extends State<AddMedicineScreen> {
+class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
   final dosageController = TextEditingController();
   final medicineNameController = TextEditingController();
   final availMedicineController = TextEditingController();
 
-  int availableMedicine = 30;
-  int days = 10;
   bool isBeforeMeal = true;
-  bool isMorningChecked = true;
-  bool isNoonChecked = false;
-  bool isNightChecked = false;
-  String morningTime = '8:00 AM';
   bool isPcsSelected = true;
 
   // Repeat state variable
@@ -248,7 +242,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
 
             final newScheduleTimes = <String, String>{};
             scheduleTime.forEach((key, value) {
-              newScheduleTimes[key] = MedicineSchedule.timeOfDayToString(value);
+              newScheduleTimes[key] = timeOfDayToString(value);
             });
 
             final newMedicine = MedicineModel(
@@ -270,12 +264,18 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             final viewModel = context.read<MedicineViewmodels>();
 
             await viewModel.add_medicine(newMedicine);
+            await viewModel.get_all_medicine();
+
             // Optionally navigate back or show success message
             if (mounted) {
               // Check if the widget is still in the tree
-              // Navigator.pop(context); // Example: Go back after saving
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //     SnackBar(content: Text('Medicine added successfully!')));
+              Navigator.pop(context); // Example: Go back after saving
+              if (viewModel.errorMessage == null) {
+                CustomSnackBar.showCustomSnackBar(
+                    title: "Medicine added",
+                    message: "$medicineName has been added successfully",
+                    context: context);
+              }
             }
           },
           title: 'Add Medicine',
@@ -305,10 +305,10 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       final File sourceFile = File(imageFile.path);
       await sourceFile.copy(permanentPath);
 
-      print('Image copied to: $permanentPath'); // For debugging
+      log('Image copied to: $permanentPath'); // For debugging
       return permanentPath; // Return the new, permanent path
     } catch (e) {
-      print('Error copying image: $e');
+      log('Error copying image: $e');
       // Handle error appropriately (e.g., show a message to the user)
       return null; // Indicate failure
     }
@@ -399,7 +399,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
                   height: 50,
                   decoration: boxDecoration(radius: 12, showShadow: true),
                   child: Text(
-                    DateFormat('d MMM, yy').format(startDate),
+                    DateFormat('d MMM, yy').format(endDate!),
                     style: boldTextStyle(size: 16),
                   ),
                 ),
@@ -513,18 +513,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             ),
           RepeatVariation.weekly => SizedBox(),
           RepeatVariation.timely => SizedBox(),
-          RepeatVariation.monthly => SizedBox(
-              // width: 50,
-              // child: TextField(
-              //   decoration: fieldDecor('0'),
-              //   textAlign: TextAlign.center,
-              //   keyboardType: TextInputType.number,
-              //   inputFormatters: [
-              //     FilteringTextInputFormatter.digitsOnly,
-              //     LengthLimitingTextInputFormatter(3),
-              //   ],
-              // ),
-              ),
+          RepeatVariation.monthly => SizedBox(),
         },
         15.horizontalSpace,
         Container(

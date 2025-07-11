@@ -25,6 +25,7 @@ class AppAssets {
   static const String back = 'assets/icons/back.svg';
   static const String schedule = 'assets/icons/schedule.svg';
   static const String profile = 'assets/icons/profile.svg';
+  static const String medicine1 = 'assets/image/medicine_1.png';
 }
 
 extension on String {

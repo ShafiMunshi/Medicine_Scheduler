@@ -10,6 +10,10 @@ class MedicineViewmodels extends ChangeNotifier {
 
   bool isLoading = false;
 
+  String? _errorMessage;
+
+  String? get errorMessage => _errorMessage;
+
   List<MedicineModel> _medicines = [];
 
   List<MedicineModel> get medicines => _medicines;
@@ -21,12 +25,11 @@ class MedicineViewmodels extends ChangeNotifier {
     try {
       final row = await medicineRepository.insertMedicine(medicine);
 
-      // also save the time schedule for alarm to the shared pref
-      MySharedPref.setTimeList(
-          'time_list', medicine.scheduleTimes.values.toList());
-
-      // get_all_medicine();
+      if (row != -1) {
+        throw 'Something went wrong to save the medicine.';
+      }
     } catch (e) {
+      _errorMessage = e.toString();
       print(e);
     } finally {
       isLoading = false;
