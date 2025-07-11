@@ -83,7 +83,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     return AppSlidableWidget(
       child: Container(
         padding: EdgeInsets.all(12),
-        margin: EdgeInsets.only(bottom: 8),
+        // margin: EdgeInsets.only(bottom: 8),
         decoration:
             boxDecoration(bgColor: white, radius: 16.r, showShadow: true),
         child: Row(

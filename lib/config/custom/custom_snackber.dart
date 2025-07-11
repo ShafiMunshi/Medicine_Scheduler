@@ -63,7 +63,7 @@ class CustomSnackBar {
       {required String message, Color? color, Duration? duration}) {
     Fluttertoast.showToast(
       msg: message,
-      backgroundColor: color,
+      backgroundColor: color?? Colors.red,
     );
   }
 }

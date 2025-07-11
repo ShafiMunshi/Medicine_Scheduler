@@ -1,6 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:medicine_app/app/data/repository/medicine_repository.dart';
-import 'package:medicine_app/app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 
 class MedicineViewmodels extends ChangeNotifier {
@@ -23,14 +24,18 @@ class MedicineViewmodels extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final row = await medicineRepository.insertMedicine(medicine);
+      final row = await medicineRepository
+          .insertMedicine(medicine)
+          .whenComplete(() async {
+        await get_all_medicine();
+      });
 
       if (row != -1) {
         throw 'Something went wrong to save the medicine.';
       }
     } catch (e) {
       _errorMessage = e.toString();
-      print(e);
+      log(e.toString());
     } finally {
       isLoading = false;
       notifyListeners();
@@ -42,15 +47,11 @@ class MedicineViewmodels extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final medi = await medicineRepository.getAllMedicines();
-      print("length: ${medi?.length}");
-
-      if (medi != null) {
-        print(medi);
-        _medicines = medi;
-      }
+      _medicines = await medicineRepository.getAllMedicines();
+      log("Length: ${_medicines.length}");
     } catch (e) {
-      print("error: $e");
+      log("error: $e");
+      _errorMessage = e.toString();
     } finally {
       isLoading = false;
       notifyListeners();

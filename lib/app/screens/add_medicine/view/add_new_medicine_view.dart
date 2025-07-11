@@ -331,7 +331,8 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
               final newTimesString = switch (scheduleTime.length) {
                 0 => 'Morning',
                 1 => 'Noon',
-                2 => 'Night',
+                2 => 'Evening',
+                3 => 'Night',
                 _ => 'New Time ${scheduleTime.length + 1}',
               };
               setState(() {
@@ -342,12 +343,13 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                         24);
               });
             },
-            child: Text('Add More Time')));
+            child: Text('Add More Schedule Time')));
   }
 
   ListView scheduleTimeSelector() {
     return ListView.builder(
       itemCount: scheduleTime.length,
+      physics: NeverScrollableScrollPhysics(),
       shrinkWrap: true,
       itemBuilder: (BuildContext context, int index) {
         final timeDay = scheduleTime.entries.elementAt(index).key;
@@ -661,7 +663,10 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                   validator: (val) {
                     if (val!.isEmpty) {
                       return 'Add How much medicine you have';
+                    } else if (val.toInt() < 1) {
+                      return "Add positive number";
                     }
+
                     return null;
                   },
                   keyboardType: TextInputType.number,
@@ -714,6 +719,8 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                         validator: (val) {
                           if (val!.isEmpty) {
                             return 'Add How much medicine you have to take per day';
+                          } else if (val.toInt() < 1) {
+                            return "Add positive number";
                           }
                           return null;
                         },
@@ -792,21 +799,18 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
           children: [
             Transform.scale(
               scale: 1.4,
-              // child: Checkbox(
-              //   value: isChecked,
-              //   onChanged: (value) {},
-              //   activeColor: AppColors.primaryColor,
-              //   shape: RoundedRectangleBorder(
-              //       borderRadius: BorderRadius.circular(20)),
-              // ),
-
               child: IconButton(
                   onPressed: () {
-                    setState(() {
-                      if (scheduleTime.containsKey(timeOfDay)) {
-                        scheduleTime.remove(timeOfDay);
-                      }
-                    });
+                    if (scheduleTime.length > 1) {
+                      setState(() {
+                        if (scheduleTime.containsKey(timeOfDay)) {
+                          scheduleTime.remove(timeOfDay);
+                        }
+                      });
+                    } else {
+                      CustomSnackBar.showCustomErrorToast(
+                          message: 'At least one schedule is required');
+                    }
                   },
                   icon: Icon(
                     Icons.cancel_outlined,
@@ -879,6 +883,20 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
               log(" Screen : week days : $_selectedWeekDaysRepeat");
               log(" Screen : Monthly days : $_selectedMonthlyDateInRepeat");
 
+              if (repeatVariation == RepeatVariation.weekly &&
+                  _selectedWeekDaysRepeat.isEmpty) {
+                CustomSnackBar.showCustomErrorToast(
+                    message: "Select Some week days to repeat");
+                return;
+              }
+
+              if (repeatVariation == RepeatVariation.monthly &&
+                  _selectedMonthlyDateInRepeat.isEmpty) {
+                CustomSnackBar.showCustomErrorToast(
+                    message: "Select Some days to repeat");
+                return;
+              }
+
               final repeatMap = switch (repeatVariation) {
                 RepeatVariation.day => {
                     'type': 'days',
@@ -904,6 +922,13 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 newScheduleTimes[key] = timeOfDayToString(value);
               });
 
+              if (newScheduleTimes.isEmpty) {
+                CustomSnackBar.showCustomErrorToast(
+                    message:
+                        "Select Some schedule times when to take the medicine");
+                return;
+              }
+
               print('added');
 
               final newMedicine = MedicineModel(
@@ -922,28 +947,24 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 scheduleTimes: newScheduleTimes,
               );
 
-              print('mdoel created');
+              log('model created');
 
               final viewModel = context.read<MedicineViewmodels>();
 
-              await viewModel.add_medicine(newMedicine);
-              await viewModel.get_all_medicine();
-
-              // Optionally navigate back or show success message
-              if (mounted) {
-                // Check if the widget is still in the tree
-                // Example: Go back after saving
-                if (viewModel.errorMessage == null) {
-                  Navigator.pop(context);
-                  CustomSnackBar.showCustomSnackBar(
-                      title: "Medicine added",
-                      message: "$medicineName has been added successfully",
-                      context: context);
-                } else {
-                  CustomSnackBar.showCustomErrorToast(
-                      message: "Error: ${viewModel.errorMessage}");
+              await viewModel.add_medicine(newMedicine).whenComplete(() {
+                if (mounted) {
+                  if (viewModel.errorMessage == null) {
+                    Navigator.pop(context);
+                    CustomSnackBar.showCustomSnackBar(
+                        title: "Medicine added",
+                        message: "$medicineName has been added successfully",
+                        context: context);
+                  } else {
+                    CustomSnackBar.showCustomErrorToast(
+                        message: "Error: ${viewModel.errorMessage}");
+                  }
                 }
-              }
+              });
             }
           },
           title: 'Add Medicine',
