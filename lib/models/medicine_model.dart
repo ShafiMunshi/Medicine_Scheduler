@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
+import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 part 'medicine_model.g.dart';
@@ -70,7 +71,7 @@ class MedicineModel {
   final DateTime startDate;
 
   /// when the medicine will be end
-  final DateTime? endDate;
+  final DateTime endDate;
 
   final DateTime createdAt;
   final DateTime modifiedAt;
@@ -91,7 +92,7 @@ class MedicineModel {
     this.finalScheduleDates,
     Map<String, String>? scheduleTimes,
     required this.startDate,
-    this.endDate,
+    required this.endDate,
     this.imagePath,
     required this.createdAt,
     required this.modifiedAt,
@@ -106,51 +107,57 @@ class MedicineModel {
       medicineScheduleList!
           .add(ScheduleDayTime(dayTimeName: key, timeString: value));
     });
-    final _endDate = endDate ?? startDate.add(Duration(days: 60));
+
+    log("In Medicine Model Constructor");
 
     switch (repeatVariation) {
       case RepeatVariation.day:
         try {
-          repeatVariationDays =
+          repeatVariationDays ??=
               RepeatVariationDays(day: repeatMap?['day']?.toString());
 
+          log(repeatVariationDays);
+
           // assign to Final Schedule Dates according repeated date
-          for (var i = startDate;
-              i.isBefore(endDate ?? startDate.add(Duration(days: 60)));
-              i.add(Duration(days: repeatVariationDays!.day.toInt()))) {
-            finalScheduleDates?.add(i);
-          }
+          finalScheduleDates = _getDatesByRepeatDays(
+              startDate: startDate,
+              endDate: endDate,
+              repeatDays: repeatVariationDays!.day.toInt());
         } catch (e) {
           log("Error found to : case RepeatVariation.day in MedicineModel{} $e");
         }
         break;
       case RepeatVariation.weekly:
         try {
-          repeatVariationWeek =
+          repeatVariationWeek ??=
               RepeatVariationWeek(weekDays: repeatMap?['days']?.cast<String>());
+          log("repeat map : $repeatMap");
+          log(" repeatVariationWeek: $repeatVariationWeek");
 
           // assign to Final Schedule Dates according repeated date
           finalScheduleDates = _getDatesByWeekdays(
               startDate: startDate,
-              endDate: _endDate,
+              endDate: endDate,
               weekdays: repeatVariationWeek!.weekDays!);
         } catch (e) {
           log("Error found to : case RepeatVariation.weekly in MedicineModel{} $e");
         }
         break;
       case RepeatVariation.timely:
-        repeatVariationTime =
+        repeatVariationTime ??=
             RepeatVariationTimes(dayTime: repeatMap?['dayTime']?.toString());
         break;
       case RepeatVariation.monthly:
         try {
-          repeatVariationMonth =
+          log("repeat map : $repeatMap");
+          repeatVariationMonth ??=
               RepeatVariationMonth(days: repeatMap?['days']?.cast<int>());
 
+          log(" repeatVariationMonth: $repeatVariationMonth");
           // assign to Final Schedule Dates according repeated date
           finalScheduleDates = _getMonthlyRepeatedDates(
               startDate: startDate,
-              endDate: _endDate,
+              endDate: endDate,
               dayNumbers: repeatVariationMonth!.days!);
         } catch (e) {
           log("Error found to : case RepeatVariation.monthly in MedicineModel{} $e");
@@ -195,6 +202,21 @@ class MedicineModel {
     return result;
   }
 
+  List<DateTime> _getDatesByRepeatDays({
+    required DateTime startDate,
+    required DateTime endDate,
+    required int repeatDays,
+  }) {
+    repeatDays = repeatDays < 1 ? 1 : repeatDays;
+    final result = <DateTime>[];
+    for (var i = startDate;
+        i.isBefore(endDate);
+        i = i.add(Duration(days: repeatDays))) {
+      result.add(i);
+    }
+    return result;
+  }
+
   List<DateTime> _getMonthlyRepeatedDates({
     required DateTime startDate,
     required DateTime endDate,
@@ -225,6 +247,6 @@ class MedicineModel {
 
   @override
   String toString() {
-    return 'MedicineModel(id: $id, medicineName: $medicineName, imagePath: $imagePath, dosage: $dosage, dosageUnit: $dosageUnit, availableQuantity: $availableQuantity, mealTiming: $mealTiming, repeatVariation: $repeatVariation, repeatMap: $repeatMap, repeatVariationDays: $repeatVariationDays, repeatVariationWeek: $repeatVariationWeek, repeatVariationMonth: $repeatVariationMonth, repeatVariationTime: $repeatVariationTime, scheduleTimes: $scheduleTimes, medicineScheduleList: $medicineScheduleList, finalScheduleDates: $finalScheduleDates, startDate: $startDate, endDate: $endDate, createdAt: $createdAt, modifiedAt: $modifiedAt)';
+    return 'MedicineModel(id: $id, medicineName: $medicineName, imagePath: $imagePath, dosage: $dosage, dosageUnit: $dosageUnit, availableQuantity: $availableQuantity, mealTiming: $mealTiming, repeatVariation: $repeatVariation, repeatMap: $repeatMap, repeatVariationDays: $repeatVariationDays, repeatVariationWeek: $repeatVariationWeek, repeatVariationMonth: $repeatVariationMonth, repeatVariationTime: $repeatVariationTime, scheduleTimes: $scheduleTimes, medicineScheduleList: $medicineScheduleList, finalScheduleDates: ${finalScheduleDates?.map((e) => e.day).toList().join(', ')}, startDate: ${startDate.toFormattedDate()}, endDate: ${endDate?.toFormattedDate()}, createdAt: ${createdAt.toFormattedDate()}, modifiedAt: $modifiedAt)';
   }
 }

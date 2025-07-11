@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 
+part 'medicine_time_schedule.g.dart';
+
 @embedded
 class ScheduleDayTime {
   String? dayTimeName; // Changed to nullable -- Morning , AfterNoon, Noon

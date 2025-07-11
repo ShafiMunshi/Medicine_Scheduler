@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:medicine_app/app/data/repository/auth_repository.dart';
 import 'package:medicine_app/app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/app/data/source/db_service_isar.dart';
-import 'package:medicine_app/app/data/source/db_service_sqflite.dart';
 import 'package:medicine_app/app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/routes.dart';
@@ -26,25 +25,34 @@ Future<void> main() async {
   ));
 
   await MySharedPref.init();
-  await LocalDatabaseService().init();
-  // await LocalDatabaseService().clear();
 
-  runApp(MyApp());
+  final localDbService = LocalDatabaseService();
+  await localDbService.init();
+
+  runApp(MyApp(
+    localDbService: localDbService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({required this.localDbService, super.key});
+  final LocalDatabaseService localDbService;
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
         providers: [
-          ChangeNotifierProvider<LocalDatabaseService>(
-              create: (context) => LocalDatabaseService()),
+          /// Provide the LocalDatabaseService
+          ChangeNotifierProvider<LocalDatabaseService>.value(
+              value: localDbService),
+
           Provider<AuthRepository>(create: (context) => AuthRepository()),
-          Provider<MedicineRepository>(
-              create: (context) => MedicineRepository(context.read())),
+
+          /// ProxyProvider: Inject LocalDatabaseService into MedicineRepository
+          ProxyProvider<LocalDatabaseService, MedicineRepository>(
+              update: (_, localDb, __) => MedicineRepository(localDb)),
+
           ChangeNotifierProvider<AuthViewModels>(
               create: (context) => AuthViewModels(context.read())),
           ChangeNotifierProvider<MedicineViewmodels>(

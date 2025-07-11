@@ -18,7 +18,7 @@ class LocalDatabaseService extends ChangeNotifier {
     notifyListeners();
   }
 
-  clear() async {
+  Future<void> clearAll() async {
     final isar = Isar.getInstance();
     isar?.writeTxn(() {
       return isar.medicineModels.clear();

@@ -1,9 +1,7 @@
 name: medicine_app
 description: "A new Flutter project."
-# The following line prevents the package from being accidentally published t
 
-# pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -44,6 +42,7 @@ dependencies:
     git:
       url: https://github.com/MrLittleWhite/isar_flutter_libs.git
   path_provider: ^2.1.5
+  flutter_slidable: ^4.0.0
   
 
 dev_dependencies:
@@ -53,7 +52,6 @@ dev_dependencies:
     sdk: flutter
   isar_generator: ^3.1.0+1
 
-# The following section is specific to Flutter packages.
 flutter:
 
   uses-material-design: true

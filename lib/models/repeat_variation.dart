@@ -1,5 +1,7 @@
 import 'package:isar/isar.dart';
 
+part 'repeat_variation.g.dart';
+
 enum RepeatVariation { timely, day, weekly, monthly }
 
 @embedded

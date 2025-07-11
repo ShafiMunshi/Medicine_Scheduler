@@ -51,9 +51,11 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
 
   // Start-End date
   DateTime startDate = DateTime.now();
-  DateTime? endDate = DateTime.now().add(Duration(days: 100));
+  DateTime endDate = DateTime.now().add(Duration(days: 60));
 
   XFile? _capturedImage;
+
+  final _formKey = GlobalKey<FormState>();
 
   final weekDays = [
     'Mon',
@@ -71,6 +73,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
     dosageController.text = '1';
     repeat['day'] = '1';
     scheduleTime['Morning'] = TimeOfDay.now();
+    availMedicineController.text = '30';
   }
 
   @override
@@ -101,92 +104,95 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
           commonAppBarWidget(context, title: 'Add Medicine', changeIcon: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Medicine Name Field
-            Text(
-              'Medicine Name *',
-              style: secondaryTextStyle(),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Flexible(child: _nameField()),
-                12.horizontalSpace,
-                _scanPictureBtn()
-              ],
-            ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Medicine Name Field
+              Text(
+                'Medicine Name *',
+                style: secondaryTextStyle(),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Flexible(child: _nameField()),
+                  12.horizontalSpace,
+                  _scanPictureBtn()
+                ],
+              ),
 
-            if (_capturedImage != null) // SizedBox(
-              SizedBox(
-                height: 60,
-                width: 60,
-                child: Image.file(
-                  File(_capturedImage!.path),
-                  fit: BoxFit.cover,
+              if (_capturedImage != null) // SizedBox(
+                SizedBox(
+                  height: 60,
+                  width: 60,
+                  child: Image.file(
+                    File(_capturedImage!.path),
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            if (_capturedImage == null)
+              if (_capturedImage == null)
 
-              // Upload Picture Button
-              _takePictureBtn(),
-            const SizedBox(height: 16),
-            // _scanPictureBtn(),
+                // Upload Picture Button
+                _takePictureBtn(),
+              const SizedBox(height: 16),
+              // _scanPictureBtn(),
 
-            // Medication Dosage
-            Text('Medication dosage', style: secondaryTextStyle()),
-            const SizedBox(height: 8),
-            medicationDosageSelector(),
-            const SizedBox(height: 16),
+              // Medication Dosage
+              Text('Medication dosage', style: secondaryTextStyle()),
+              const SizedBox(height: 8),
+              medicationDosageSelector(),
+              const SizedBox(height: 16),
 
-            // Repeat Section
-            Text('Repeat', style: secondaryTextStyle()),
-            const SizedBox(height: 8),
-            repeatSection(),
-            if (repeatVariation == RepeatVariation.weekly) 10.verticalSpace,
-            if (repeatVariation == RepeatVariation.weekly)
-              repeatWeeklySection(),
-            if (repeatVariation == RepeatVariation.monthly)
-              MultiDatePicker(
-                onDatesSelected: (dates) {
-                  _selectedMonthlyDateInRepeat = dates;
-                },
-              ),
-            if (repeatVariation == RepeatVariation.weekly ||
-                repeatVariation == RepeatVariation.monthly)
+              // Repeat Section
+              Text('Repeat', style: secondaryTextStyle()),
+              const SizedBox(height: 8),
+              repeatSection(),
+              if (repeatVariation == RepeatVariation.weekly) 10.verticalSpace,
+              if (repeatVariation == RepeatVariation.weekly)
+                repeatWeeklySection(),
+              if (repeatVariation == RepeatVariation.monthly)
+                MultiDatePicker(
+                  onDatesSelected: (dates) {
+                    _selectedMonthlyDateInRepeat = dates;
+                  },
+                ),
+              if (repeatVariation == RepeatVariation.weekly ||
+                  repeatVariation == RepeatVariation.monthly)
+                10.verticalSpace,
+              // Available Medicines
               10.verticalSpace,
-            // Available Medicines
-            10.verticalSpace,
-            Text('Available medicines', style: secondaryTextStyle()),
-            const SizedBox(height: 8),
+              Text('Available medicines', style: secondaryTextStyle()),
+              const SizedBox(height: 8),
 
-            availableMedicineSelector(),
-            const SizedBox(height: 16),
+              availableMedicineSelector(),
+              const SizedBox(height: 16),
 
-            // Meal Timing Buttons
-            mealSelector(),
-            const SizedBox(height: 16),
+              // Meal Timing Buttons
+              mealSelector(),
+              const SizedBox(height: 16),
 
-            // Schedule Checkboxes
-            scheduleTimeSelector(),
-            addMoreScheduleBtn(),
+              // Schedule Checkboxes
+              scheduleTimeSelector(),
+              addMoreScheduleBtn(),
 
-            const SizedBox(height: 16),
-            // Start-End Date Selector
-            startEndDateSelector(context),
+              const SizedBox(height: 16),
+              // Start-End Date Selector
+              startEndDateSelector(context),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            // Cancel and Add Medicine Buttons
-            Consumer<MedicineViewmodels>(builder: (context, vm, child) {
-              if (vm.isLoading) return CircularProgressIndicator();
-              return saveOrCancelBtn(context);
-            }),
-            //))
-          ],
+              // Cancel and Add Medicine Buttons
+              Consumer<MedicineViewmodels>(builder: (context, vm, child) {
+                if (vm.isLoading) return CircularProgressIndicator();
+                return saveOrCancelBtn(context);
+              }),
+              //))
+            ],
+          ),
         ),
       ),
     );
@@ -306,7 +312,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                   height: 50,
                   decoration: boxDecoration(radius: 12, showShadow: true),
                   child: Text(
-                    DateFormat('d MMM, yy').format(endDate!),
+                    DateFormat('d MMM, yy').format(endDate),
                     style: boldTextStyle(size: 16),
                   ),
                 ),
@@ -371,7 +377,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                   _selectedWeekDaysRepeat.remove(weekDays[index]);
                 } else {
                   repeat[weekDays[index]] = '1';
-                  _selectedWeekDaysRepeat.remove(weekDays[index]);
+                  _selectedWeekDaysRepeat.add(weekDays[index]);
                 }
               });
             },
@@ -409,8 +415,14 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
         switch (repeatVariation) {
           RepeatVariation.day => SizedBox(
               width: 50,
-              child: TextField(
+              child: TextFormField(
                 controller: repeatAfterDayController,
+                validator: (val) {
+                  if (val!.isEmpty) {
+                    return 'Add Repeat After Day';
+                  }
+                  return null;
+                },
                 decoration: fieldDecor('0'),
                 textAlign: TextAlign.center,
                 keyboardType: TextInputType.number,
@@ -458,7 +470,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                         break;
                       case RepeatVariation.monthly:
                         repeat['type'] = 'monthly';
-
                         break;
                     }
                   }
@@ -541,9 +552,16 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
     );
   }
 
-  TextField _nameField() {
-    return TextField(
-        controller: medicineNameController, decoration: fieldDecor('eg. Napa'));
+  TextFormField _nameField() {
+    return TextFormField(
+        controller: medicineNameController,
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please enter medicine name';
+          }
+          return null;
+        },
+        decoration: fieldDecor('eg. Napa'));
   }
 
   _openCameraToTakePicture() async {
@@ -638,8 +656,14 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
           ),
           SizedBox(
               width: 70,
-              child: TextField(
+              child: TextFormField(
                   controller: availMedicineController,
+                  validator: (val) {
+                    if (val!.isEmpty) {
+                      return 'Add How much medicine you have';
+                    }
+                    return null;
+                  },
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.center,
                   inputFormatters: [
@@ -685,8 +709,14 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 ),
                 SizedBox(
                     width: 70,
-                    child: TextField(
+                    child: TextFormField(
                         controller: dosageController,
+                        validator: (val) {
+                          if (val!.isEmpty) {
+                            return 'Add How much medicine you have to take per day';
+                          }
+                          return null;
+                        },
                         keyboardType: TextInputType.number,
                         textAlign: TextAlign.center,
                         inputFormatters: [
@@ -823,80 +853,96 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
         _bottomBtn(
           context,
           ontap: () async {
-            String? permanentImagePath;
-            if (_capturedImage != null) {
-              // Show loading indicator while copying?
-              permanentImagePath =
-                  await _copyImageToPermanentStorage(_capturedImage);
-              if (permanentImagePath == null) {
-                // Handle the error - maybe show a snackbar and don't proceed?
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Failed to save image. Please try again.')));
-                return; // Stop the save process
-              }
-            }
-
-            final dosage = int.parse(dosageController.text);
-            final dosageUnit = isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;
-            final availableQuantity = int.parse(availMedicineController.text);
-            final medicineName = medicineNameController.text;
-            final mealTiming =
-                isBeforeMeal ? MealTiming.before : MealTiming.after;
-            final repeatMap = switch (repeatVariation) {
-              RepeatVariation.day => {
-                  'type': 'days',
-                  'day': int.parse(repeatAfterDayController.text),
-                },
-              RepeatVariation.weekly => {
-                  'type': 'weekly',
-                  'days': _selectedWeekDaysRepeat
-                },
-              RepeatVariation.timely => {
-                  'type': 'timely',
-                  'dayTime': '',
-                },
-              RepeatVariation.monthly => {
-                  'type': 'monthly',
-                  'days':
-                      _selectedMonthlyDateInRepeat.map((e) => e.day).toList()
+            if (_formKey.currentState!.validate()) {
+              String? permanentImagePath;
+              if (_capturedImage != null) {
+                // Show loading indicator while copying?
+                permanentImagePath =
+                    await _copyImageToPermanentStorage(_capturedImage);
+                if (permanentImagePath == null) {
+                  // Handle the error - maybe show a snackbar and don't proceed?
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content:
+                          Text('Failed to save image. Please try again.')));
+                  return; // Stop the save process
                 }
-            };
+              }
 
-            final newScheduleTimes = <String, String>{};
-            scheduleTime.forEach((key, value) {
-              newScheduleTimes[key] = timeOfDayToString(value);
-            });
+              final dosage = int.parse(dosageController.text);
+              final dosageUnit =
+                  isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;
+              final availableQuantity = int.parse(availMedicineController.text);
+              final medicineName = medicineNameController.text;
+              final mealTiming =
+                  isBeforeMeal ? MealTiming.before : MealTiming.after;
 
-            final newMedicine = MedicineModel(
-              medicineName: medicineName,
-              dosage: dosage,
-              dosageUnit: dosageUnit,
-              availableQuantity: availableQuantity,
-              mealTiming: mealTiming,
-              repeatMap: repeatMap,
-              repeatVariation: repeatVariation,
-              imagePath: permanentImagePath,
-              createdAt: DateTime.now(),
-              modifiedAt: DateTime.now(),
-              startDate: startDate,
-              endDate: endDate,
-              scheduleTimes: newScheduleTimes,
-            );
+              log(" Screen : week days : $_selectedWeekDaysRepeat");
+              log(" Screen : Monthly days : $_selectedMonthlyDateInRepeat");
 
-            final viewModel = context.read<MedicineViewmodels>();
+              final repeatMap = switch (repeatVariation) {
+                RepeatVariation.day => {
+                    'type': 'days',
+                    'day': int.parse(repeatAfterDayController.text),
+                  },
+                RepeatVariation.weekly => {
+                    'type': 'weekly',
+                    'days': _selectedWeekDaysRepeat
+                  },
+                RepeatVariation.timely => {
+                    'type': 'timely',
+                    'dayTime': '',
+                  },
+                RepeatVariation.monthly => {
+                    'type': 'monthly',
+                    'days':
+                        _selectedMonthlyDateInRepeat.map((e) => e.day).toList()
+                  }
+              };
 
-            await viewModel.add_medicine(newMedicine);
-            await viewModel.get_all_medicine();
+              final newScheduleTimes = <String, String>{};
+              scheduleTime.forEach((key, value) {
+                newScheduleTimes[key] = timeOfDayToString(value);
+              });
 
-            // Optionally navigate back or show success message
-            if (mounted) {
-              // Check if the widget is still in the tree
-              Navigator.pop(context); // Example: Go back after saving
-              if (viewModel.errorMessage == null) {
-                CustomSnackBar.showCustomSnackBar(
-                    title: "Medicine added",
-                    message: "$medicineName has been added successfully",
-                    context: context);
+              print('added');
+
+              final newMedicine = MedicineModel(
+                medicineName: medicineName,
+                dosage: dosage,
+                dosageUnit: dosageUnit,
+                availableQuantity: availableQuantity,
+                mealTiming: mealTiming,
+                repeatMap: repeatMap,
+                repeatVariation: repeatVariation,
+                imagePath: permanentImagePath,
+                createdAt: DateTime.now(),
+                modifiedAt: DateTime.now(),
+                startDate: startDate,
+                endDate: endDate,
+                scheduleTimes: newScheduleTimes,
+              );
+
+              print('mdoel created');
+
+              final viewModel = context.read<MedicineViewmodels>();
+
+              await viewModel.add_medicine(newMedicine);
+              await viewModel.get_all_medicine();
+
+              // Optionally navigate back or show success message
+              if (mounted) {
+                // Check if the widget is still in the tree
+                // Example: Go back after saving
+                if (viewModel.errorMessage == null) {
+                  Navigator.pop(context);
+                  CustomSnackBar.showCustomSnackBar(
+                      title: "Medicine added",
+                      message: "$medicineName has been added successfully",
+                      context: context);
+                } else {
+                  CustomSnackBar.showCustomErrorToast(
+                      message: "Error: ${viewModel.errorMessage}");
+                }
               }
             }
           },

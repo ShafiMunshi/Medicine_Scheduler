@@ -8,6 +8,7 @@ import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view
 import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/models/repeat_variation.dart';
+import 'package:medicine_app/widgets/common/app_slideablde_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 
@@ -72,100 +73,103 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     );
   }
 
-  Container medicineWidget({
+  AppSlidableWidget medicineWidget({
     required String medicineName,
     required String timeLeft,
     required String availableMedicine,
     required int index,
     String? imagePath,
   }) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: boxDecoration(bgColor: white, radius: 16.r, showShadow: true),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            // mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                  height: 84.w,
-                  width: 84.w,
-                  child: Image.asset(imagePath ?? getRandomMedicineImage(index),
-                      fit: BoxFit.cover)),
-              12.horizontalSpace,
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  medicineName,
-                  style: boldTextStyle(size: 15),
-                ),
-                Text(
-                  'Beximco pharmaceuticals Ltd.',
-                  style: secondaryTextStyle(size: 12),
-                ),
-                6.verticalSpace,
-                Row(
-                  // crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    _timeOfDay(title: 'Morning', isDone: true),
-                    15.horizontalSpace,
-                    _timeOfDay(title: 'Noon', isDone: false),
-                    15.horizontalSpace,
-                    _timeOfDay(title: 'Night', isDone: false),
-                  ],
-                ),
-                6.verticalSpace,
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Time left',
-                      style: primaryTextStyle(size: 10),
-                    ),
-                    12.horizontalSpace,
-                    _buildProgressWithText(text: '5 hours', value: .5)
-                  ],
-                ),
-                10.verticalSpace,
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Medicine left',
-                      style: secondaryTextStyle(size: 10),
-                    ),
-                    12.horizontalSpace,
-                    SizedBox(
-                      width: 110.w,
-                      height: 8,
-                      child: ListView.builder(
-                        itemCount: 5,
-                        shrinkWrap: true,
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (BuildContext context, int index) {
-                          return _littleTablet();
-                        },
+    return AppSlidableWidget(
+      child: Container(
+        padding: EdgeInsets.all(12),
+        margin: EdgeInsets.only(bottom: 8),
+        decoration:
+            boxDecoration(bgColor: white, radius: 16.r, showShadow: true),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                SizedBox(
+                    height: 84.w,
+                    width: 84.w,
+                    child: Image.asset(
+                        imagePath ?? getRandomMedicineImage(index),
+                        fit: BoxFit.cover)),
+                12.horizontalSpace,
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    medicineName,
+                    style: boldTextStyle(size: 15),
+                  ),
+                  Text(
+                    'Beximco pharmaceuticals Ltd.',
+                    style: secondaryTextStyle(size: 12),
+                  ),
+                  6.verticalSpace,
+                  Row(
+                    // crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.max,
+                    children: [
+                      _timeOfDay(title: 'Morning', isDone: true),
+                      15.horizontalSpace,
+                      _timeOfDay(title: 'Noon', isDone: false),
+                      15.horizontalSpace,
+                      _timeOfDay(title: 'Night', isDone: false),
+                    ],
+                  ),
+                  6.verticalSpace,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Time left',
+                        style: primaryTextStyle(size: 10),
                       ),
-                    ),
-                    Text(
-                      '100 / 50',
-                      style: secondaryTextStyle(size: 10),
-                    ),
-                  ],
-                )
-              ]),
-            ],
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: SvgPicture.asset('assets/icons/clock_blue.svg'),
-          )
-        ],
+                      12.horizontalSpace,
+                      _buildProgressWithText(text: '5 hours', value: .5)
+                    ],
+                  ),
+                  10.verticalSpace,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Medicine left',
+                        style: secondaryTextStyle(size: 10),
+                      ),
+                      12.horizontalSpace,
+                      SizedBox(
+                        width: 110.w,
+                        height: 8,
+                        child: ListView.builder(
+                          itemCount: 5,
+                          shrinkWrap: true,
+                          scrollDirection: Axis.horizontal,
+                          itemBuilder: (BuildContext context, int index) {
+                            return _littleTablet();
+                          },
+                        ),
+                      ),
+                      Text(
+                        '100 / 50',
+                        style: secondaryTextStyle(size: 10),
+                      ),
+                    ],
+                  )
+                ]),
+              ],
+            ),
+            Align(
+              alignment: Alignment.topRight,
+              child: SvgPicture.asset('assets/icons/clock_blue.svg'),
+            )
+          ],
+        ),
       ),
     );
   }
@@ -263,30 +267,18 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     return 'assets/images/medicine_$rand.png';
   }
 
-  // TODO: this function calculate the remaining time when user will take the pill / cups on nearest time.. 
+  // TODO: this function calculate the remaining time when user will take the pill / cups on nearest time..
   getRemainingTimeToTakeNearestMedicine(MedicineModel model) {
-
     switch (model.repeatVariation) {
       case RepeatVariation.day:
-        
         break;
       default:
     }
 
     model.medicineScheduleList;
-
   }
 
-  // Calculate from how much days go and how much medicine user has taken... 
-  getHowMuchMedicineLeft(){}
-  // TODO: create a function which will return the nearest period when user will take medicine.. 
-
-
-
-
-
-
-
-
-
+  // Calculate from how much days go and how much medicine user has taken...
+  getHowMuchMedicineLeft() {}
+  // TODO: create a function which will return the nearest period when user will take medicine..
 }

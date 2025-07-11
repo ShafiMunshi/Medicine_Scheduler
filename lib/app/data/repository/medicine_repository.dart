@@ -6,23 +6,19 @@ import 'package:medicine_app/app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 
 class MedicineRepository {
-  final LocalDatabaseService localDatabaseService;
+  final LocalDatabaseService db;
 
-  MedicineRepository(this.localDatabaseService);
+  MedicineRepository(this.db);
 
   Future<int> insertMedicine(MedicineModel medicineData) async {
     try {
-      final db = Isar.getInstance();
-      log('Isar instance: $db');
-      if (db != null) {
-        // also save the time schedule for alarm to the shared pref
-        MySharedPref.setTimeList(
-            'time_list', medicineData.scheduleTimes.values.toList());
+      // also save the time schedule for alarm to the shared pref
+      MySharedPref.setTimeList(
+          'time_list', medicineData.scheduleTimes.values.toList());
 
-        db.writeTxn(() {
-          return db.medicineModels.put(medicineData);
-        });
-      }
+      db.isar.writeTxn(() {
+        return db.isar.medicineModels.put(medicineData);
+      });
 
       return -1;
     } catch (e) {
@@ -32,13 +28,19 @@ class MedicineRepository {
 
   Future<List<MedicineModel>> getAllMedicines() async {
     try {
-      final db = Isar.getInstance();
-      log('Isar instance: $db');
-      if (db != null) {
-        return await db.medicineModels.where().findAll();
-      }
+      return await db.isar.medicineModels.where().findAll();
+    } catch (e) {
+      log(e.toString());
+      throw Exception(e);
+    }
+  }
 
-      return [];
+  Future<void> clearSpecificMedicine(int id) async {
+    try {
+      // specify the id of the medicine to clear
+      await db.isar.writeTxn(() async {
+        await db.isar.medicineModels.delete(id);
+      });
     } catch (e) {
       log(e.toString());
       throw Exception(e);

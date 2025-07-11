@@ -262,7 +262,7 @@ MedicineModel _medicineModelDeserialize(
     dosageUnit: _MedicineModeldosageUnitValueEnumMap[
             reader.readByteOrNull(offsets[3])] ??
         DosageUnit.pcs,
-    endDate: reader.readDateTimeOrNull(offsets[4]),
+    endDate: reader.readDateTime(offsets[4]),
     finalScheduleDates: reader.readDateTimeList(offsets[5]),
     id: id,
     imagePath: reader.readStringOrNull(offsets[6]),
@@ -323,7 +323,7 @@ P _medicineModelDeserializeProp<P>(
               reader.readByteOrNull(offset)] ??
           DosageUnit.pcs) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
       return (reader.readDateTimeList(offset)) as P;
     case 6:
@@ -728,25 +728,7 @@ extension MedicineModelQueryFilter
   }
 
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
-      endDateIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'endDate',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
-      endDateIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'endDate',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
-      endDateEqualTo(DateTime? value) {
+      endDateEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'endDate',
@@ -757,7 +739,7 @@ extension MedicineModelQueryFilter
 
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
       endDateGreaterThan(
-    DateTime? value, {
+    DateTime value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -771,7 +753,7 @@ extension MedicineModelQueryFilter
 
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
       endDateLessThan(
-    DateTime? value, {
+    DateTime value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -785,8 +767,8 @@ extension MedicineModelQueryFilter
 
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
       endDateBetween(
-    DateTime? lower,
-    DateTime? upper, {
+    DateTime lower,
+    DateTime upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2190,7 +2172,7 @@ extension MedicineModelQueryProperty
     });
   }
 
-  QueryBuilder<MedicineModel, DateTime?, QQueryOperations> endDateProperty() {
+  QueryBuilder<MedicineModel, DateTime, QQueryOperations> endDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'endDate');
     });
