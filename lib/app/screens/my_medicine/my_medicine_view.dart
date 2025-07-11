@@ -31,6 +31,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
 
   @override
   Widget build(BuildContext context) {
+    print(MediaQuery.of(context).size.width);
     return Scaffold(
       appBar: commonAppBarWidget(context,
           title: 'My Medicine',
@@ -86,7 +87,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
       medicine: medicine,
       child: Container(
         padding: EdgeInsets.all(12),
-        // margin: EdgeInsets.only(bottom: 8),
+        margin: EdgeInsets.symmetric(horizontal: 2),
         decoration:
             boxDecoration(bgColor: white, radius: 16.r, showShadow: true),
         child: Row(
@@ -94,6 +95,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 SizedBox(
                     height: 84.w,
@@ -105,24 +107,21 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(
                     medicineName,
-                    style: boldTextStyle(size: 15),
-                  ),
-                  Text(
-                    'Beximco pharmaceuticals Ltd.',
-                    style: secondaryTextStyle(size: 12),
+                    style: boldTextStyle(size: 16),
                   ),
                   6.verticalSpace,
-                  Row(
-                    // crossAxisAlignment: CrossAxisAlignment.stretch,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.max,
-                    children: [
-                      _timeOfDay(title: 'Morning', isDone: true),
-                      15.horizontalSpace,
-                      _timeOfDay(title: 'Noon', isDone: false),
-                      15.horizontalSpace,
-                      _timeOfDay(title: 'Night', isDone: false),
-                    ],
+                  SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.57,
+                    child: Wrap(
+                        direction: Axis.horizontal,
+                        spacing: 5.w,
+                        runSpacing: 5.h, // optional: space between lines
+                        alignment: WrapAlignment.start,
+                        children: medicine.medicineScheduleList!
+                            .map((e) => _timeOfDay(
+                                title: e.dayTimeName ?? "Unknown",
+                                isDone: true))
+                            .toList()),
                   ),
                   6.verticalSpace,
                   Row(
@@ -241,27 +240,65 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     );
   }
 
-  Row _timeOfDay({
+  // Container _timeOfDay({
+  //   required String title,
+  //   required bool isDone,
+  // }) {
+  //   return Container(
+  //     constraints: BoxConstraints(maxWidth: 55.w),
+  //     child: Row(
+  //       mainAxisSize: MainAxisSize.min,
+  //       children: [
+  //         Icon(
+  //           Icons.done,
+  //           size: 14,
+  //           color: isDone
+  //               ? AppColors.primaryColor
+  //               : Color(0xFF002D6F).withValues(alpha: .2),
+  //         ),
+  //         Text(
+  //           title,
+  //           overflow: TextOverflow.ellipsis,
+  //           style: primaryTextStyle(
+  //               size: 10,
+  //               color: isDone ? AppColors.primaryColor : Color(0xFF002D6F)),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+  Widget _timeOfDay({
     required String title,
     required bool isDone,
   }) {
-    return Row(
-      // mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.done,
-          size: 14,
-          color: isDone
-              ? AppColors.primaryColor
-              : Color(0xFF002D6F).withValues(alpha: .2),
-        ),
-        Text(
-          title,
-          style: primaryTextStyle(
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 4.h),
+      decoration: BoxDecoration(
+        color:
+            isDone ? AppColors.primaryColor.withOpacity(0.1) : Colors.grey[100],
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.done,
+            size: 14,
+            color: isDone
+                ? AppColors.primaryColor
+                : Color(0xFF002D6F).withOpacity(0.2),
+          ),
+          SizedBox(width: 4.w),
+          Text(
+            title,
+            style: primaryTextStyle(
               size: 10,
-              color: isDone ? AppColors.primaryColor : Color(0xFF002D6F)),
-        ),
-      ],
+              color: isDone ? AppColors.primaryColor : Color(0xFF002D6F),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
     );
   }
 
