@@ -7,6 +7,7 @@ import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 
@@ -264,6 +265,14 @@ class _MyMedicineViewState extends State<MyMedicineView> {
 
   // TODO: this function calculate the remaining time when user will take the pill / cups on nearest time.. 
   getRemainingTimeToTakeNearestMedicine(MedicineModel model) {
+
+    switch (model.repeatVariation) {
+      case RepeatVariation.day:
+        
+        break;
+      default:
+    }
+
     model.medicineScheduleList;
 
   }

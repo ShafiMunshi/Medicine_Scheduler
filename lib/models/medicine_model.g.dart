@@ -43,65 +43,70 @@ const MedicineModelSchema = CollectionSchema(
       name: r'endDate',
       type: IsarType.dateTime,
     ),
-    r'imagePath': PropertySchema(
+    r'finalScheduleDates': PropertySchema(
       id: 5,
+      name: r'finalScheduleDates',
+      type: IsarType.dateTimeList,
+    ),
+    r'imagePath': PropertySchema(
+      id: 6,
       name: r'imagePath',
       type: IsarType.string,
     ),
     r'mealTiming': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'mealTiming',
       type: IsarType.byte,
       enumMap: _MedicineModelmealTimingEnumValueMap,
     ),
     r'medicineName': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'medicineName',
       type: IsarType.string,
     ),
     r'medicineScheduleList': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'medicineScheduleList',
       type: IsarType.objectList,
-      target: r'MedicineSchedule',
+      target: r'ScheduleDayTime',
     ),
     r'modifiedAt': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'modifiedAt',
       type: IsarType.dateTime,
     ),
     r'repeatVariation': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'repeatVariation',
       type: IsarType.byte,
       enumMap: _MedicineModelrepeatVariationEnumValueMap,
     ),
     r'repeatVariationDays': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'repeatVariationDays',
       type: IsarType.object,
       target: r'RepeatVariationDays',
     ),
     r'repeatVariationMonth': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'repeatVariationMonth',
       type: IsarType.object,
       target: r'RepeatVariationMonth',
     ),
     r'repeatVariationTime': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'repeatVariationTime',
       type: IsarType.object,
       target: r'RepeatVariationTimes',
     ),
     r'repeatVariationWeek': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'repeatVariationWeek',
       type: IsarType.object,
       target: r'RepeatVariationWeek',
     ),
     r'startDate': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'startDate',
       type: IsarType.dateTime,
     )
@@ -118,7 +123,7 @@ const MedicineModelSchema = CollectionSchema(
     r'RepeatVariationWeek': RepeatVariationWeekSchema,
     r'RepeatVariationMonth': RepeatVariationMonthSchema,
     r'RepeatVariationTimes': RepeatVariationTimesSchema,
-    r'MedicineSchedule': MedicineScheduleSchema
+    r'ScheduleDayTime': ScheduleDayTimeSchema
   },
   getId: _medicineModelGetId,
   getLinks: _medicineModelGetLinks,
@@ -133,6 +138,12 @@ int _medicineModelEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.finalScheduleDates;
+    if (value != null) {
+      bytesCount += 3 + value.length * 8;
+    }
+  }
+  {
     final value = object.imagePath;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -144,11 +155,11 @@ int _medicineModelEstimateSize(
     if (list != null) {
       bytesCount += 3 + list.length * 3;
       {
-        final offsets = allOffsets[MedicineSchedule]!;
+        final offsets = allOffsets[ScheduleDayTime]!;
         for (var i = 0; i < list.length; i++) {
           final value = list[i];
           bytesCount +=
-              MedicineScheduleSchema.estimateSize(value, offsets, allOffsets);
+              ScheduleDayTimeSchema.estimateSize(value, offsets, allOffsets);
         }
       }
     }
@@ -199,42 +210,43 @@ void _medicineModelSerialize(
   writer.writeLong(offsets[2], object.dosage);
   writer.writeByte(offsets[3], object.dosageUnit.index);
   writer.writeDateTime(offsets[4], object.endDate);
-  writer.writeString(offsets[5], object.imagePath);
-  writer.writeByte(offsets[6], object.mealTiming.index);
-  writer.writeString(offsets[7], object.medicineName);
-  writer.writeObjectList<MedicineSchedule>(
-    offsets[8],
+  writer.writeDateTimeList(offsets[5], object.finalScheduleDates);
+  writer.writeString(offsets[6], object.imagePath);
+  writer.writeByte(offsets[7], object.mealTiming.index);
+  writer.writeString(offsets[8], object.medicineName);
+  writer.writeObjectList<ScheduleDayTime>(
+    offsets[9],
     allOffsets,
-    MedicineScheduleSchema.serialize,
+    ScheduleDayTimeSchema.serialize,
     object.medicineScheduleList,
   );
-  writer.writeDateTime(offsets[9], object.modifiedAt);
-  writer.writeByte(offsets[10], object.repeatVariation.index);
+  writer.writeDateTime(offsets[10], object.modifiedAt);
+  writer.writeByte(offsets[11], object.repeatVariation.index);
   writer.writeObject<RepeatVariationDays>(
-    offsets[11],
+    offsets[12],
     allOffsets,
     RepeatVariationDaysSchema.serialize,
     object.repeatVariationDays,
   );
   writer.writeObject<RepeatVariationMonth>(
-    offsets[12],
+    offsets[13],
     allOffsets,
     RepeatVariationMonthSchema.serialize,
     object.repeatVariationMonth,
   );
   writer.writeObject<RepeatVariationTimes>(
-    offsets[13],
+    offsets[14],
     allOffsets,
     RepeatVariationTimesSchema.serialize,
     object.repeatVariationTime,
   );
   writer.writeObject<RepeatVariationWeek>(
-    offsets[14],
+    offsets[15],
     allOffsets,
     RepeatVariationWeekSchema.serialize,
     object.repeatVariationWeek,
   );
-  writer.writeDateTime(offsets[15], object.startDate);
+  writer.writeDateTime(offsets[16], object.startDate);
 }
 
 MedicineModel _medicineModelDeserialize(
@@ -251,43 +263,44 @@ MedicineModel _medicineModelDeserialize(
             reader.readByteOrNull(offsets[3])] ??
         DosageUnit.pcs,
     endDate: reader.readDateTimeOrNull(offsets[4]),
+    finalScheduleDates: reader.readDateTimeList(offsets[5]),
     id: id,
-    imagePath: reader.readStringOrNull(offsets[5]),
+    imagePath: reader.readStringOrNull(offsets[6]),
     mealTiming: _MedicineModelmealTimingValueEnumMap[
-            reader.readByteOrNull(offsets[6])] ??
+            reader.readByteOrNull(offsets[7])] ??
         MealTiming.before,
-    medicineName: reader.readString(offsets[7]),
-    medicineScheduleList: reader.readObjectList<MedicineSchedule>(
-      offsets[8],
-      MedicineScheduleSchema.deserialize,
+    medicineName: reader.readString(offsets[8]),
+    medicineScheduleList: reader.readObjectList<ScheduleDayTime>(
+      offsets[9],
+      ScheduleDayTimeSchema.deserialize,
       allOffsets,
-      MedicineSchedule(),
+      ScheduleDayTime(),
     ),
-    modifiedAt: reader.readDateTime(offsets[9]),
+    modifiedAt: reader.readDateTime(offsets[10]),
     repeatVariation: _MedicineModelrepeatVariationValueEnumMap[
-            reader.readByteOrNull(offsets[10])] ??
+            reader.readByteOrNull(offsets[11])] ??
         RepeatVariation.timely,
     repeatVariationDays: reader.readObjectOrNull<RepeatVariationDays>(
-      offsets[11],
+      offsets[12],
       RepeatVariationDaysSchema.deserialize,
       allOffsets,
     ),
     repeatVariationMonth: reader.readObjectOrNull<RepeatVariationMonth>(
-      offsets[12],
+      offsets[13],
       RepeatVariationMonthSchema.deserialize,
       allOffsets,
     ),
     repeatVariationTime: reader.readObjectOrNull<RepeatVariationTimes>(
-      offsets[13],
+      offsets[14],
       RepeatVariationTimesSchema.deserialize,
       allOffsets,
     ),
     repeatVariationWeek: reader.readObjectOrNull<RepeatVariationWeek>(
-      offsets[14],
+      offsets[15],
       RepeatVariationWeekSchema.deserialize,
       allOffsets,
     ),
-    startDate: reader.readDateTime(offsets[15]),
+    startDate: reader.readDateTime(offsets[16]),
   );
   return object;
 }
@@ -312,51 +325,53 @@ P _medicineModelDeserializeProp<P>(
     case 4:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 5:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readDateTimeList(offset)) as P;
     case 6:
+      return (reader.readStringOrNull(offset)) as P;
+    case 7:
       return (_MedicineModelmealTimingValueEnumMap[
               reader.readByteOrNull(offset)] ??
           MealTiming.before) as P;
-    case 7:
-      return (reader.readString(offset)) as P;
     case 8:
-      return (reader.readObjectList<MedicineSchedule>(
-        offset,
-        MedicineScheduleSchema.deserialize,
-        allOffsets,
-        MedicineSchedule(),
-      )) as P;
+      return (reader.readString(offset)) as P;
     case 9:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readObjectList<ScheduleDayTime>(
+        offset,
+        ScheduleDayTimeSchema.deserialize,
+        allOffsets,
+        ScheduleDayTime(),
+      )) as P;
     case 10:
+      return (reader.readDateTime(offset)) as P;
+    case 11:
       return (_MedicineModelrepeatVariationValueEnumMap[
               reader.readByteOrNull(offset)] ??
           RepeatVariation.timely) as P;
-    case 11:
+    case 12:
       return (reader.readObjectOrNull<RepeatVariationDays>(
         offset,
         RepeatVariationDaysSchema.deserialize,
         allOffsets,
       )) as P;
-    case 12:
+    case 13:
       return (reader.readObjectOrNull<RepeatVariationMonth>(
         offset,
         RepeatVariationMonthSchema.deserialize,
         allOffsets,
       )) as P;
-    case 13:
+    case 14:
       return (reader.readObjectOrNull<RepeatVariationTimes>(
         offset,
         RepeatVariationTimesSchema.deserialize,
         allOffsets,
       )) as P;
-    case 14:
+    case 15:
       return (reader.readObjectOrNull<RepeatVariationWeek>(
         offset,
         RepeatVariationWeekSchema.deserialize,
         allOffsets,
       )) as P;
-    case 15:
+    case 16:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -783,6 +798,169 @@ extension MedicineModelQueryFilter
         upper: upper,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'finalScheduleDates',
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'finalScheduleDates',
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesElementEqualTo(DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'finalScheduleDates',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesElementGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'finalScheduleDates',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesElementLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'finalScheduleDates',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesElementBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'finalScheduleDates',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      finalScheduleDatesLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'finalScheduleDates',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
     });
   }
 
@@ -1554,7 +1732,7 @@ extension MedicineModelQueryFilter
 extension MedicineModelQueryObject
     on QueryBuilder<MedicineModel, MedicineModel, QFilterCondition> {
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
-      medicineScheduleListElement(FilterQuery<MedicineSchedule> q) {
+      medicineScheduleListElement(FilterQuery<ScheduleDayTime> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'medicineScheduleList');
     });
@@ -1931,6 +2109,13 @@ extension MedicineModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MedicineModel, MedicineModel, QDistinct>
+      distinctByFinalScheduleDates() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'finalScheduleDates');
+    });
+  }
+
   QueryBuilder<MedicineModel, MedicineModel, QDistinct> distinctByImagePath(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2011,6 +2196,13 @@ extension MedicineModelQueryProperty
     });
   }
 
+  QueryBuilder<MedicineModel, List<DateTime>?, QQueryOperations>
+      finalScheduleDatesProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'finalScheduleDates');
+    });
+  }
+
   QueryBuilder<MedicineModel, String?, QQueryOperations> imagePathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'imagePath');
@@ -2030,7 +2222,7 @@ extension MedicineModelQueryProperty
     });
   }
 
-  QueryBuilder<MedicineModel, List<MedicineSchedule>?, QQueryOperations>
+  QueryBuilder<MedicineModel, List<ScheduleDayTime>?, QQueryOperations>
       medicineScheduleListProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'medicineScheduleList');
@@ -2084,1515 +2276,3 @@ extension MedicineModelQueryProperty
     });
   }
 }
-
-// **************************************************************************
-// IsarEmbeddedGenerator
-// **************************************************************************
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const RepeatVariationDaysSchema = Schema(
-  name: r'RepeatVariationDays',
-  id: -1494091411996334077,
-  properties: {
-    r'day': PropertySchema(
-      id: 0,
-      name: r'day',
-      type: IsarType.string,
-    )
-  },
-  estimateSize: _repeatVariationDaysEstimateSize,
-  serialize: _repeatVariationDaysSerialize,
-  deserialize: _repeatVariationDaysDeserialize,
-  deserializeProp: _repeatVariationDaysDeserializeProp,
-);
-
-int _repeatVariationDaysEstimateSize(
-  RepeatVariationDays object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final value = object.day;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  return bytesCount;
-}
-
-void _repeatVariationDaysSerialize(
-  RepeatVariationDays object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeString(offsets[0], object.day);
-}
-
-RepeatVariationDays _repeatVariationDaysDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = RepeatVariationDays(
-    day: reader.readStringOrNull(offsets[0]),
-  );
-  return object;
-}
-
-P _repeatVariationDaysDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringOrNull(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension RepeatVariationDaysQueryFilter on QueryBuilder<RepeatVariationDays,
-    RepeatVariationDays, QFilterCondition> {
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'day',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'day',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'day',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'day',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'day',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'day',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationDays, RepeatVariationDays, QAfterFilterCondition>
-      dayIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'day',
-        value: '',
-      ));
-    });
-  }
-}
-
-extension RepeatVariationDaysQueryObject on QueryBuilder<RepeatVariationDays,
-    RepeatVariationDays, QFilterCondition> {}
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const RepeatVariationTimesSchema = Schema(
-  name: r'RepeatVariationTimes',
-  id: 7490877538859948694,
-  properties: {
-    r'dayTime': PropertySchema(
-      id: 0,
-      name: r'dayTime',
-      type: IsarType.string,
-    )
-  },
-  estimateSize: _repeatVariationTimesEstimateSize,
-  serialize: _repeatVariationTimesSerialize,
-  deserialize: _repeatVariationTimesDeserialize,
-  deserializeProp: _repeatVariationTimesDeserializeProp,
-);
-
-int _repeatVariationTimesEstimateSize(
-  RepeatVariationTimes object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final value = object.dayTime;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  return bytesCount;
-}
-
-void _repeatVariationTimesSerialize(
-  RepeatVariationTimes object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeString(offsets[0], object.dayTime);
-}
-
-RepeatVariationTimes _repeatVariationTimesDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = RepeatVariationTimes(
-    dayTime: reader.readStringOrNull(offsets[0]),
-  );
-  return object;
-}
-
-P _repeatVariationTimesDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringOrNull(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension RepeatVariationTimesQueryFilter on QueryBuilder<RepeatVariationTimes,
-    RepeatVariationTimes, QFilterCondition> {
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'dayTime',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'dayTime',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'dayTime',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-          QAfterFilterCondition>
-      dayTimeContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'dayTime',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-          QAfterFilterCondition>
-      dayTimeMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'dayTime',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dayTime',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationTimes, RepeatVariationTimes,
-      QAfterFilterCondition> dayTimeIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'dayTime',
-        value: '',
-      ));
-    });
-  }
-}
-
-extension RepeatVariationTimesQueryObject on QueryBuilder<RepeatVariationTimes,
-    RepeatVariationTimes, QFilterCondition> {}
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const RepeatVariationWeekSchema = Schema(
-  name: r'RepeatVariationWeek',
-  id: -2059248272879264652,
-  properties: {
-    r'weekDays': PropertySchema(
-      id: 0,
-      name: r'weekDays',
-      type: IsarType.stringList,
-    )
-  },
-  estimateSize: _repeatVariationWeekEstimateSize,
-  serialize: _repeatVariationWeekSerialize,
-  deserialize: _repeatVariationWeekDeserialize,
-  deserializeProp: _repeatVariationWeekDeserializeProp,
-);
-
-int _repeatVariationWeekEstimateSize(
-  RepeatVariationWeek object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final list = object.weekDays;
-    if (list != null) {
-      bytesCount += 3 + list.length * 3;
-      {
-        for (var i = 0; i < list.length; i++) {
-          final value = list[i];
-          bytesCount += value.length * 3;
-        }
-      }
-    }
-  }
-  return bytesCount;
-}
-
-void _repeatVariationWeekSerialize(
-  RepeatVariationWeek object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeStringList(offsets[0], object.weekDays);
-}
-
-RepeatVariationWeek _repeatVariationWeekDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = RepeatVariationWeek(
-    weekDays: reader.readStringList(offsets[0]),
-  );
-  return object;
-}
-
-P _repeatVariationWeekDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringList(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension RepeatVariationWeekQueryFilter on QueryBuilder<RepeatVariationWeek,
-    RepeatVariationWeek, QFilterCondition> {
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'weekDays',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'weekDays',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'weekDays',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'weekDays',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'weekDays',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'weekDays',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'weekDays',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationWeek, RepeatVariationWeek, QAfterFilterCondition>
-      weekDaysLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'weekDays',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-}
-
-extension RepeatVariationWeekQueryObject on QueryBuilder<RepeatVariationWeek,
-    RepeatVariationWeek, QFilterCondition> {}
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const RepeatVariationMonthSchema = Schema(
-  name: r'RepeatVariationMonth',
-  id: 6044871637931404053,
-  properties: {
-    r'days': PropertySchema(
-      id: 0,
-      name: r'days',
-      type: IsarType.stringList,
-    )
-  },
-  estimateSize: _repeatVariationMonthEstimateSize,
-  serialize: _repeatVariationMonthSerialize,
-  deserialize: _repeatVariationMonthDeserialize,
-  deserializeProp: _repeatVariationMonthDeserializeProp,
-);
-
-int _repeatVariationMonthEstimateSize(
-  RepeatVariationMonth object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final list = object.days;
-    if (list != null) {
-      bytesCount += 3 + list.length * 3;
-      {
-        for (var i = 0; i < list.length; i++) {
-          final value = list[i];
-          bytesCount += value.length * 3;
-        }
-      }
-    }
-  }
-  return bytesCount;
-}
-
-void _repeatVariationMonthSerialize(
-  RepeatVariationMonth object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeStringList(offsets[0], object.days);
-}
-
-RepeatVariationMonth _repeatVariationMonthDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = RepeatVariationMonth(
-    days: reader.readStringList(offsets[0]),
-  );
-  return object;
-}
-
-P _repeatVariationMonthDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringList(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension RepeatVariationMonthQueryFilter on QueryBuilder<RepeatVariationMonth,
-    RepeatVariationMonth, QFilterCondition> {
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'days',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'days',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'days',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-          QAfterFilterCondition>
-      daysElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'days',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-          QAfterFilterCondition>
-      daysElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'days',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'days',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'days',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<RepeatVariationMonth, RepeatVariationMonth,
-      QAfterFilterCondition> daysLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'days',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-}
-
-extension RepeatVariationMonthQueryObject on QueryBuilder<RepeatVariationMonth,
-    RepeatVariationMonth, QFilterCondition> {}
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const MedicineScheduleSchema = Schema(
-  name: r'MedicineSchedule',
-  id: 5721320792536507454,
-  properties: {
-    r'dayTimeName': PropertySchema(
-      id: 0,
-      name: r'dayTimeName',
-      type: IsarType.string,
-    ),
-    r'timeString': PropertySchema(
-      id: 1,
-      name: r'timeString',
-      type: IsarType.string,
-    )
-  },
-  estimateSize: _medicineScheduleEstimateSize,
-  serialize: _medicineScheduleSerialize,
-  deserialize: _medicineScheduleDeserialize,
-  deserializeProp: _medicineScheduleDeserializeProp,
-);
-
-int _medicineScheduleEstimateSize(
-  MedicineSchedule object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final value = object.dayTimeName;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  {
-    final value = object.timeString;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  return bytesCount;
-}
-
-void _medicineScheduleSerialize(
-  MedicineSchedule object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeString(offsets[0], object.dayTimeName);
-  writer.writeString(offsets[1], object.timeString);
-}
-
-MedicineSchedule _medicineScheduleDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = MedicineSchedule(
-    dayTimeName: reader.readStringOrNull(offsets[0]),
-    timeString: reader.readStringOrNull(offsets[1]),
-  );
-  return object;
-}
-
-P _medicineScheduleDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringOrNull(offset)) as P;
-    case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension MedicineScheduleQueryFilter
-    on QueryBuilder<MedicineSchedule, MedicineSchedule, QFilterCondition> {
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'dayTimeName',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'dayTimeName',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'dayTimeName',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'dayTimeName',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'dayTimeName',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dayTimeName',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      dayTimeNameIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'dayTimeName',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'timeString',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'timeString',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'timeString',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'timeString',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'timeString',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'timeString',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<MedicineSchedule, MedicineSchedule, QAfterFilterCondition>
-      timeStringIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'timeString',
-        value: '',
-      ));
-    });
-  }
-}
-
-extension MedicineScheduleQueryObject
-    on QueryBuilder<MedicineSchedule, MedicineSchedule, QFilterCondition> {}

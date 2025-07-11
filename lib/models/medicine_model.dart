@@ -1,13 +1,11 @@
-import 'dart:developer';
-
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // Needed for TimeOfDay
 import 'package:isar/isar.dart';
+import 'package:medicine_app/models/medicine_time_schedule.dart';
+import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
+import 'package:nb_utils/nb_utils.dart';
 
 part 'medicine_model.g.dart';
-
-enum RepeatVariation { timely, day, weekly, monthly }
 
 enum MealTiming {
   before,
@@ -15,51 +13,6 @@ enum MealTiming {
 }
 
 enum DosageUnit { pcs, cup }
-
-@embedded
-// Stores the day count which will be repeated every after that day.
-class RepeatVariationDays {
-  String? day; // Changed to nullable
-  RepeatVariationDays({this.day}); // Optional parameter
-}
-
-@embedded
-class RepeatVariationTimes {
-  String? dayTime; // Changed to nullable
-  RepeatVariationTimes({this.dayTime}); // Optional parameter
-}
-
-@embedded
-class RepeatVariationWeek {
-  List<String>? weekDays; // Changed to nullable
-  RepeatVariationWeek({this.weekDays}); // Optional parameter
-}
-
-@embedded
-class RepeatVariationMonth {
-  List<String>? days; // Changed to nullable
-  RepeatVariationMonth({this.days}); // Optional parameter
-}
-
-@embedded
-class MedicineSchedule {
-  String? dayTimeName; // Changed to nullable -- Morning , AfterNoon, Noon
-  String? timeString; // Changed to nullable -- 8:00 , 1:00, 6:00
-
-  MedicineSchedule({this.dayTimeName, this.timeString}); // Optional parameters
-
-  @ignore
-  TimeOfDay? get dayTime {
-    return stringToTimeOfDay(timeString);
-  }
-
-  factory MedicineSchedule.fromTimeOfDay(String? name, TimeOfDay time) {
-    return MedicineSchedule(
-      dayTimeName: name,
-      timeString: timeOfDayToString(time),
-    );
-  }
-}
 
 @collection
 class MedicineModel {
@@ -103,12 +56,15 @@ class MedicineModel {
   ///This data is not using---
   RepeatVariationTimes? repeatVariationTime;
 
-  /// This won't be used anywhere, it's just used to replicate the , Morning, Noon [MedicineSchedule]  just for the Add New. Medicine Page to then save to ISAR
+  /// This won't be used anywhere, it's just used to replicate the , Morning, Noon [ScheduleDayTime]  just for the Add New. Medicine Page to then save to ISAR
   @ignore
   final Map<String, String> scheduleTimes;
 
   /// On the dayTime when when this medicine will be taken by user [Morning , 8:00]
-  List<MedicineSchedule>? medicineScheduleList;
+  List<ScheduleDayTime>? medicineScheduleList;
+
+  /// This list store the List of all dates when user will take medicine..
+  List<DateTime>? finalScheduleDates;
 
   /// when the medicine will be started
   final DateTime startDate;
@@ -132,6 +88,7 @@ class MedicineModel {
     this.repeatVariationMonth,
     this.repeatVariationTime,
     this.medicineScheduleList,
+    this.finalScheduleDates,
     Map<String, String>? scheduleTimes,
     required this.startDate,
     this.endDate,
@@ -147,26 +104,127 @@ class MedicineModel {
         log("Warning: Invalid time format '$value' in scheduleTimes for key '$key'");
       }
       medicineScheduleList!
-          .add(MedicineSchedule(dayTimeName: key, timeString: value));
+          .add(ScheduleDayTime(dayTimeName: key, timeString: value));
     });
+    final _endDate = endDate ?? startDate.add(Duration(days: 60));
 
     switch (repeatVariation) {
       case RepeatVariation.day:
-        repeatVariationDays =
-            RepeatVariationDays(day: repeatMap?['day']?.toString());
+        try {
+          repeatVariationDays =
+              RepeatVariationDays(day: repeatMap?['day']?.toString());
+
+          // assign to Final Schedule Dates according repeated date
+          for (var i = startDate;
+              i.isBefore(endDate ?? startDate.add(Duration(days: 60)));
+              i.add(Duration(days: repeatVariationDays!.day.toInt()))) {
+            finalScheduleDates?.add(i);
+          }
+        } catch (e) {
+          log("Error found to : case RepeatVariation.day in MedicineModel{} $e");
+        }
         break;
       case RepeatVariation.weekly:
-        repeatVariationWeek =
-            RepeatVariationWeek(weekDays: repeatMap?['days']?.cast<String>());
+        try {
+          repeatVariationWeek =
+              RepeatVariationWeek(weekDays: repeatMap?['days']?.cast<String>());
+
+          // assign to Final Schedule Dates according repeated date
+          finalScheduleDates = _getDatesByWeekdays(
+              startDate: startDate,
+              endDate: _endDate,
+              weekdays: repeatVariationWeek!.weekDays!);
+        } catch (e) {
+          log("Error found to : case RepeatVariation.weekly in MedicineModel{} $e");
+        }
         break;
       case RepeatVariation.timely:
         repeatVariationTime =
             RepeatVariationTimes(dayTime: repeatMap?['dayTime']?.toString());
         break;
       case RepeatVariation.monthly:
-        repeatVariationMonth =
-            RepeatVariationMonth(days: repeatMap?['days']?.cast<String>());
+        try {
+          repeatVariationMonth =
+              RepeatVariationMonth(days: repeatMap?['days']?.cast<int>());
+
+          // assign to Final Schedule Dates according repeated date
+          finalScheduleDates = _getMonthlyRepeatedDates(
+              startDate: startDate,
+              endDate: _endDate,
+              dayNumbers: repeatVariationMonth!.days!);
+        } catch (e) {
+          log("Error found to : case RepeatVariation.monthly in MedicineModel{} $e");
+        }
         break;
     }
+  }
+
+  List<DateTime> _getDatesByWeekdays({
+    required DateTime startDate,
+    required DateTime endDate,
+    required List<String> weekdays,
+  }) {
+    // Mapping short weekday names to DateTime weekday integers
+    const weekdayMap = {
+      'Mon': DateTime.monday,
+      'Tue': DateTime.tuesday,
+      'Wed': DateTime.wednesday,
+      'Thu': DateTime.thursday,
+      'Fri': DateTime.friday,
+      'Sat': DateTime.saturday,
+      'Sun': DateTime.sunday,
+    };
+
+    // Convert provided weekday names to int
+    final desiredWeekdayInts = weekdays
+        .map((day) => weekdayMap[day.trim()])
+        .where((w) => w != null)
+        .cast<int>()
+        .toSet();
+
+    final result = <DateTime>[];
+    DateTime current = startDate;
+
+    while (!current.isAfter(endDate)) {
+      if (desiredWeekdayInts.contains(current.weekday)) {
+        result.add(current);
+      }
+      current = current.add(const Duration(days: 1));
+    }
+
+    return result;
+  }
+
+  List<DateTime> _getMonthlyRepeatedDates({
+    required DateTime startDate,
+    required DateTime endDate,
+    required List<int> dayNumbers,
+  }) {
+    final result = <DateTime>[];
+
+    // Normalize and remove duplicates
+    final validDays = dayNumbers.toSet().where((d) => d >= 1 && d <= 31);
+
+    for (int year = startDate.year; year <= endDate.year; year++) {
+      for (int month = 1; month <= 12; month++) {
+        for (final day in validDays) {
+          try {
+            final date = DateTime(year, month, day);
+            if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
+              result.add(date);
+            }
+          } catch (_) {
+            // Invalid day in month (e.g., 30 Feb), ignore
+          }
+        }
+      }
+    }
+
+    return result..sort();
+  }
+
+  @override
+  String toString() {
+    return 'MedicineModel(id: $id, medicineName: $medicineName, imagePath: $imagePath, dosage: $dosage, dosageUnit: $dosageUnit, availableQuantity: $availableQuantity, mealTiming: $mealTiming, repeatVariation: $repeatVariation, repeatMap: $repeatMap, repeatVariationDays: $repeatVariationDays, repeatVariationWeek: $repeatVariationWeek, repeatVariationMonth: $repeatVariationMonth, repeatVariationTime: $repeatVariationTime, scheduleTimes: $scheduleTimes, medicineScheduleList: $medicineScheduleList, finalScheduleDates: $finalScheduleDates, startDate: $startDate, endDate: $endDate, createdAt: $createdAt, modifiedAt: $modifiedAt)';
   }
 }

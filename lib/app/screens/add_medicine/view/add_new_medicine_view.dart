@@ -14,6 +14,7 @@ import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/config/custom/custom_snackber.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:medicine_app/widgets/common/widget.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
@@ -188,100 +189,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Row saveOrCancelBtn(BuildContext context) {
-    return Row(
-      children: [
-        _bottomBtn(context, ontap: () {
-          Navigator.pop(context);
-        }, title: 'Cancel', color: Colors.red),
-        const SizedBox(width: 16),
-        _bottomBtn(
-          context,
-          ontap: () async {
-            String? permanentImagePath;
-            if (_capturedImage != null) {
-              // Show loading indicator while copying?
-              permanentImagePath =
-                  await _copyImageToPermanentStorage(_capturedImage);
-              if (permanentImagePath == null) {
-                // Handle the error - maybe show a snackbar and don't proceed?
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Failed to save image. Please try again.')));
-                return; // Stop the save process
-              }
-            }
-
-            final dosage = int.parse(dosageController.text);
-            final dosageUnit = isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;
-            final availableQuantity = int.parse(availMedicineController.text);
-            final medicineName = medicineNameController.text;
-            final mealTiming =
-                isBeforeMeal ? MealTiming.before : MealTiming.after;
-            final repeatMap = switch (repeatVariation) {
-              RepeatVariation.day => {
-                  'type': 'days',
-                  'day': int.parse(repeatAfterDayController.text),
-                },
-              RepeatVariation.weekly => {
-                  'type': 'weekly',
-                  'days': _selectedWeekDaysRepeat
-                },
-              RepeatVariation.timely => {
-                  'type': 'timely',
-                  'dayTime': '',
-                },
-              RepeatVariation.monthly => {
-                  'type': 'monthly',
-                  'days':
-                      _selectedMonthlyDateInRepeat.map((e) => e.day).toList()
-                }
-            };
-
-            final newScheduleTimes = <String, String>{};
-            scheduleTime.forEach((key, value) {
-              newScheduleTimes[key] = timeOfDayToString(value);
-            });
-
-            final newMedicine = MedicineModel(
-              medicineName: medicineName,
-              dosage: dosage,
-              dosageUnit: dosageUnit,
-              availableQuantity: availableQuantity,
-              mealTiming: mealTiming,
-              repeatMap: repeatMap,
-              repeatVariation: repeatVariation,
-              imagePath: permanentImagePath,
-              createdAt: DateTime.now(),
-              modifiedAt: DateTime.now(),
-              startDate: startDate,
-              endDate: endDate,
-              scheduleTimes: newScheduleTimes,
-            );
-
-            final viewModel = context.read<MedicineViewmodels>();
-
-            await viewModel.add_medicine(newMedicine);
-            await viewModel.get_all_medicine();
-
-            // Optionally navigate back or show success message
-            if (mounted) {
-              // Check if the widget is still in the tree
-              Navigator.pop(context); // Example: Go back after saving
-              if (viewModel.errorMessage == null) {
-                CustomSnackBar.showCustomSnackBar(
-                    title: "Medicine added",
-                    message: "$medicineName has been added successfully",
-                    context: context);
-              }
-            }
-          },
-          title: 'Add Medicine',
-          color: AppColors.primaryColor,
-        ),
-      ],
     );
   }
 
@@ -461,8 +368,10 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
               setState(() {
                 if (repeat.containsKey(weekDays[index])) {
                   repeat.remove(weekDays[index]);
+                  _selectedWeekDaysRepeat.remove(weekDays[index]);
                 } else {
                   repeat[weekDays[index]] = '1';
+                  _selectedWeekDaysRepeat.remove(weekDays[index]);
                 }
               });
             },
@@ -903,4 +812,100 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
       ],
     );
   }
+
+  Row saveOrCancelBtn(BuildContext context) {
+    return Row(
+      children: [
+        _bottomBtn(context, ontap: () {
+          Navigator.pop(context);
+        }, title: 'Cancel', color: Colors.red),
+        const SizedBox(width: 16),
+        _bottomBtn(
+          context,
+          ontap: () async {
+            String? permanentImagePath;
+            if (_capturedImage != null) {
+              // Show loading indicator while copying?
+              permanentImagePath =
+                  await _copyImageToPermanentStorage(_capturedImage);
+              if (permanentImagePath == null) {
+                // Handle the error - maybe show a snackbar and don't proceed?
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Failed to save image. Please try again.')));
+                return; // Stop the save process
+              }
+            }
+
+            final dosage = int.parse(dosageController.text);
+            final dosageUnit = isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;
+            final availableQuantity = int.parse(availMedicineController.text);
+            final medicineName = medicineNameController.text;
+            final mealTiming =
+                isBeforeMeal ? MealTiming.before : MealTiming.after;
+            final repeatMap = switch (repeatVariation) {
+              RepeatVariation.day => {
+                  'type': 'days',
+                  'day': int.parse(repeatAfterDayController.text),
+                },
+              RepeatVariation.weekly => {
+                  'type': 'weekly',
+                  'days': _selectedWeekDaysRepeat
+                },
+              RepeatVariation.timely => {
+                  'type': 'timely',
+                  'dayTime': '',
+                },
+              RepeatVariation.monthly => {
+                  'type': 'monthly',
+                  'days':
+                      _selectedMonthlyDateInRepeat.map((e) => e.day).toList()
+                }
+            };
+
+            final newScheduleTimes = <String, String>{};
+            scheduleTime.forEach((key, value) {
+              newScheduleTimes[key] = timeOfDayToString(value);
+            });
+
+            final newMedicine = MedicineModel(
+              medicineName: medicineName,
+              dosage: dosage,
+              dosageUnit: dosageUnit,
+              availableQuantity: availableQuantity,
+              mealTiming: mealTiming,
+              repeatMap: repeatMap,
+              repeatVariation: repeatVariation,
+              imagePath: permanentImagePath,
+              createdAt: DateTime.now(),
+              modifiedAt: DateTime.now(),
+              startDate: startDate,
+              endDate: endDate,
+              scheduleTimes: newScheduleTimes,
+            );
+
+            final viewModel = context.read<MedicineViewmodels>();
+
+            await viewModel.add_medicine(newMedicine);
+            await viewModel.get_all_medicine();
+
+            // Optionally navigate back or show success message
+            if (mounted) {
+              // Check if the widget is still in the tree
+              Navigator.pop(context); // Example: Go back after saving
+              if (viewModel.errorMessage == null) {
+                CustomSnackBar.showCustomSnackBar(
+                    title: "Medicine added",
+                    message: "$medicineName has been added successfully",
+                    context: context);
+              }
+            }
+          },
+          title: 'Add Medicine',
+          color: AppColors.primaryColor,
+        ),
+      ],
+    );
+  }
 }
+
+// TODO: Validate each field accurate so that no null issue should occur in future..
