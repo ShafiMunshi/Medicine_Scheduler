@@ -239,34 +239,6 @@ class _MyMedicineViewState extends State<MyMedicineView> {
       ],
     );
   }
-
-  // Container _timeOfDay({
-  //   required String title,
-  //   required bool isDone,
-  // }) {
-  //   return Container(
-  //     constraints: BoxConstraints(maxWidth: 55.w),
-  //     child: Row(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         Icon(
-  //           Icons.done,
-  //           size: 14,
-  //           color: isDone
-  //               ? AppColors.primaryColor
-  //               : Color(0xFF002D6F).withValues(alpha: .2),
-  //         ),
-  //         Text(
-  //           title,
-  //           overflow: TextOverflow.ellipsis,
-  //           style: primaryTextStyle(
-  //               size: 10,
-  //               color: isDone ? AppColors.primaryColor : Color(0xFF002D6F)),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
   Widget _timeOfDay({
     required String title,
     required bool isDone,
