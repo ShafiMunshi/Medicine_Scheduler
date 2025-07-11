@@ -57,4 +57,21 @@ class MedicineViewmodels extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> delete_medicine(int id) async {
+    isLoading = true;
+    notifyListeners();
+
+    try {
+      await medicineRepository.clearSpecificMedicine(id).whenComplete(() async {
+        await get_all_medicine();
+      });
+    } catch (e) {
+      log("error: $e");
+      _errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
 }

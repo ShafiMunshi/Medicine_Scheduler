@@ -66,6 +66,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                 timeLeft: '5',
                 availableMedicine: '2',
                 index: index,
+                medicine: medicine,
                 imagePath: medicine.imagePath);
           },
         ).paddingAll(12);
@@ -78,9 +79,11 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     required String timeLeft,
     required String availableMedicine,
     required int index,
+    required MedicineModel medicine,
     String? imagePath,
   }) {
     return AppSlidableWidget(
+      medicine: medicine,
       child: Container(
         padding: EdgeInsets.all(12),
         // margin: EdgeInsets.only(bottom: 8),
