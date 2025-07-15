@@ -9,10 +9,12 @@ class CountdownWithValueNotifier extends StatefulWidget {
   const CountdownWithValueNotifier({super.key, required this.initialDuration});
 
   @override
-  State<CountdownWithValueNotifier> createState() => _CountdownWithValueNotifierState();
+  State<CountdownWithValueNotifier> createState() =>
+      _CountdownWithValueNotifierState();
 }
 
-class _CountdownWithValueNotifierState extends State<CountdownWithValueNotifier> {
+class _CountdownWithValueNotifierState
+    extends State<CountdownWithValueNotifier> {
   late final ValueNotifier<Duration> durationNotifier;
   Timer? timer;
 
@@ -45,9 +47,12 @@ class _CountdownWithValueNotifierState extends State<CountdownWithValueNotifier>
     return ValueListenableBuilder<Duration>(
       valueListenable: durationNotifier,
       builder: (_, duration, __) {
+        if (duration == Duration.zero) {
+          return Text("Time's up, Take medicine now", style: primaryTextStyle(size: 10));
+        }
         return Text(
           format(duration),
-          style:primaryTextStyle(size: 10),
+          style: primaryTextStyle(size: 10),
         );
       },
     );
