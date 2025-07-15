@@ -115,15 +115,11 @@ class MedicineModel {
           .add(ScheduleDayTime(dayTimeName: key, timeString: value));
     });
 
-    log("In Medicine Model Constructor $medicineName");
-
     switch (repeatVariation) {
       case RepeatVariation.day:
         try {
           repeatVariationDays ??=
               RepeatVariationDays(day: repeatMap?['day']?.toString());
-
-          log(repeatVariationDays);
 
           // assign to Final Schedule Dates according repeated date
           finalScheduleDates = _getDatesByRepeatDays(
@@ -143,8 +139,6 @@ class MedicineModel {
             repeatVariationWeek ??= RepeatVariationWeek(
                 weekDays: repeatMap?['days']?.cast<String>());
           }
-          log("repeat map : $repeatMap");
-          log(" repeatVariationWeek: $repeatVariationWeek");
 
           // assign to Final Schedule Dates according repeated date
           finalScheduleDates = _getDatesByWeekdays(
@@ -161,11 +155,9 @@ class MedicineModel {
         break;
       case RepeatVariation.monthly:
         try {
-          log("repeat map : $repeatMap");
           repeatVariationMonth ??=
               RepeatVariationMonth(days: repeatMap?['days']?.cast<int>());
 
-          log(" repeatVariationMonth: $repeatVariationMonth");
           // assign to Final Schedule Dates according repeated date
           finalScheduleDates = _getMonthlyRepeatedDates(
               startDate: startDate,

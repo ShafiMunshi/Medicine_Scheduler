@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:medicine_app/app/screens/my_medicine/timer_countdown_widget.dart';
 import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/widgets/common/app_slideablde_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -51,7 +53,6 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                 MaterialPageRoute(builder: (_) => AddNewMedicineScreen()));
           }),
       body: Consumer<MedicineViewmodels>(builder: (_, vm, child) {
-        log("Listened");
         if (vm.isLoading) return Center(child: CircularProgressIndicator());
         // if (vm.errorMessage != null) {
         //   return Center(child: Text("Error: ${vm.errorMessage}"));
@@ -66,12 +67,15 @@ class _MyMedicineViewState extends State<MyMedicineView> {
           shrinkWrap: true,
           itemBuilder: (BuildContext context, int index) {
             final medicine = vm.medicines[index];
-            log(medicine.medicineName);
+
+            final nearestTimeLeft =
+                getHowMuchTimeLeftToTakeNearestMedicine(medicine);
 
             return medicineWidget(
                 medicineName: medicine.medicineName,
-                timeLeft: '5',
-                availableMedicine: '2',
+                timeLeft: nearestTimeLeft,
+                lengthNeedToBeColored:
+                    getTotalProgressIndexHowMuchMedicineLeft(medicine),
                 index: index,
                 medicine: medicine,
                 imagePath: medicine.imagePath);
@@ -83,8 +87,8 @@ class _MyMedicineViewState extends State<MyMedicineView> {
 
   AppSlidableWidget medicineWidget({
     required String medicineName,
-    required String timeLeft,
-    required String availableMedicine,
+    required Duration? timeLeft,
+    required int lengthNeedToBeColored,
     required int index,
     required MedicineModel medicine,
     String? imagePath,
@@ -130,18 +134,26 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                             .toList()),
                   ),
                   6.verticalSpace,
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Time left',
-                        style: primaryTextStyle(size: 10),
-                      ),
-                      12.horizontalSpace,
-                      _buildProgressWithText(text: '5 hours', value: .5)
-                    ],
-                  ),
+                  timeLeft == null
+                      ? Text(
+                          "No medicine today",
+                          style: primaryTextStyle(size: 10),
+                        )
+                      :
+                      // Row(
+                      //     crossAxisAlignment: CrossAxisAlignment.center,
+                      //     mainAxisAlignment: MainAxisAlignment.center,
+                      //     children: [
+                      //       Text(
+                      //         'Time left',
+                      //         style: primaryTextStyle(size: 10),
+                      //       ),
+                      //       12.horizontalSpace,
+                      //       _buildProgressWithText(text: '5 hours', value: .5)
+                      //     ],
+                      //   ),
+
+                      CountdownWithValueNotifier(initialDuration: timeLeft),
                   10.verticalSpace,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -159,12 +171,13 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                           shrinkWrap: true,
                           scrollDirection: Axis.horizontal,
                           itemBuilder: (BuildContext context, int index) {
-                            return _littleTablet();
+                            return _littleTablet(
+                                isColored: index < lengthNeedToBeColored);
                           },
                         ),
                       ),
                       Text(
-                        '100 / 50',
+                        '${medicine.medicineTakenCount} / ${medicine.availableQuantity}',
                         style: secondaryTextStyle(size: 10),
                       ),
                     ],
@@ -182,14 +195,14 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     );
   }
 
-  Container _littleTablet() {
+  Container _littleTablet({bool isColored = false}) {
     return Container(
       height: 7.h,
       width: 18.w,
       margin: EdgeInsets.only(right: 4),
       decoration: boxDecoration(
         radius: 10,
-        bgColor: AppColors.secondaryColor,
+        bgColor: isColored ? AppColors.secondaryColor : AppColors.greyColor,
       ),
     );
   }
@@ -298,14 +311,43 @@ class _MyMedicineViewState extends State<MyMedicineView> {
   }
 
   // Calculate from how much days go and how much medicine user has taken...
-  getHowMuchMedicineLeft(MedicineModel model) {
-    final totalMedicineNeeded = getTotalEstimatedMedicine(model);
+  int getTotalProgressIndexHowMuchMedicineLeft(MedicineModel model) {
+    double percentage =
+        (model.availableQuantity / model.medicineTakenCount) * 100;
 
-    // get the total count of medicine which user has taken.
+    int progressIndex = (percentage >= 80)
+        ? 5
+        : (percentage >= 60)
+            ? 4
+            : (percentage >= 40)
+                ? 3
+                : (percentage >= 20)
+                    ? 2
+                    : (percentage >= 1)
+                        ? 1
+                        : 0;
 
-    // update the available medicine count...
+    return progressIndex;
+  }
 
-    // return totalMedicineNeeded - totalMedicineTaken;
+  // get how much time left to take the next medicine
+  Duration? getHowMuchTimeLeftToTakeNearestMedicine(MedicineModel model) {
+    if (model.finalScheduleDates == null) {
+      return null;
+    }
+
+    if (_isTodayInList(model.finalScheduleDates!)) {
+      if (model.medicineScheduleList != null) {
+        log('1');
+        final result = _getTimeUntilNextSchedule(model.medicineScheduleList!);
+        log("value is $result");
+        return result;
+      }
+    }
+    log("model.medicineScheduleList is ${model.medicineScheduleList}");
+    log("returning null from getHowMuchTimeLeftToTakeNearestMedicine");
+
+    return null;
   }
 
   // get total estimated medicine will take by the user.
@@ -314,5 +356,40 @@ class _MyMedicineViewState extends State<MyMedicineView> {
         model.dosage *
         (model.finalScheduleDates?.length ?? 1);
   }
-  // TODO: create a function which will return the nearest period when user will take medicine..
+
+  bool _isTodayInList(List<DateTime> dates) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return dates.any((date) {
+      final d = DateTime(date.year, date.month, date.day);
+      return d == today;
+    });
+  }
+
+  Duration? _getTimeUntilNextSchedule(List<ScheduleDayTime> scheduleList) {
+    final now = TimeOfDay.now();
+    final nowDateTime = DateTime.now();
+
+    // Convert TimeOfDay to today's DateTime
+    DateTime toTodayDateTime(TimeOfDay time) {
+      return DateTime(nowDateTime.year, nowDateTime.month, nowDateTime.day,
+          time.hour, time.minute);
+    }
+
+    // Filter and find upcoming times
+    final upcomingTimes = scheduleList
+        .where((s) => s.dayTime != null)
+        .map((s) => toTodayDateTime(s.dayTime!))
+        .where((dt) => dt.isAfter(nowDateTime))
+        .toList();
+
+    if (upcomingTimes.isEmpty) return null;
+
+    upcomingTimes.sort(); // sort by soonest
+
+    final nextTime = upcomingTimes.first;
+
+    return nextTime.difference(nowDateTime);
+  }
 }
