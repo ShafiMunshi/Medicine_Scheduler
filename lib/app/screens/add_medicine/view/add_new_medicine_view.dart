@@ -124,7 +124,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
           repeat[i] = '1';
         }
         repeat['type'] = 'weekly';
-        log("After loop weekdays:  ${medicineModel.repeatVariationWeek?.weekDays}");
 
         break;
       case RepeatVariation.monthly:
@@ -132,16 +131,12 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
             ?.map((e) => DateTime(startDate.year, startDate.month, e))
             .toList();
 
-        log("After loop monthly length:  ${allDays?.length}");
         _selectedMonthlyDateInRepeat = allDays ?? [];
         repeat['type'] = 'monthly';
 
         break;
       case RepeatVariation.timely:
         repeat['type'] = 'timely';
-        break;
-
-      default:
         break;
     }
 
@@ -151,8 +146,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
       scheduleTime[schedule.dayTimeName!] =
           stringToTimeOfDay(schedule.timeString!)!;
     });
-
-    // ... other state variables ...
   }
 
   @override
@@ -544,7 +537,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                   repeat.remove(weekDays[index]);
                   _selectedWeekDaysRepeat.remove(weekDays[index]);
                 } else {
-                  log("adding time: ${_selectedWeekDaysRepeat.runtimeType}");
                   repeat[weekDays[index]] = '1';
                   _selectedWeekDaysRepeat.add(weekDays[index]);
                 }
@@ -1026,8 +1018,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 return;
               }
 
-              log("Before creating medi: $_selectedWeekDaysRepeat");
-
               final newMedicine = widget.existingMedicine != null
                   ? widget.existingMedicine!.copyWith(
                       medicineName: medicineName,
@@ -1065,8 +1055,6 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                       scheduleTimes: newScheduleTimes,
                       medicineTakenCount: 0,
                       isUpdating: false);
-
-              log('model created');
 
               final viewModel = context.read<MedicineViewmodels>();
 
