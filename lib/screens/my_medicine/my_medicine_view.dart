@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:medicine_app/app/screens/my_medicine/timer_countdown_widget.dart';
-import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/screens/my_medicine/timer_countdown_widget.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
-import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
+import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/models/repeat_variation.dart';

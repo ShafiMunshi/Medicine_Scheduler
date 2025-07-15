@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
-import 'package:medicine_app/app/screens/auth/sign_up_page.dart';
-import 'package:medicine_app/app/viewmodels/viewmodels_auth.dart';
+import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/auth/sign_up_page.dart';
+import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 

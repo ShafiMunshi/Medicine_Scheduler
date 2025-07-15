@@ -1,8 +1,8 @@
 import 'dart:developer';
 
 import 'package:isar/isar.dart';
-import 'package:medicine_app/app/data/source/db_service_isar.dart';
-import 'package:medicine_app/app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/data/source/db_service_isar.dart';
+import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 
 class MedicineRepository {

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/app/screens/home/home_view.dart';
-import 'package:medicine_app/app/screens/my_medicine/my_medicine_view.dart';
-import 'package:medicine_app/app/screens/profile/profile_view.dart';
-import 'package:medicine_app/app/screens/schedule/view/schedule_view.dart';
+import 'package:medicine_app/screens/home/home_view.dart';
+import 'package:medicine_app/screens/my_medicine/my_medicine_view.dart';
+import 'package:medicine_app/screens/profile/profile_view.dart';
+import 'package:medicine_app/screens/schedule/schedule_view.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class TopScreenView extends StatefulWidget {

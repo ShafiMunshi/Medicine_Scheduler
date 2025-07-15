@@ -3,13 +3,18 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:nb_utils/nb_utils.dart';
 
-class ScheduleView extends StatelessWidget {
-    static const String routeName = '/schedule_screen';
+class ScheduleView extends StatefulWidget {
+  static const String routeName = '/schedule_screen';
   const ScheduleView({super.key});
 
+  @override
+  State<ScheduleView> createState() => _ScheduleViewState();
+}
+
+class _ScheduleViewState extends State<ScheduleView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medicine_app/config/custom/custom_logger.dart';
-import 'package:medicine_app/app/data/repository/auth_repository.dart';
+import 'package:medicine_app/data/repository/auth_repository.dart';
 
 class AuthViewModels extends ChangeNotifier {
   final log = logger(AuthViewModels);

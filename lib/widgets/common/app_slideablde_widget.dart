@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:isar/isar.dart';
-import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
-import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:provider/provider.dart';
 

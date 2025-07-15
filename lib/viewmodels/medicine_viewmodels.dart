@@ -1,7 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:medicine_app/app/data/repository/medicine_repository.dart';
+import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 
 class MedicineViewmodels extends ChangeNotifier {
