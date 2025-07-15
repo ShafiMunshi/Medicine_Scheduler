@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:isar/isar.dart';
+import 'package:medicine_app/app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:provider/provider.dart';
@@ -36,7 +37,7 @@ class AppSlidableWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             SlidableAction(
-              onPressed: doNothing,
+              onPressed: (context) => updateMedicine(medicine, context),
               backgroundColor: Color(0xFF21B7CA),
               foregroundColor: Colors.white,
               icon: Icons.edit,
@@ -60,5 +61,13 @@ class AppSlidableWidget extends StatelessWidget {
     await vm.delete_medicine(id);
   }
 
-  void doNothing(BuildContext context) {}
+  void updateMedicine(MedicineModel medicine, BuildContext context) async {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (_) => AddNewMedicineScreen(existingMedicine: medicine)));
+  }
 }
+
+
+// TODO: Next finish the medicine left count

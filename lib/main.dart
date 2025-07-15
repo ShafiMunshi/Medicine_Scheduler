@@ -10,6 +10,7 @@ import 'package:medicine_app/app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/app/screens/top_screen_view.dart';
 import 'package:medicine_app/app/viewmodels/viewmodels_auth.dart';
+import 'package:medicine_app/test_page.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
@@ -53,10 +54,10 @@ class MyApp extends StatelessWidget {
           ProxyProvider<LocalDatabaseService, MedicineRepository>(
               update: (_, localDb, __) => MedicineRepository(localDb)),
 
-          ChangeNotifierProvider<AuthViewModels>(
-              create: (context) => AuthViewModels(context.read())),
           ChangeNotifierProvider<MedicineViewmodels>(
               create: (context) => MedicineViewmodels(context.read())),
+          // ChangeNotifierProvider<AuthViewModels>(
+          //     create: (context) => AuthViewModels(context.read())),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),
@@ -72,8 +73,8 @@ class MyApp extends StatelessWidget {
                     colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
                     useMaterial3: true,
                   ),
-                  // home:TopScreenView()
-                  home: TopScreenView(),
+                  home:TopScreenView(),
+                  // home: TestPage(incoming: ["hellsd"],),
                   routes: app_routes,
                 )));
   }

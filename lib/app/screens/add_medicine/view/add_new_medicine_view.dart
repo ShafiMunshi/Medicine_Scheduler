@@ -25,7 +25,9 @@ import 'package:provider/provider.dart';
 
 class AddNewMedicineScreen extends StatefulWidget {
   static const String routeName = '/add_medicine_screen';
-  const AddNewMedicineScreen({super.key});
+  const AddNewMedicineScreen({super.key, this.existingMedicine});
+
+  final MedicineModel? existingMedicine;
 
   @override
   _AddNewMedicineScreenState createState() => _AddNewMedicineScreenState();
@@ -70,10 +72,87 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
   @override
   void initState() {
     super.initState();
-    dosageController.text = '1';
-    repeat['day'] = '1';
-    scheduleTime['Morning'] = TimeOfDay.now();
-    availMedicineController.text = '30';
+
+    if (widget.existingMedicine != null) {
+      _populateStateVariables(widget.existingMedicine!);
+    } else {
+      // Initialize state variables with default values
+      dosageController.text = '1';
+      repeat['day'] = '1';
+      scheduleTime['Morning'] = TimeOfDay.now();
+      availMedicineController.text = '30';
+    }
+
+    setState(() {});
+  }
+
+  void _populateStateVariables(MedicineModel medicineModel) {
+    log("Opening existing medicine: ");
+    log(medicineModel);
+    // start days and end days
+    startDate = medicineModel.startDate;
+    endDate = medicineModel.endDate;
+
+    // Assign values from MedicineModel to state variables
+    medicineNameController.text = medicineModel.medicineName;
+    dosageController.text = medicineModel.dosage.toString();
+    availMedicineController.text = medicineModel.availableQuantity.toString();
+
+    // Meal timing
+    isBeforeMeal = medicineModel.mealTiming == MealTiming.before;
+    isPcsSelected = medicineModel.dosageUnit == DosageUnit.pcs;
+
+    // Image
+    _capturedImage = medicineModel.imagePath != null
+        ? XFile(medicineModel.imagePath!)
+        : null;
+
+    // Repeat variation
+    repeatVariation = medicineModel.repeatVariation;
+
+    switch (repeatVariation) {
+      case RepeatVariation.day:
+        repeatAfterDayController.text =
+            medicineModel.repeatVariationDays?.day ?? '1';
+        repeat['type'] = 'days';
+        repeat['day'] = int.parse(repeatAfterDayController.text);
+        break;
+      case RepeatVariation.weekly:
+        final allWeekDays = medicineModel.repeatVariationWeek?.weekDays ?? [];
+        for (var i in allWeekDays) {
+          _selectedWeekDaysRepeat.add(i);
+          repeat[i] = '1';
+        }
+        repeat['type'] = 'weekly';
+        log("After loop weekdays:  ${medicineModel.repeatVariationWeek?.weekDays}");
+
+        break;
+      case RepeatVariation.monthly:
+        final allDays = medicineModel.repeatVariationMonth?.days
+            ?.map((e) => DateTime(startDate.year, startDate.month, e))
+            .toList();
+
+        log("After loop monthly length:  ${allDays?.length}");
+        _selectedMonthlyDateInRepeat = allDays ?? [];
+        repeat['type'] = 'monthly';
+
+        break;
+      case RepeatVariation.timely:
+        repeat['type'] = 'timely';
+        break;
+
+      default:
+        break;
+    }
+
+    // Schedule time
+    scheduleTime.clear();
+    medicineModel.medicineScheduleList?.forEach((schedule) {
+      scheduleTime[schedule.dayTimeName!] =
+          stringToTimeOfDay(schedule.timeString!)!;
+    });
+
+    // ... other state variables ...
   }
 
   @override
@@ -100,8 +179,11 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar:
-          commonAppBarWidget(context, title: 'Add Medicine', changeIcon: true),
+      appBar: commonAppBarWidget(context,
+          title: widget.existingMedicine == null
+              ? 'Add Medicine'
+              : 'Update Medicine',
+          changeIcon: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -150,16 +232,12 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
               // Repeat Section
               Text('Repeat', style: secondaryTextStyle()),
               const SizedBox(height: 8),
-              repeatSection(),
+              repeatHeadingSection(),
               if (repeatVariation == RepeatVariation.weekly) 10.verticalSpace,
               if (repeatVariation == RepeatVariation.weekly)
                 repeatWeeklySection(),
               if (repeatVariation == RepeatVariation.monthly)
-                MultiDatePicker(
-                  onDatesSelected: (dates) {
-                    _selectedMonthlyDateInRepeat = dates;
-                  },
-                ),
+                repeatMonthlySection(),
               if (repeatVariation == RepeatVariation.weekly ||
                   repeatVariation == RepeatVariation.monthly)
                 10.verticalSpace,
@@ -172,11 +250,11 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
               const SizedBox(height: 16),
 
               // Meal Timing Buttons
-              mealSelector(),
+              mealAfterBeforeSelector(),
               const SizedBox(height: 16),
 
               // Schedule Checkboxes
-              scheduleTimeSelector(),
+              alarmTimeSelector(),
               addMoreScheduleBtn(),
 
               const SizedBox(height: 16),
@@ -346,7 +424,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
             child: Text('Add More Schedule Time')));
   }
 
-  ListView scheduleTimeSelector() {
+  ListView alarmTimeSelector() {
     return ListView.builder(
       itemCount: scheduleTime.length,
       physics: NeverScrollableScrollPhysics(),
@@ -362,53 +440,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
     );
   }
 
-  SizedBox repeatWeeklySection() {
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        itemCount: 7,
-        shrinkWrap: true,
-        physics: NeverScrollableScrollPhysics(),
-        scrollDirection: Axis.horizontal,
-        itemBuilder: (BuildContext context, int index) {
-          return InkWell(
-            onTap: () {
-              setState(() {
-                if (repeat.containsKey(weekDays[index])) {
-                  repeat.remove(weekDays[index]);
-                  _selectedWeekDaysRepeat.remove(weekDays[index]);
-                } else {
-                  repeat[weekDays[index]] = '1';
-                  _selectedWeekDaysRepeat.add(weekDays[index]);
-                }
-              });
-            },
-            child: Container(
-              alignment: Alignment.center,
-              margin: EdgeInsets.only(right: 10.w),
-              padding: EdgeInsets.all(8.w),
-              decoration: boxDecoration(
-                  bgColor: repeat.containsKey(weekDays[index])
-                      ? AppColors.primaryColor
-                      : Colors.white,
-                  color: AppColors.primaryColor,
-                  radius: 8.r),
-              child: Text(
-                weekDays[index],
-                style: TextStyle(
-                  color: repeat.containsKey(weekDays[index])
-                      ? AppColors.white
-                      : Colors.black87,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Row repeatSection() {
+  Row repeatHeadingSection() {
     return Row(
       children: [
         if (repeatVariation != RepeatVariation.weekly)
@@ -496,6 +528,64 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
     );
   }
 
+  SizedBox repeatWeeklySection() {
+    return SizedBox(
+      height: 40,
+      child: ListView.builder(
+        itemCount: 7,
+        shrinkWrap: true,
+        physics: NeverScrollableScrollPhysics(),
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (BuildContext context, int index) {
+          return InkWell(
+            onTap: () {
+              setState(() {
+                if (repeat.containsKey(weekDays[index])) {
+                  repeat.remove(weekDays[index]);
+                  _selectedWeekDaysRepeat.remove(weekDays[index]);
+                } else {
+                  log("adding time: ${_selectedWeekDaysRepeat.runtimeType}");
+                  repeat[weekDays[index]] = '1';
+                  _selectedWeekDaysRepeat.add(weekDays[index]);
+                }
+              });
+            },
+            child: Container(
+              alignment: Alignment.center,
+              margin: EdgeInsets.only(right: 10.w),
+              padding: EdgeInsets.all(8.w),
+              decoration: boxDecoration(
+                  bgColor: repeat.containsKey(weekDays[index])
+                      ? AppColors.primaryColor
+                      : Colors.white,
+                  color: AppColors.primaryColor,
+                  radius: 8.r),
+              child: Text(
+                weekDays[index],
+                style: TextStyle(
+                  color: repeat.containsKey(weekDays[index])
+                      ? AppColors.white
+                      : Colors.black87,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  MultiDatePicker repeatMonthlySection() {
+    return MultiDatePicker(
+      initialDates: widget.existingMedicine == null
+          ? null
+          : [..._selectedMonthlyDateInRepeat],
+      onDatesSelected: (dates) {
+        _selectedMonthlyDateInRepeat = dates;
+      },
+    );
+  }
+
   SizedBox _takePictureBtn() {
     return SizedBox(
       width: double.infinity,
@@ -577,7 +667,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
     }
   }
 
-  Container mealSelector() {
+  Container mealAfterBeforeSelector() {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: boxDecoration(
@@ -865,11 +955,18 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                     await _copyImageToPermanentStorage(_capturedImage);
                 if (permanentImagePath == null) {
                   // Handle the error - maybe show a snackbar and don't proceed?
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content:
-                          Text('Failed to save image. Please try again.')));
+                  CustomSnackBar.showCustomErrorToast(
+                      message: 'Failed to save image. Please try again.',
+                      color: redColor);
+
                   return; // Stop the save process
                 }
+              }
+
+              if (endDate.isBefore(startDate)) {
+                CustomSnackBar.showCustomErrorToast(
+                    message: "End date must be after start date");
+                return;
               }
 
               final dosage = int.parse(dosageController.text);
@@ -897,7 +994,7 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 return;
               }
 
-              final repeatMap = switch (repeatVariation) {
+              final finalRepeatMap = switch (repeatVariation) {
                 RepeatVariation.day => {
                     'type': 'days',
                     'day': int.parse(repeatAfterDayController.text),
@@ -929,32 +1026,72 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                 return;
               }
 
-              print('added');
+              log("Before creating medi: $_selectedWeekDaysRepeat");
 
-              final newMedicine = MedicineModel(
-                medicineName: medicineName,
-                dosage: dosage,
-                dosageUnit: dosageUnit,
-                availableQuantity: availableQuantity,
-                mealTiming: mealTiming,
-                repeatMap: repeatMap,
-                repeatVariation: repeatVariation,
-                imagePath: permanentImagePath,
-                createdAt: DateTime.now(),
-                modifiedAt: DateTime.now(),
-                startDate: startDate,
-                endDate: endDate,
-                scheduleTimes: newScheduleTimes,
-              );
+              final newMedicine = widget.existingMedicine != null
+                  ? widget.existingMedicine!.copyWith(
+                      medicineName: medicineName,
+                      dosage: dosage,
+                      dosageUnit: dosageUnit,
+                      availableQuantity: availableQuantity,
+                      mealTiming: mealTiming,
+                      repeatMap: finalRepeatMap,
+                      repeatVariation: repeatVariation,
+                      repeatVariationDays: null,
+                      repeatVariationMonth: null,
+                      repeatVariationTime: null,
+                      repeatVariationWeek: null,
+                      imagePath: permanentImagePath,
+                      createdAt: DateTime.now(),
+                      modifiedAt: DateTime.now(),
+                      startDate: startDate,
+                      endDate: endDate,
+                      scheduleTimes: newScheduleTimes,
+                      medicineTakenCount: 0,
+                      isUpdating: true)
+                  : MedicineModel(
+                      medicineName: medicineName,
+                      dosage: dosage,
+                      dosageUnit: dosageUnit,
+                      availableQuantity: availableQuantity,
+                      mealTiming: mealTiming,
+                      repeatMap: finalRepeatMap,
+                      repeatVariation: repeatVariation,
+                      imagePath: permanentImagePath,
+                      createdAt: DateTime.now(),
+                      modifiedAt: DateTime.now(),
+                      startDate: startDate,
+                      endDate: endDate,
+                      scheduleTimes: newScheduleTimes,
+                      medicineTakenCount: 0,
+                      isUpdating: false);
 
               log('model created');
 
               final viewModel = context.read<MedicineViewmodels>();
 
-              await viewModel.add_medicine(newMedicine).whenComplete(() {
-                if (mounted) {
+              if (widget.existingMedicine != null) {
+                // update medicine
+                await viewModel
+                    .update_medicine(newMedicine)
+                    .whenComplete(() async {
+                  if (mounted) {
+                    if (viewModel.errorMessage == null) {
+                      CustomSnackBar.showCustomSnackBar(
+                          title: "Medicine updated",
+                          message:
+                              "$medicineName has been updated successfully",
+                          context: context);
+                      Navigator.pop(context);
+                    } else {
+                      CustomSnackBar.showCustomErrorToast(
+                          message: "Error: ${viewModel.errorMessage}");
+                    }
+                  }
+                });
+              } else {
+                await viewModel.add_medicine(newMedicine).whenComplete(() {
                   if (viewModel.errorMessage == null) {
-                    Navigator.pop(context);
                     CustomSnackBar.showCustomSnackBar(
                         title: "Medicine added",
                         message: "$medicineName has been added successfully",
@@ -963,12 +1100,16 @@ class _AddNewMedicineScreenState extends State<AddNewMedicineScreen> {
                     CustomSnackBar.showCustomErrorToast(
                         message: "Error: ${viewModel.errorMessage}");
                   }
-                }
-              });
+                });
+
+                Navigator.pop(context);
+              }
             }
           },
-          title: 'Add Medicine',
-          color: AppColors.primaryColor,
+          title: widget.existingMedicine != null ? 'Update' : 'Add Medicine',
+          color: widget.existingMedicine != null
+              ? Colors.green
+              : AppColors.primaryColor,
         ),
       ],
     );

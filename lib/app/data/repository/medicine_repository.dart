@@ -16,11 +16,11 @@ class MedicineRepository {
       MySharedPref.setTimeList(
           'time_list', medicineData.scheduleTimes.values.toList());
 
-      db.isar.writeTxn(() {
-        return db.isar.medicineModels.put(medicineData);
+      final rowId = await db.isar.writeTxn(() async {
+        return await db.isar.medicineModels.put(medicineData);
       });
 
-      return -1;
+      return rowId;
     } catch (e) {
       throw Exception(e);
     }
@@ -29,6 +29,17 @@ class MedicineRepository {
   Future<List<MedicineModel>> getAllMedicines() async {
     try {
       return await db.isar.medicineModels.where().findAll();
+    } catch (e) {
+      log(e.toString());
+      throw Exception(e);
+    }
+  }
+
+  Future<void> updateMedicine(MedicineModel medicineData) async {
+    try {
+      await db.isar.writeTxn(() async {
+        await db.isar.medicineModels.put(medicineData);
+      });
     } catch (e) {
       log(e.toString());
       throw Exception(e);

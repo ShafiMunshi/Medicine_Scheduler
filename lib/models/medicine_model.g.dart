@@ -70,43 +70,48 @@ const MedicineModelSchema = CollectionSchema(
       type: IsarType.objectList,
       target: r'ScheduleDayTime',
     ),
-    r'modifiedAt': PropertySchema(
+    r'medicineTakenCount': PropertySchema(
       id: 10,
+      name: r'medicineTakenCount',
+      type: IsarType.long,
+    ),
+    r'modifiedAt': PropertySchema(
+      id: 11,
       name: r'modifiedAt',
       type: IsarType.dateTime,
     ),
     r'repeatVariation': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'repeatVariation',
       type: IsarType.byte,
       enumMap: _MedicineModelrepeatVariationEnumValueMap,
     ),
     r'repeatVariationDays': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'repeatVariationDays',
       type: IsarType.object,
       target: r'RepeatVariationDays',
     ),
     r'repeatVariationMonth': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'repeatVariationMonth',
       type: IsarType.object,
       target: r'RepeatVariationMonth',
     ),
     r'repeatVariationTime': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'repeatVariationTime',
       type: IsarType.object,
       target: r'RepeatVariationTimes',
     ),
     r'repeatVariationWeek': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'repeatVariationWeek',
       type: IsarType.object,
       target: r'RepeatVariationWeek',
     ),
     r'startDate': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'startDate',
       type: IsarType.dateTime,
     )
@@ -220,33 +225,34 @@ void _medicineModelSerialize(
     ScheduleDayTimeSchema.serialize,
     object.medicineScheduleList,
   );
-  writer.writeDateTime(offsets[10], object.modifiedAt);
-  writer.writeByte(offsets[11], object.repeatVariation.index);
+  writer.writeLong(offsets[10], object.medicineTakenCount);
+  writer.writeDateTime(offsets[11], object.modifiedAt);
+  writer.writeByte(offsets[12], object.repeatVariation.index);
   writer.writeObject<RepeatVariationDays>(
-    offsets[12],
+    offsets[13],
     allOffsets,
     RepeatVariationDaysSchema.serialize,
     object.repeatVariationDays,
   );
   writer.writeObject<RepeatVariationMonth>(
-    offsets[13],
+    offsets[14],
     allOffsets,
     RepeatVariationMonthSchema.serialize,
     object.repeatVariationMonth,
   );
   writer.writeObject<RepeatVariationTimes>(
-    offsets[14],
+    offsets[15],
     allOffsets,
     RepeatVariationTimesSchema.serialize,
     object.repeatVariationTime,
   );
   writer.writeObject<RepeatVariationWeek>(
-    offsets[15],
+    offsets[16],
     allOffsets,
     RepeatVariationWeekSchema.serialize,
     object.repeatVariationWeek,
   );
-  writer.writeDateTime(offsets[16], object.startDate);
+  writer.writeDateTime(offsets[17], object.startDate);
 }
 
 MedicineModel _medicineModelDeserialize(
@@ -276,31 +282,32 @@ MedicineModel _medicineModelDeserialize(
       allOffsets,
       ScheduleDayTime(),
     ),
-    modifiedAt: reader.readDateTime(offsets[10]),
+    medicineTakenCount: reader.readLong(offsets[10]),
+    modifiedAt: reader.readDateTime(offsets[11]),
     repeatVariation: _MedicineModelrepeatVariationValueEnumMap[
-            reader.readByteOrNull(offsets[11])] ??
+            reader.readByteOrNull(offsets[12])] ??
         RepeatVariation.timely,
     repeatVariationDays: reader.readObjectOrNull<RepeatVariationDays>(
-      offsets[12],
+      offsets[13],
       RepeatVariationDaysSchema.deserialize,
       allOffsets,
     ),
     repeatVariationMonth: reader.readObjectOrNull<RepeatVariationMonth>(
-      offsets[13],
+      offsets[14],
       RepeatVariationMonthSchema.deserialize,
       allOffsets,
     ),
     repeatVariationTime: reader.readObjectOrNull<RepeatVariationTimes>(
-      offsets[14],
+      offsets[15],
       RepeatVariationTimesSchema.deserialize,
       allOffsets,
     ),
     repeatVariationWeek: reader.readObjectOrNull<RepeatVariationWeek>(
-      offsets[15],
+      offsets[16],
       RepeatVariationWeekSchema.deserialize,
       allOffsets,
     ),
-    startDate: reader.readDateTime(offsets[16]),
+    startDate: reader.readDateTime(offsets[17]),
   );
   return object;
 }
@@ -342,36 +349,38 @@ P _medicineModelDeserializeProp<P>(
         ScheduleDayTime(),
       )) as P;
     case 10:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
       return (_MedicineModelrepeatVariationValueEnumMap[
               reader.readByteOrNull(offset)] ??
           RepeatVariation.timely) as P;
-    case 12:
+    case 13:
       return (reader.readObjectOrNull<RepeatVariationDays>(
         offset,
         RepeatVariationDaysSchema.deserialize,
         allOffsets,
       )) as P;
-    case 13:
+    case 14:
       return (reader.readObjectOrNull<RepeatVariationMonth>(
         offset,
         RepeatVariationMonthSchema.deserialize,
         allOffsets,
       )) as P;
-    case 14:
+    case 15:
       return (reader.readObjectOrNull<RepeatVariationTimes>(
         offset,
         RepeatVariationTimesSchema.deserialize,
         allOffsets,
       )) as P;
-    case 15:
+    case 16:
       return (reader.readObjectOrNull<RepeatVariationWeek>(
         offset,
         RepeatVariationWeekSchema.deserialize,
         allOffsets,
       )) as P;
-    case 16:
+    case 17:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1471,6 +1480,62 @@ extension MedicineModelQueryFilter
   }
 
   QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      medicineTakenCountEqualTo(int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'medicineTakenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      medicineTakenCountGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'medicineTakenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      medicineTakenCountLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'medicineTakenCount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
+      medicineTakenCountBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'medicineTakenCount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterFilterCondition>
       modifiedAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1858,6 +1923,20 @@ extension MedicineModelQuerySortBy
     });
   }
 
+  QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy>
+      sortByMedicineTakenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineTakenCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy>
+      sortByMedicineTakenCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineTakenCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy> sortByModifiedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'modifiedAt', Sort.asc);
@@ -2017,6 +2096,20 @@ extension MedicineModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy>
+      thenByMedicineTakenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineTakenCount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy>
+      thenByMedicineTakenCountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'medicineTakenCount', Sort.desc);
+    });
+  }
+
   QueryBuilder<MedicineModel, MedicineModel, QAfterSortBy> thenByModifiedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'modifiedAt', Sort.asc);
@@ -2118,6 +2211,13 @@ extension MedicineModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<MedicineModel, MedicineModel, QDistinct>
+      distinctByMedicineTakenCount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'medicineTakenCount');
+    });
+  }
+
   QueryBuilder<MedicineModel, MedicineModel, QDistinct> distinctByModifiedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'modifiedAt');
@@ -2208,6 +2308,13 @@ extension MedicineModelQueryProperty
       medicineScheduleListProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'medicineScheduleList');
+    });
+  }
+
+  QueryBuilder<MedicineModel, int, QQueryOperations>
+      medicineTakenCountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'medicineTakenCount');
     });
   }
 

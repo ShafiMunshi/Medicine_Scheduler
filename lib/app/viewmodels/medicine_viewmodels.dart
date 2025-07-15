@@ -21,21 +21,20 @@ class MedicineViewmodels extends ChangeNotifier {
 
   Future<void> add_medicine(MedicineModel medicine) async {
     isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
-      final row = await medicineRepository
-          .insertMedicine(medicine)
-          .whenComplete(() async {
-        await get_all_medicine();
-      });
-
-      if (row != -1) {
-        throw 'Something went wrong to save the medicine.';
+      final row = await medicineRepository.insertMedicine(medicine);
+      log("inserted row num: $row");
+      if (row == -1) {
+        throw 'Something went wrong while saving the medicine.';
       }
+
+      await get_all_medicine(); // only call this if insertion succeeded
     } catch (e) {
       _errorMessage = e.toString();
-      log(e.toString());
+      log("add_medicine error:$e");
     } finally {
       isLoading = false;
       notifyListeners();
@@ -44,6 +43,7 @@ class MedicineViewmodels extends ChangeNotifier {
 
   Future<void> get_all_medicine() async {
     isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {
@@ -58,8 +58,26 @@ class MedicineViewmodels extends ChangeNotifier {
     }
   }
 
+  Future<void> update_medicine(MedicineModel medicine) async {
+    isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await medicineRepository.updateMedicine(medicine);
+      await get_all_medicine(); // Only after success
+    } catch (e) {
+      log("error: $e");
+      _errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> delete_medicine(int id) async {
     isLoading = true;
+    _errorMessage = null;
     notifyListeners();
 
     try {

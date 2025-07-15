@@ -47,10 +47,15 @@ class _MyMedicineViewState extends State<MyMedicineView> {
             color: white,
           ),
           onPressed: () {
-            Navigator.pushNamed(context, AddNewMedicineScreen.routeName);
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => AddNewMedicineScreen()));
           }),
-      body: Consumer<MedicineViewmodels>(builder: (context, vm, child) {
+      body: Consumer<MedicineViewmodels>(builder: (_, vm, child) {
+        log("Listened");
         if (vm.isLoading) return Center(child: CircularProgressIndicator());
+        // if (vm.errorMessage != null) {
+        //   return Center(child: Text("Error: ${vm.errorMessage}"));
+        // }
         if (vm.medicines.isEmpty) {
           return Center(
             child: Text("No Medicine Found"),
@@ -61,6 +66,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
           shrinkWrap: true,
           itemBuilder: (BuildContext context, int index) {
             final medicine = vm.medicines[index];
+            log(medicine.medicineName);
 
             return medicineWidget(
                 medicineName: medicine.medicineName,
@@ -239,6 +245,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
       ],
     );
   }
+
   Widget _timeOfDay({
     required String title,
     required bool isDone,
@@ -291,6 +298,21 @@ class _MyMedicineViewState extends State<MyMedicineView> {
   }
 
   // Calculate from how much days go and how much medicine user has taken...
-  getHowMuchMedicineLeft() {}
+  getHowMuchMedicineLeft(MedicineModel model) {
+    final totalMedicineNeeded = getTotalEstimatedMedicine(model);
+
+    // get the total count of medicine which user has taken.
+
+    // update the available medicine count...
+
+    // return totalMedicineNeeded - totalMedicineTaken;
+  }
+
+  // get total estimated medicine will take by the user.
+  int getTotalEstimatedMedicine(MedicineModel model) {
+    return model.scheduleTimes.length *
+        model.dosage *
+        (model.finalScheduleDates?.length ?? 1);
+  }
   // TODO: create a function which will return the nearest period when user will take medicine..
 }

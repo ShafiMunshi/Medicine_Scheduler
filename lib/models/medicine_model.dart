@@ -1,10 +1,12 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
+import 'package:nb_utils/nb_utils.dart';
+
 import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
-import 'package:nb_utils/nb_utils.dart';
 
 part 'medicine_model.g.dart';
 
@@ -73,6 +75,8 @@ class MedicineModel {
   /// when the medicine will be end
   final DateTime endDate;
 
+  final int medicineTakenCount;
+
   final DateTime createdAt;
   final DateTime modifiedAt;
 
@@ -84,6 +88,7 @@ class MedicineModel {
     required this.availableQuantity,
     required this.mealTiming,
     required this.repeatVariation,
+    required this.medicineTakenCount,
     this.repeatVariationDays,
     this.repeatVariationWeek,
     this.repeatVariationMonth,
@@ -97,9 +102,11 @@ class MedicineModel {
     required this.createdAt,
     required this.modifiedAt,
     Map<String, dynamic>? repeatMap,
+    bool isUpdating = false,
   })  : repeatMap = repeatMap ?? {},
         scheduleTimes = scheduleTimes ?? {} {
-    medicineScheduleList = medicineScheduleList ?? [];
+    // in case of update - clear the old remaining medicineScheduleList then insert the new
+    medicineScheduleList = isUpdating ? [] : medicineScheduleList ?? [];
     this.scheduleTimes.forEach((key, value) {
       if (stringToTimeOfDay(value) == null && kDebugMode) {
         log("Warning: Invalid time format '$value' in scheduleTimes for key '$key'");
@@ -108,7 +115,7 @@ class MedicineModel {
           .add(ScheduleDayTime(dayTimeName: key, timeString: value));
     });
 
-    log("In Medicine Model Constructor");
+    log("In Medicine Model Constructor $medicineName");
 
     switch (repeatVariation) {
       case RepeatVariation.day:
@@ -129,8 +136,13 @@ class MedicineModel {
         break;
       case RepeatVariation.weekly:
         try {
-          repeatVariationWeek ??=
-              RepeatVariationWeek(weekDays: repeatMap?['days']?.cast<String>());
+          if (isUpdating) {
+            repeatVariationWeek = RepeatVariationWeek(
+                weekDays: repeatMap?['days']?.cast<String>());
+          } else {
+            repeatVariationWeek ??= RepeatVariationWeek(
+                weekDays: repeatMap?['days']?.cast<String>());
+          }
           log("repeat map : $repeatMap");
           log(" repeatVariationWeek: $repeatVariationWeek");
 
@@ -249,4 +261,62 @@ class MedicineModel {
   String toString() {
     return 'MedicineModel(id: $id, medicineName: $medicineName, imagePath: $imagePath, dosage: $dosage, dosageUnit: $dosageUnit, availableQuantity: $availableQuantity, mealTiming: $mealTiming, repeatVariation: $repeatVariation, repeatMap: $repeatMap, repeatVariationDays: $repeatVariationDays, repeatVariationWeek: $repeatVariationWeek, repeatVariationMonth: $repeatVariationMonth, repeatVariationTime: $repeatVariationTime, scheduleTimes: $scheduleTimes, medicineScheduleList: $medicineScheduleList, finalScheduleDates: ${finalScheduleDates?.map((e) => e.day).toList().join(', ')}, startDate: ${startDate.toFormattedDate()}, endDate: ${endDate?.toFormattedDate()}, createdAt: ${createdAt.toFormattedDate()}, modifiedAt: $modifiedAt)';
   }
+
+  MedicineModel copyWith({
+    Id? id,
+    String? medicineName,
+    String? imagePath,
+    int? dosage,
+    DosageUnit? dosageUnit,
+    int? availableQuantity,
+    MealTiming? mealTiming,
+    RepeatVariation? repeatVariation,
+    Map<String, dynamic>? repeatMap,
+    RepeatVariationDays? repeatVariationDays,
+    RepeatVariationWeek? repeatVariationWeek,
+    RepeatVariationMonth? repeatVariationMonth,
+    RepeatVariationTimes? repeatVariationTime,
+    Map<String, String>? scheduleTimes,
+    List<ScheduleDayTime>? medicineScheduleList,
+    List<DateTime>? finalScheduleDates,
+    DateTime? startDate,
+    DateTime? endDate,
+    int? medicineTakenCount,
+    DateTime? createdAt,
+    DateTime? modifiedAt,
+    bool? isUpdating,
+  }) {
+    return MedicineModel(
+      id: id ?? this.id,
+      medicineName: medicineName ?? this.medicineName,
+      imagePath: imagePath ?? this.imagePath,
+      dosage: dosage ?? this.dosage,
+      dosageUnit: dosageUnit ?? this.dosageUnit,
+      availableQuantity: availableQuantity ?? this.availableQuantity,
+      mealTiming: mealTiming ?? this.mealTiming,
+      repeatVariation: repeatVariation ?? this.repeatVariation,
+      repeatMap: repeatMap ?? this.repeatMap,
+      repeatVariationDays: repeatVariationDays ?? this.repeatVariationDays,
+      repeatVariationWeek: repeatVariationWeek ?? this.repeatVariationWeek,
+      repeatVariationMonth: repeatVariationMonth ?? this.repeatVariationMonth,
+      repeatVariationTime: repeatVariationTime ?? this.repeatVariationTime,
+      scheduleTimes: scheduleTimes ?? this.scheduleTimes,
+      medicineScheduleList: medicineScheduleList ?? this.medicineScheduleList,
+      finalScheduleDates: finalScheduleDates ?? this.finalScheduleDates,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      medicineTakenCount: medicineTakenCount ?? this.medicineTakenCount,
+      createdAt: createdAt ?? this.createdAt,
+      modifiedAt: modifiedAt ?? this.modifiedAt,
+      isUpdating: isUpdating ?? false,
+    );
+  }
 }
+
+
+
+// TODO: when user will take a medicine : 
+// 1. decrease availableQuantity and medicineTakenCount
+// 2. add the data in MedicineConsumedModel 
+
+

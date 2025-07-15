@@ -9,7 +9,7 @@ class ScheduleDayTime {
   String? dayTimeName; // Changed to nullable -- Morning , AfterNoon, Noon
   String? timeString; // Changed to nullable -- 8:00 , 1:00, 6:00
 
-  ScheduleDayTime({this.dayTimeName, this.timeString}); // Optional parameters
+  ScheduleDayTime({this.dayTimeName, this.timeString}); 
 
   @ignore
   TimeOfDay? get dayTime {
