@@ -21,6 +21,7 @@ class ScheduleView extends StatefulWidget {
 
 class _ScheduleViewState extends State<ScheduleView> {
   late PageController pageController;
+  int quantity = 0;
 
   @override
   void initState() {
@@ -62,7 +63,8 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 
-  SingleChildScrollView eachMedicine({required MedicineModel medicine, required int index}) {
+  SingleChildScrollView eachMedicine(
+      {required MedicineModel medicine, required int index}) {
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -107,7 +109,8 @@ class _ScheduleViewState extends State<ScheduleView> {
                               medicine.mealTiming == MealTiming.before
                                   ? 'Before meal'
                                   : 'After meal',
-                              style: TextStyle(color: Colors.white, fontSize: 14),
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 14),
                             ),
                           ),
                         ],
@@ -152,7 +155,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${medicine.scheduleTimes.length} times',
+                          '${medicine.medicineScheduleList?.length ?? 0} times',
                           style: boldTextStyle(color: white),
                         ),
                       ),
@@ -162,21 +165,22 @@ class _ScheduleViewState extends State<ScheduleView> {
               ),
             ),
             const SizedBox(height: 15),
-      
+
             Column(
               spacing: 8,
               children: List.generate(
                   medicine.medicineScheduleList?.length ?? 0,
                   (index) => _buildScheduleRow(
                       medicine.medicineScheduleList?[index].dayTimeName ?? '',
-                      timeOfDayToString(
+                      formatTimeOfDayTo12Hour(
                           medicine.medicineScheduleList?[index].dayTime ??
-                              TimeOfDay.now()),
+                              TimeOfDay.now(),
+                          context),
                       index == 0)),
             ),
-      
+
             const SizedBox(height: 16),
-      
+
             // Add More Medicines Link
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -208,7 +212,7 @@ class _ScheduleViewState extends State<ScheduleView> {
               ],
             ),
             10.verticalSpace,
-      
+
             // Quantity Selector
             Row(
               children: [
@@ -222,21 +226,21 @@ class _ScheduleViewState extends State<ScheduleView> {
                       children: [
                         IconButton(
                           onPressed: () {
-                            // setState(() {
-                            //   if (quantity > 0) quantity--;
-                            // });
+                            setState(() {
+                              if (quantity > 0) quantity--;
+                            });
                           },
                           icon: const Icon(Icons.remove),
                         ),
                         Text(
-                          '0 Pcs',
+                          '$quantity Pcs',
                           style: const TextStyle(fontSize: 16),
                         ),
                         IconButton(
                           onPressed: () {
-                            // setState(() {
-                            //   if (quantity < 50) quantity++;
-                            // });
+                            setState(() {
+                              quantity++;
+                            });
                           },
                           icon: const Icon(Icons.add),
                         ),
@@ -250,8 +254,8 @@ class _ScheduleViewState extends State<ScheduleView> {
                   child: Container(
                     alignment: Alignment.center,
                     width: double.maxFinite,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 14),
                     decoration: BoxDecoration(
                       color: AppColors.secondaryColor,
                       borderRadius: BorderRadius.circular(10),
@@ -265,7 +269,7 @@ class _ScheduleViewState extends State<ScheduleView> {
               ],
             ),
             const SizedBox(height: 24),
-      
+
             // I Have Taken Button
             SizedBox(
               width: double.infinity,
@@ -335,6 +339,5 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 }
-
 
 // TODO: Mark medicine as taken to Medicine Consumption Model and track when when took medicine and when didn't

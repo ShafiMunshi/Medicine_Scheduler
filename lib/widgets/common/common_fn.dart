@@ -29,3 +29,10 @@ TimeOfDay? stringToTimeOfDay(String? timeString) {
     return null;
   }
 }
+
+
+
+String formatTimeOfDayTo12Hour(TimeOfDay time, BuildContext context) {
+  final localizations = MaterialLocalizations.of(context);
+  return localizations.formatTimeOfDay(time);
+}
