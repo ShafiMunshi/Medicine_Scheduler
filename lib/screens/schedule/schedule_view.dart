@@ -5,7 +5,9 @@ import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/schedule/schedule_time_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -26,14 +28,21 @@ class _ScheduleViewState extends State<ScheduleView> {
   @override
   void initState() {
     pageController = PageController();
-    getTodaysMedicine();
+    getTodaysMedicineAndConsumeData();
     super.initState();
   }
 
-  void getTodaysMedicine() async {
+  void getTodaysMedicineAndConsumeData() async {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MedicineViewmodels>().get_todays_medicine();
+      context.read<ScheduleViewmodels>().get_all_medicine_consume_data();
     });
+  }
+
+  @override
+  void dispose() {
+    pageController.dispose();
+    super.dispose();
   }
 
   @override
@@ -44,27 +53,40 @@ class _ScheduleViewState extends State<ScheduleView> {
           changeIcon: true,
           iconWidget1: SvgPicture.asset('assets/icons/edit_square.svg')
               .paddingRight(20)),
-      body: Consumer<MedicineViewmodels>(builder: (_, vm, __) {
-        if (vm.isLoading) {
+      body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
+        if (vmMedicine.isLoading) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (vm.todaysMedicines.isEmpty) {
+        if (vmMedicine.todaysMedicines.isEmpty) {
           return const Center(child: Text("No Medicine Found For Today"));
         }
 
-        return PageView(
-          controller: pageController,
-          children: List.generate(
-              vm.todaysMedicines.length,
-              (index) => eachMedicine(
-                  medicine: vm.todaysMedicines[index], index: index)),
-        );
+        return Consumer<ScheduleViewmodels>(builder: (_, vmSchedule, __) {
+          if (vmSchedule.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return PageView(
+            controller: pageController,
+            children: List.generate(
+                vmMedicine.todaysMedicines.length,
+                (index) => eachMedicine(
+                    medicine: vmMedicine.todaysMedicines[index],
+                    index: index,
+                    vmSchedule: vmSchedule)),
+          );
+        });
       }),
     );
   }
 
   SingleChildScrollView eachMedicine(
-      {required MedicineModel medicine, required int index}) {
+      {required MedicineModel medicine,
+      required int index,
+      required ScheduleViewmodels vmSchedule}) {
+    final mediConsume =
+        vmSchedule.get_todays_medicine_consume_data_list(medicine.id!);
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -132,13 +154,6 @@ class _ScheduleViewState extends State<ScheduleView> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  // const Text(
-                  //   'Beximco Pharmaceuticals Ltd.',
-                  //   style: TextStyle(
-                  //     fontSize: 14,
-                  //     color: Colors.grey,
-                  //   ),
-                  // ),
                   15.verticalSpace,
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -169,14 +184,26 @@ class _ScheduleViewState extends State<ScheduleView> {
             Column(
               spacing: 8,
               children: List.generate(
-                  medicine.medicineScheduleList?.length ?? 0,
-                  (index) => _buildScheduleRow(
-                      medicine.medicineScheduleList?[index].dayTimeName ?? '',
-                      formatTimeOfDayTo12Hour(
-                          medicine.medicineScheduleList?[index].dayTime ??
-                              TimeOfDay.now(),
-                          context),
-                      index == 0)),
+                  medicine.medicineScheduleList?.length ?? 0, (index) {
+                final mediScheduleTime =
+                    medicine.medicineScheduleList?[index].dayTime;
+
+                final isChecked = mediConsume?.any((consume) =>
+                        consume.actualTakenTime?.hour ==
+                            mediScheduleTime?.hour &&
+                        consume.actualTakenTime?.minute ==
+                            mediScheduleTime?.minute) ??
+                    false;
+
+                return ScheduleRowView(
+                    timeOfDay:
+                        medicine.medicineScheduleList?[index].dayTimeName ?? '',
+                    time: formatTimeOfDayTo12Hour(
+                        medicine.medicineScheduleList?[index].dayTime ??
+                            TimeOfDay.now(),
+                        context),
+                    isChecked: isChecked);
+              }),
             ),
 
             const SizedBox(height: 16),
@@ -297,46 +324,6 @@ class _ScheduleViewState extends State<ScheduleView> {
   String getRandomMedicineImage(int index) {
     final rand = index % 3 + 1;
     return 'assets/images/medicine_$rand.png';
-  }
-
-  // Helper method to build schedule rows
-  Widget _buildScheduleRow(String timeOfDay, String time, bool isChecked) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Transform.scale(
-              scale: 1.4,
-              child: Checkbox(
-                value: isChecked,
-                onChanged: (value) {},
-                activeColor: AppColors.primaryColor,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-              ),
-            ),
-            Text(
-              timeOfDay,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-        Row(
-          children: [
-            const Icon(
-              Icons.alarm,
-              color: Colors.grey,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              time,
-              style: const TextStyle(fontSize: 16),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 }
 
