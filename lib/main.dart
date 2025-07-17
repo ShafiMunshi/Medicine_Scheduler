@@ -3,14 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:medicine_app/data/repository/auth_repository.dart';
+import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
-import 'package:medicine_app/data/source/db_service_isar.dart';
+import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
-import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
-import 'package:medicine_app/test_page.dart';
+import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:provider/provider.dart';
 
 Future<void> main() async {
@@ -54,10 +54,15 @@ class MyApp extends StatelessWidget {
           ProxyProvider<LocalDatabaseService, MedicineRepository>(
               update: (_, localDb, __) => MedicineRepository(localDb)),
 
+          /// ProxyProvider: Inject LocalDatabaseService into MedicineConsumedRepository
+          ProxyProvider<LocalDatabaseService, MedicineConsumeRepository>(
+              update: (_, localDb, __) => MedicineConsumeRepository(localDb)),
+
           ChangeNotifierProvider<MedicineViewmodels>(
               create: (context) => MedicineViewmodels(context.read())),
-          // ChangeNotifierProvider<AuthViewModels>(
-          //     create: (context) => AuthViewModels(context.read())),
+
+          ChangeNotifierProvider<ScheduleViewmodels>(
+              create: (context) => ScheduleViewmodels(context.read())),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),
@@ -73,7 +78,7 @@ class MyApp extends StatelessWidget {
                     colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
                     useMaterial3: true,
                   ),
-                  home:TopScreenView(),
+                  home: TopScreenView(),
                   // home: CountdownWithProgress( initialDuration: Duration(hours: 1),),
                   routes: app_routes,
                 )));
