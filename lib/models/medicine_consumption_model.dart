@@ -20,7 +20,8 @@ class MedicineConsumeLogModel {
   final int? dosageTaken;
 
   MedicineConsumeLogModel(
-      {required this.medicineId,
+      {this.id,
+      required this.medicineId,
       required this.scheduledDateTime,
       required this.actualTakenTime,
       required this.status,
@@ -29,5 +30,23 @@ class MedicineConsumeLogModel {
   @override
   String toString() {
     return 'MedicineConsumeLogModel(id: $id, medicineId: $medicineId, scheduledDateTime: $scheduledDateTime, actualTakenTime: $actualTakenTime, status: $status, dosageTaken: $dosageTaken)\n';
+  }
+
+  MedicineConsumeLogModel copyWith({
+    Id? id,
+    int? medicineId,
+    DateTime? scheduledDateTime,
+    DateTime? actualTakenTime,
+    ConsumptionStatus? status,
+    int? dosageTaken,
+  }) {
+    return MedicineConsumeLogModel(
+      id: id ?? this.id,
+      medicineId: medicineId ?? this.medicineId,
+      scheduledDateTime: scheduledDateTime ?? this.scheduledDateTime,
+      actualTakenTime: actualTakenTime ?? this.actualTakenTime,
+      status: status ?? this.status,
+      dosageTaken: dosageTaken ?? this.dosageTaken,
+    );
   }
 }

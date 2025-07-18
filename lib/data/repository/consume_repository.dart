@@ -56,4 +56,15 @@ class MedicineConsumeRepository {
       throw Exception(e);
     }
   }
+
+  Future<void> clearAllMedicineConsumeLogs() async {
+    try {
+      await db.isar.writeTxn(() async {
+        await db.isar.medicineConsumeLogModels.clear();
+      });
+    } catch (e) {
+      log(e.toString());
+      throw Exception(e);
+    }
+  }
 }

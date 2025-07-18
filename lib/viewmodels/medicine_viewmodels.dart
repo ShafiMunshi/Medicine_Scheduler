@@ -53,7 +53,6 @@ class MedicineViewmodels extends ChangeNotifier {
 
     try {
       _medicines = await medicineRepository.getAllMedicines();
-      log("Length: ${_medicines.length}");
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();

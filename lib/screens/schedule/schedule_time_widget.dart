@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:medicine_app/constant/app_color.dart';
 
-class ScheduleRowView extends StatefulWidget {
-  ScheduleRowView(
+class ScheduleTimeWidget extends StatefulWidget {
+  ScheduleTimeWidget(
       {super.key,
       required this.timeOfDay,
       required this.time,
       this.isChecked = false,
-      required this.onChanged
-      });
+      required this.onChanged});
 
   final String timeOfDay, time;
   bool isChecked;
@@ -16,10 +15,10 @@ class ScheduleRowView extends StatefulWidget {
   final Function(bool) onChanged;
 
   @override
-  State<ScheduleRowView> createState() => _ScheduleRowViewState();
+  State<ScheduleTimeWidget> createState() => _ScheduleTimeWidgetState();
 }
 
-class _ScheduleRowViewState extends State<ScheduleRowView> {
+class _ScheduleTimeWidgetState extends State<ScheduleTimeWidget> {
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -32,14 +31,15 @@ class _ScheduleRowViewState extends State<ScheduleRowView> {
               child: Checkbox(
                 value: widget.isChecked,
                 onChanged: (value) {
+                  print("Checkbox changed: $value");
+                  // Update the state of the checkbox
                   setState(() {
-                    widget.isChecked = !widget.isChecked;
+                    widget.isChecked = value!;
                   });
 
-                    if (value != null) {
-                    widget.onChanged(value); // Notify parent
+                  if(value!=null) {
+                    widget.onChanged(value);// Notify parent{
                   }
-                 
                 },
                 activeColor: AppColors.primaryColor,
                 shape: RoundedRectangleBorder(

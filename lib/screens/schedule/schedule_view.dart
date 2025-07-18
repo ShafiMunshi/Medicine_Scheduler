@@ -86,6 +86,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                 medicine: vmMedicine.todaysMedicines[index],
                 index: index,
                 vmSchedule: vmSchedule,
+                vmMedicine: vmMedicine,
               );
             },
           );
@@ -94,10 +95,12 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 
-  SingleChildScrollView eachMedicine(
-      {required MedicineModel medicine,
-      required int index,
-      required ScheduleViewmodels vmSchedule}) {
+  SingleChildScrollView eachMedicine({
+    required MedicineModel medicine,
+    required int index,
+    required ScheduleViewmodels vmSchedule,
+    required MedicineViewmodels vmMedicine,
+  }) {
     final mediConsume =
         vmSchedule.get_todays_medicine_consume_data_list(medicine.id!);
 
@@ -210,7 +213,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                             mediScheduleTime?.minute) ??
                     false;
 
-                return ScheduleRowView(
+                return ScheduleTimeWidget(
                   timeOfDay:
                       medicine.medicineScheduleList?[index].dayTimeName ?? '',
                   time: formatTimeOfDayTo12Hour(
@@ -222,9 +225,9 @@ class _ScheduleViewState extends State<ScheduleView> {
                     final now = DateTime.now();
                     final consumeModel = mediConsume?.firstWhere(
                         (consume) =>
-                            consume.actualTakenTime?.hour ==
+                            consume.scheduledDateTime.hour ==
                                 mediScheduleTime?.hour &&
-                            consume.actualTakenTime?.minute ==
+                            consume.scheduledDateTime.minute ==
                                 mediScheduleTime?.minute,
                         orElse: () => MedicineConsumeLogModel(
                               medicineId: medicine.id!,
@@ -244,15 +247,28 @@ class _ScheduleViewState extends State<ScheduleView> {
                                   : null,
                             ));
 
+                    log("Is checked: $isChecked");
+                    log("Is taken: $isTaken");
+
+                    log("Consume Model: $consumeModel");
+                    // Update the medicine consumption log
+
                     if (consumeModel != null) {
-                      await vmSchedule
-                          .update_medicine_consume_data(
-                              medicine.id!, consumeModel, medicine)
-                          .then((_) async {
-                        await context
-                            .read<MedicineViewmodels>()
-                            .get_all_medicine();
-                      });
+                      if (isTaken) {
+                        await vmSchedule.update_medicine_consume_data(
+                            medicine.id!, consumeModel, medicine);
+                      } else {
+                        // Revert the consume data if unchecked
+                        final updatedConsumeModel = consumeModel.copyWith(
+                          status: ConsumptionStatus.missed,
+                          actualTakenTime: null,
+                        );
+
+                        await vmSchedule.revert_updated_medicine_consume_data(
+                            medicine.id!, updatedConsumeModel, medicine);
+                      }
+
+                      await vmMedicine.get_all_medicine();
                     }
                   },
                 );

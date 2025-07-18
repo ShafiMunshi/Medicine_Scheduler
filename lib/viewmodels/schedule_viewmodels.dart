@@ -69,7 +69,32 @@ class ScheduleViewmodels extends ChangeNotifier {
         modifiedAt: DateTime.now(),
         availableQuantity: medicineModel.availableQuantity - 1,
         medicineTakenCount: medicineModel.medicineTakenCount + 1,
-        // isUpdating: true,
+      );
+      await medicineRepository.updateMedicine(updatedMedicine);
+      await get_all_medicine_consume_data(); // Only after success
+    } catch (e) {
+      log("error: $e");
+      _errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> revert_updated_medicine_consume_data(int medicineId,
+      MedicineConsumeLogModel consumeModel, MedicineModel medicineModel) async {
+    isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      await consumeRepository.clearSpecificMedicineConsume(
+        consumeModel.id!,
+      );
+      final updatedMedicine = medicineModel.copyWith(
+        modifiedAt: DateTime.now(),
+        availableQuantity: medicineModel.availableQuantity + 1,
+        medicineTakenCount: medicineModel.medicineTakenCount - 1,
       );
       await medicineRepository.updateMedicine(updatedMedicine);
       await get_all_medicine_consume_data(); // Only after success
