@@ -4,7 +4,7 @@ import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/screens/home/home_view.dart';
 import 'package:medicine_app/screens/my_medicine/my_medicine_view.dart';
-import 'package:medicine_app/screens/profile/profile_view.dart';
+import 'package:medicine_app/screens/settings/settings_view.dart';
 import 'package:medicine_app/screens/schedule/schedule_view.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -23,7 +23,7 @@ class _TopScreenViewState extends State<TopScreenView> {
     HomeView(),
     MyMedicineView(),
     ScheduleView(),
-    ProfileView(),
+    SettingsView(),
   ];
   @override
   Widget build(BuildContext context) {
@@ -47,7 +47,7 @@ class _TopScreenViewState extends State<TopScreenView> {
             _bottomItem(
                 index: 2, label: 'Schedule', assetSvg: AppAssets.schedule),
             _bottomItem(
-                index: 3, label: 'Profile', assetSvg: AppAssets.profile),
+                index: 3, label: 'Settings', assetSvg: AppAssets.profile),
           ]),
     );
   }

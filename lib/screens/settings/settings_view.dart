@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:provider/provider.dart';
 
-class ProfileView extends StatelessWidget {
-  static String routeName = '/profile';
-  const ProfileView({super.key});
+class SettingsView extends StatelessWidget {
+  static String routeName = '/settings_view';
+  const SettingsView({super.key});
 
   @override
   Widget build(BuildContext context) {

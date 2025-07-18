@@ -347,18 +347,33 @@ class _ScheduleViewState extends State<ScheduleView> {
                 20.horizontalSpace,
                 Flexible(
                   flex: 1,
-                  child: Container(
-                    alignment: Alignment.center,
-                    width: double.maxFinite,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.secondaryColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      'Add',
-                      style: boldTextStyle(color: white, size: 15),
+                  child: InkWell(
+                    onTap: () async {
+                      final updatedMedicine = medicine.copyWith(
+                        availableQuantity:
+                            medicine.availableQuantity + quantity,
+                      );
+                      await context.read<MedicineViewmodels>().update_medicine(
+                            updatedMedicine,
+                          );
+
+                      setState(() {
+                        quantity = 0; // Reset quantity after adding
+                      });
+                    },
+                    child: Container(
+                      alignment: Alignment.center,
+                      width: double.maxFinite,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.secondaryColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        'Add',
+                        style: boldTextStyle(color: white, size: 15),
+                      ),
                     ),
                   ),
                 ),

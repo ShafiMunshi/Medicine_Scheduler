@@ -36,13 +36,14 @@ dependencies:
   provider: ^6.1.4
   shared_preferences: ^2.3.5
   flutter_scalable_ocr: ^2.2.1
-  sqflite: ^2.4.1
+  # sqflite: ^2.4.1
   isar: ^3.1.0+1
   isar_flutter_libs:
     git:
       url: https://github.com/MrLittleWhite/isar_flutter_libs.git
   path_provider: ^2.1.5
   flutter_slidable: ^4.0.0
+  # awesome_notifications: ^0.10.1
   
 
 dev_dependencies:
