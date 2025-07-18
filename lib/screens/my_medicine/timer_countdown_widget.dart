@@ -33,7 +33,7 @@ class _CountdownWithValueNotifierState
   }
 
   String format(Duration d) =>
-      "Time left: ${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes % 60).toString().padLeft(2, '0')}";
+      "Time left: ${d.inHours.toString().padLeft(2, '0')}:${(d.inMinutes % 60).toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
 
   @override
   void dispose() {

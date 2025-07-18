@@ -2,9 +2,12 @@ import 'dart:developer';
 import 'package:isar/isar.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
+import 'package:medicine_app/models/medicine_model.dart';
 
 class MedicineConsumeRepository {
   final LocalDatabaseService db;
+
+
 
   MedicineConsumeRepository(this.db);
 
@@ -31,10 +34,10 @@ class MedicineConsumeRepository {
   }
 
   Future<void> updateMedicineConsumeData(
-      MedicineConsumeLogModel medicineData) async {
+      MedicineConsumeLogModel consumeData) async {
     try {
       await db.isar.writeTxn(() async {
-        await db.isar.medicineConsumeLogModels.put(medicineData);
+        await db.isar.medicineConsumeLogModels.put(consumeData);
       });
     } catch (e) {
       log(e.toString());

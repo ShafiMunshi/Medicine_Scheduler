@@ -307,8 +307,4 @@ class MedicineModel {
 
 
 
-// TODO: when user will take a medicine : 
-// 1. decrease availableQuantity and medicineTakenCount
-// 2. add the data in MedicineConsumedModel 
-
 

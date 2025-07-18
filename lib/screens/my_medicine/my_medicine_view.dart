@@ -350,13 +350,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     return null;
   }
 
-  // get total estimated medicine will take by the user.
-  int getTotalEstimatedMedicine(MedicineModel model) {
-    return model.scheduleTimes.length *
-        model.dosage *
-        (model.finalScheduleDates?.length ?? 1);
-  }
-
+  
   bool _isTodayInList(List<DateTime> dates) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -368,7 +362,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
   }
 
   Duration? _getTimeUntilNextSchedule(List<ScheduleDayTime> scheduleList) {
-    final now = TimeOfDay.now();
+   
     final nowDateTime = DateTime.now();
 
     // Convert TimeOfDay to today's DateTime

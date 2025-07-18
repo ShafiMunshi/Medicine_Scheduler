@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
+import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/schedule/schedule_time_widget.dart';
@@ -24,6 +25,7 @@ class ScheduleView extends StatefulWidget {
 class _ScheduleViewState extends State<ScheduleView> {
   late PageController pageController;
   int quantity = 0;
+  int currentPage = 0;
 
   @override
   void initState() {
@@ -66,14 +68,26 @@ class _ScheduleViewState extends State<ScheduleView> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return PageView(
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (pageController.hasClients &&
+                pageController.page != currentPage) {
+              pageController.jumpToPage(currentPage);
+            }
+          });
+
+          return PageView.builder(
             controller: pageController,
-            children: List.generate(
-                vmMedicine.todaysMedicines.length,
-                (index) => eachMedicine(
-                    medicine: vmMedicine.todaysMedicines[index],
-                    index: index,
-                    vmSchedule: vmSchedule)),
+            onPageChanged: (index) {
+              currentPage = index;
+            },
+            itemCount: vmMedicine.todaysMedicines.length,
+            itemBuilder: (context, index) {
+              return eachMedicine(
+                medicine: vmMedicine.todaysMedicines[index],
+                index: index,
+                vmSchedule: vmSchedule,
+              );
+            },
           );
         });
       }),
@@ -189,20 +203,59 @@ class _ScheduleViewState extends State<ScheduleView> {
                     medicine.medicineScheduleList?[index].dayTime;
 
                 final isChecked = mediConsume?.any((consume) =>
-                        consume.actualTakenTime?.hour ==
+                        consume.status == ConsumptionStatus.taken &&
+                        consume.scheduledDateTime.hour ==
                             mediScheduleTime?.hour &&
-                        consume.actualTakenTime?.minute ==
+                        consume.scheduledDateTime.minute ==
                             mediScheduleTime?.minute) ??
                     false;
 
                 return ScheduleRowView(
-                    timeOfDay:
-                        medicine.medicineScheduleList?[index].dayTimeName ?? '',
-                    time: formatTimeOfDayTo12Hour(
-                        medicine.medicineScheduleList?[index].dayTime ??
-                            TimeOfDay.now(),
-                        context),
-                    isChecked: isChecked);
+                  timeOfDay:
+                      medicine.medicineScheduleList?[index].dayTimeName ?? '',
+                  time: formatTimeOfDayTo12Hour(
+                      medicine.medicineScheduleList?[index].dayTime ??
+                          TimeOfDay.now(),
+                      context),
+                  isChecked: isChecked,
+                  onChanged: (isTaken) async {
+                    final now = DateTime.now();
+                    final consumeModel = mediConsume?.firstWhere(
+                        (consume) =>
+                            consume.actualTakenTime?.hour ==
+                                mediScheduleTime?.hour &&
+                            consume.actualTakenTime?.minute ==
+                                mediScheduleTime?.minute,
+                        orElse: () => MedicineConsumeLogModel(
+                              medicineId: medicine.id!,
+                              dosageTaken: 1,
+                              status: isTaken
+                                  ? ConsumptionStatus.taken
+                                  : ConsumptionStatus.missed,
+                              scheduledDateTime: DateTime(
+                                  now.year,
+                                  now.month,
+                                  now.day,
+                                  mediScheduleTime!.hour,
+                                  mediScheduleTime.minute),
+                              actualTakenTime: isTaken
+                                  ? DateTime(now.year, now.month, now.day,
+                                      now.hour, now.minute)
+                                  : null,
+                            ));
+
+                    if (consumeModel != null) {
+                      await vmSchedule
+                          .update_medicine_consume_data(
+                              medicine.id!, consumeModel, medicine)
+                          .then((_) async {
+                        await context
+                            .read<MedicineViewmodels>()
+                            .get_all_medicine();
+                      });
+                    }
+                  },
+                );
               }),
             ),
 
@@ -295,8 +348,28 @@ class _ScheduleViewState extends State<ScheduleView> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
-
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: AppColors.primaryColor,
+                  size: 15,
+                ),
+                8.horizontalSpace,
+                Text(
+                  'Estimated Need',
+                  style: secondaryTextStyle(size: 11),
+                ),
+                5.horizontalSpace,
+                Text(
+                  '${getTotalEstimatedMedicine(medicine)} Pcs',
+                  style:
+                      primaryTextStyle(size: 11, color: AppColors.primaryColor),
+                )
+              ],
+            ),
+            const SizedBox(height: 10),
             // I Have Taken Button
             SizedBox(
               width: double.infinity,
@@ -325,6 +398,14 @@ class _ScheduleViewState extends State<ScheduleView> {
     final rand = index % 3 + 1;
     return 'assets/images/medicine_$rand.png';
   }
+
+  // get total estimated medicine will take by the user.
+  int getTotalEstimatedMedicine(MedicineModel model) {
+    return (model.medicineScheduleList?.length ?? 1) *
+        model.dosage *
+        (model.finalScheduleDates?.length ?? 1);
+  }
 }
 
 // TODO: Mark medicine as taken to Medicine Consumption Model and track when when took medicine and when didn't
+// TODO: Fix quantity issue, currently it is not updating the quantity in Medicine Model

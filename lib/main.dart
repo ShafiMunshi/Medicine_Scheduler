@@ -62,7 +62,8 @@ class MyApp extends StatelessWidget {
               create: (context) => MedicineViewmodels(context.read())),
 
           ChangeNotifierProvider<ScheduleViewmodels>(
-              create: (context) => ScheduleViewmodels(context.read())),
+              create: (context) =>
+                  ScheduleViewmodels(context.read(), context.read())),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),

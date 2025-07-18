@@ -2,12 +2,15 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:medicine_app/data/repository/consume_repository.dart';
+import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
+import 'package:medicine_app/models/medicine_model.dart';
 
 class ScheduleViewmodels extends ChangeNotifier {
   final MedicineConsumeRepository consumeRepository;
+  final MedicineRepository medicineRepository;
 
-  ScheduleViewmodels(this.consumeRepository);
+  ScheduleViewmodels(this.consumeRepository, this.medicineRepository);
 
   bool isLoading = false;
 
@@ -26,7 +29,7 @@ class ScheduleViewmodels extends ChangeNotifier {
 
     try {
       _medicinesConsume = await consumeRepository.getAllMedicineConsumedData();
-      log("Length: ${_medicinesConsume.length}");
+      log("Length: ${_medicinesConsume}");
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -52,14 +55,23 @@ class ScheduleViewmodels extends ChangeNotifier {
     }
   }
 
-  Future<void> update_medicine_consume_data(
-      int medicineId, MedicineConsumeLogModel consumeModel) async {
+  Future<void> update_medicine_consume_data(int medicineId,
+      MedicineConsumeLogModel consumeModel, MedicineModel medicineModel) async {
     isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      await consumeRepository.updateMedicineConsumeData(consumeModel);
+      await consumeRepository.updateMedicineConsumeData(
+        consumeModel,
+      );
+      final updatedMedicine = medicineModel.copyWith(
+        modifiedAt: DateTime.now(),
+        availableQuantity: medicineModel.availableQuantity - 1,
+        medicineTakenCount: medicineModel.medicineTakenCount + 1,
+        // isUpdating: true,
+      );
+      await medicineRepository.updateMedicine(updatedMedicine);
       await get_all_medicine_consume_data(); // Only after success
     } catch (e) {
       log("error: $e");
