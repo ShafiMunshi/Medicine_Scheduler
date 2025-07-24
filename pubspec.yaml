@@ -45,6 +45,7 @@ dependencies:
   flutter_slidable: ^4.0.0
   awesome_notifications: ^0.10.1
   awesome_notifications_core: ^0.10.1
+  workmanager: ^0.8.0
   
 
 dev_dependencies:

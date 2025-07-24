@@ -1,4 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:medicine_app/constant/app_constants.dart';
+import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MySharedPref {
@@ -25,50 +29,32 @@ class MySharedPref {
     return _sharedPreferences.getString(key);
   }
 
-  static setInt(String key, int value) {
-    _sharedPreferences.setInt(key, value);
-    if (kDebugMode) {
-      print("$key = $value (setted)");
-    }
-  }
-
-  static setTimeList(String key, List<String> timeList) {
-    _sharedPreferences.setStringList(key, timeList);
-    if (kDebugMode) {
-      print("$key = $timeList (setted)");
-    }
-  }
-
-  static int? getInt(String key) {
-    return _sharedPreferences.getInt(key);
-  }
-
-  // static bool? isLogin() {
-  //   return _sharedPreferences.getBool(AppConstants.IS_LOGIN);
-  // }
-
-  // static setLoggedIn() {
-  //   _sharedPreferences.setBool(AppConstants.IS_LOGIN, true);
-  // }
-
-  static bool? getBool(String key) {
-    return _sharedPreferences.getBool(key);
-  }
-
   static Future<void> setBool(String key, bool val) async {
     await _sharedPreferences.setBool(key, val);
   }
 
-  // static setLoggedInFalse() {
-  //   _sharedPreferences.setBool(AppConstants.IS_LOGIN, false);
-  // }
-
-  static removeCookies(String key) {
-    _sharedPreferences.remove(key);
-  }
-
   static isContains(String key) {
     _sharedPreferences.containsKey(key);
+  }
+
+  
+
+  static Future<void> saveDraftMedicineLogs(MedicineDraftLog newLogs) async {
+    final prefs = await SharedPreferences.getInstance();
+    final oldLogs = await getDraftMedicineLogs();
+    final updatedLogs = [...oldLogs, newLogs];
+    await prefs.setStringList(
+      AppConstants.DRAFT_MEDICINE_LOGS,
+      updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
+    );
+  }
+
+  static Future<List<MedicineDraftLog>> getDraftMedicineLogs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final logs = prefs.getStringList(AppConstants.DRAFT_MEDICINE_LOGS) ?? [];
+    return logs
+        .map((log) => MedicineDraftLog.fromJson(jsonDecode(log)))
+        .toList();
   }
 
   static Future<void> clear() async => await _sharedPreferences.clear();

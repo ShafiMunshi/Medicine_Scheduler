@@ -7,12 +7,11 @@ import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
-import 'package:medicine_app/screens/top_screen_view.dart';
-import 'package:medicine_app/test_logs.dart';
+import 'package:medicine_app/routes.dart';
+import 'package:medicine_app/service/notification_service.dart';
 // import 'package:medicine_app/service/notification_service.dart.';
 import 'package:medicine_app/test_page.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
-import 'package:medicine_app/routes.dart';
 // import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:provider/provider.dart';
@@ -35,8 +34,8 @@ Future<void> main() async {
   await localDbService.init();
 
   // Always initialize Awesome Notifications
-  // await MedicineNotificationService.initialize(localDbService.isar);
-  // await _requestNotificationPermissions();
+  await NotificationService.initializeNotifications();
+
   runApp(MyApp(
     localDbService: localDbService,
   ));
@@ -46,7 +45,6 @@ class MyApp extends StatelessWidget {
   const MyApp({required this.localDbService, super.key});
   final LocalDatabaseService localDbService;
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -89,15 +87,9 @@ class MyApp extends StatelessWidget {
                   // home: TopScreenView(),
                   home: NotificationScreen(),
                   // home: NotificationScreen(),
-                
+
                   routes: app_routes,
                 )));
   }
 }
 
-// Future<void> _requestNotificationPermissions() async {
-//   final isAllowed = await MedicineNotificationService.requestPermissions();
-//   if (!isAllowed) {
-//     await MedicineNotificationService.requestNotificationPermissions();
-//   }
-// }
