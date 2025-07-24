@@ -90,13 +90,13 @@ MedicineConsumeLogModel _medicineConsumeLogModelDeserialize(
   final object = MedicineConsumeLogModel(
     actualTakenTime: reader.readDateTimeOrNull(offsets[0]),
     dosageTaken: reader.readLongOrNull(offsets[1]),
+    id: id,
     medicineId: reader.readLong(offsets[2]),
     scheduledDateTime: reader.readDateTime(offsets[3]),
     status: _MedicineConsumeLogModelstatusValueEnumMap[
             reader.readByteOrNull(offsets[4])] ??
         ConsumptionStatus.taken,
   );
-  object.id = id;
   return object;
 }
 

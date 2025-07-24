@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/models/testing_model.dart';
 import 'package:path_provider/path_provider.dart';
 
 class LocalDatabaseService extends ChangeNotifier {
@@ -13,6 +14,7 @@ class LocalDatabaseService extends ChangeNotifier {
       [
         MedicineModelSchema,
         MedicineConsumeLogModelSchema, 
+        TestingModelSchema,
       ],
       directory: dir.path,
     );

@@ -12,6 +12,23 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+// add this
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            val androidExtension = project.extensions.findByName("android")
+            if (androidExtension is com.android.build.gradle.BaseExtension) {
+                androidExtension.compileSdkVersion = "android-35"
+                androidExtension.buildToolsVersion = "35.0.0"
+                androidExtension.ndkVersion = "27.0.12077973"
+                if (androidExtension.namespace == null) {
+                    androidExtension.namespace = project.group.toString()
+                }
+            }
+        }
+    }
+}
+// end add
 subprojects {
     project.evaluationDependsOn(":app")
 }

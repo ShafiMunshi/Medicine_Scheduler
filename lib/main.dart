@@ -7,9 +7,13 @@ import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/screens/top_screen_view.dart';
+import 'package:medicine_app/test_logs.dart';
+// import 'package:medicine_app/service/notification_service.dart.';
+import 'package:medicine_app/test_page.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/routes.dart';
-import 'package:medicine_app/screens/top_screen_view.dart';
+// import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:provider/provider.dart';
 
@@ -30,6 +34,9 @@ Future<void> main() async {
   final localDbService = LocalDatabaseService();
   await localDbService.init();
 
+  // Always initialize Awesome Notifications
+  // await MedicineNotificationService.initialize(localDbService.isar);
+  // await _requestNotificationPermissions();
   runApp(MyApp(
     localDbService: localDbService,
   ));
@@ -79,9 +86,18 @@ class MyApp extends StatelessWidget {
                     colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
                     useMaterial3: true,
                   ),
-                  home: TopScreenView(),
-                  // home: CountdownWithProgress( initialDuration: Duration(hours: 1),),
+                  // home: TopScreenView(),
+                  home: NotificationScreen(),
+                  // home: NotificationScreen(),
+                
                   routes: app_routes,
                 )));
   }
 }
+
+// Future<void> _requestNotificationPermissions() async {
+//   final isAllowed = await MedicineNotificationService.requestPermissions();
+//   if (!isAllowed) {
+//     await MedicineNotificationService.requestNotificationPermissions();
+//   }
+// }
