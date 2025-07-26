@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medicine_app/data/repository/consume_repository.dart';
+import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:provider/provider.dart';
 
 class SettingsView extends StatelessWidget {
@@ -13,12 +14,24 @@ class SettingsView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            
-            ElevatedButton(
-                onPressed: () async {
-                  await context.read<MedicineConsumeRepository>().clearAllMedicineConsumeLogs();
+            Card(
+              child: ListTile(
+                title: Text('Clear Medicine Consume Log'),
+                onTap: () async {
+                  await context
+                      .read<MedicineConsumeRepository>()
+                      .clearAllMedicineConsumeLogs();
                 },
-                child: Text('Clear Medicine Consume Log')),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                title: Text('Clear Shared Pref Log'),
+                onTap: () async {
+                  await MySharedPref.clear();
+                },
+              ),
+            ),
           ],
         ),
       ),

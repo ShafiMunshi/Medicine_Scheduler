@@ -37,25 +37,34 @@ class MySharedPref {
     _sharedPreferences.containsKey(key);
   }
 
-  
+  // static Future<void> saveDraftMedicineLogs(MedicineDraftLog newLogs) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final oldLogs = await getDraftMedicineLogs();
+  //   final updatedLogs = [...oldLogs, newLogs];
+  //   await prefs.setStringList(
+  //     AppConstants.DRAFT_MEDICINE_LOGS,
+  //     updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
+  //   );
+  // }
 
-  static Future<void> saveDraftMedicineLogs(MedicineDraftLog newLogs) async {
-    final prefs = await SharedPreferences.getInstance();
-    final oldLogs = await getDraftMedicineLogs();
-    final updatedLogs = [...oldLogs, newLogs];
-    await prefs.setStringList(
-      AppConstants.DRAFT_MEDICINE_LOGS,
-      updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
-    );
-  }
+  // static Future<void> saveDraftMedicineLogsList(
+  //     List<MedicineDraftLog> newLogs) async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final oldLogs = await getDraftMedicineLogs();
+  //   final updatedLogs = [...oldLogs, ...newLogs];
+  //   await prefs.setStringList(
+  //     AppConstants.DRAFT_MEDICINE_LOGS,
+  //     updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
+  //   );
+  // }
 
-  static Future<List<MedicineDraftLog>> getDraftMedicineLogs() async {
-    final prefs = await SharedPreferences.getInstance();
-    final logs = prefs.getStringList(AppConstants.DRAFT_MEDICINE_LOGS) ?? [];
-    return logs
-        .map((log) => MedicineDraftLog.fromJson(jsonDecode(log)))
-        .toList();
-  }
+  // static Future<List<MedicineDraftLog>> getDraftMedicineLogs() async {
+  //   final prefs = await SharedPreferences.getInstance();
+  //   final logs = prefs.getStringList(AppConstants.DRAFT_MEDICINE_LOGS) ?? [];
+  //   return logs
+  //       .map((log) => MedicineDraftLog.fromJson(jsonDecode(log)))
+  //       .toList();
+  // }
 
   static Future<void> clear() async => await _sharedPreferences.clear();
 }

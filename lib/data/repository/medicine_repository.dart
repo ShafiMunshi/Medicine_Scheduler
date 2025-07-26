@@ -3,7 +3,9 @@ import 'dart:developer';
 import 'package:isar/isar.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/service/draft_json_file_service.dart';
 
 class MedicineRepository {
   final LocalDatabaseService db;
@@ -12,12 +14,14 @@ class MedicineRepository {
 
   Future<int> insertMedicine(MedicineModel medicineData) async {
     try {
-      // also save the time schedule for alarm to the shared pref
-      
-
       final rowId = await db.isar.writeTxn(() async {
         return await db.isar.medicineModels.put(medicineData);
       });
+
+      final insertedMedicine = medicineData.copyWith(id: rowId);
+      // also save the time schedule for alarm to the shared pref
+      final draftLogs = MedicineDraftLog.fromMedicineModels(insertedMedicine);
+      await MedicineDraftLogService.addLog(draftLogs);
 
       return rowId;
     } catch (e) {

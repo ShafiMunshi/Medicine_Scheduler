@@ -2,7 +2,10 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:medicine_app/config/custom/custom_snackber.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
+import 'package:medicine_app/service/draft_json_file_service.dart';
+import 'package:medicine_app/test_file_logs_page.dart';
 import 'package:medicine_app/test_logs.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -124,21 +127,24 @@ class _NotificationScreenState extends State<NotificationScreen> {
     log('Button key: ${receivedAction.buttonKeyPressed}');
     log('Notification ID: ${receivedAction.id}');
 
-     final shred_pref = await SharedPreferences.getInstance();
+    final shred_pref = await SharedPreferences.getInstance();
 
     switch (receivedAction.buttonKeyPressed) {
       case 'ACCEPT':
         log('User accepted the notification');
 
         await shred_pref.setString("test", "Accepted Notification");
+        await MedicineDraftLogService.addLog([
+          MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
+        ]);
 
         // Handle accept action
         break;
       case 'REJECT':
-
         await shred_pref.setString("test", "rejected Notification");
 
         log('User rejected the notification');
+        await MedicineDraftLogService.clearLogs();
 
         // Handle reject action
         break;
@@ -146,7 +152,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         log('User snoozed the notification');
 
         // Reschedule notification for 5 minutes later
-      
+
         break;
       case 'COMPLETE':
 
@@ -225,8 +231,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
 
     log('Scheduled notifications: ${scheduledNotifications.length}');
     for (var notification in scheduledNotifications) {
-      log(
-          'ID: ${notification.content!.id}, Title: ${notification.content!.title}');
+      log('ID: ${notification.content!.id}, Title: ${notification.content!.title}');
     }
   }
 
@@ -316,11 +321,21 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                final data =await MySharedPref.getValue("test");
+                final data = await MySharedPref.getValue("test");
                 CustomSnackBar.showCustomToast(message: "data: $data");
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               child: Text('Show all Shared Pref test logs '),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => TestFileLogsPage()));
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: Text('Show all Draft Medicine Logs from file'),
             ),
           ],
         ),

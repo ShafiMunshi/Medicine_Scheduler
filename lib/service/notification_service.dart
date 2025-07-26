@@ -118,17 +118,17 @@ class NotificationService {
       scheduledDateTime: DateTime.parse(scheduled),
       actualTakenTime: DateTime.now(),
       status: status,
-      dosageTaken: dosage,
+      dosage: dosage,
     );
 
     switch (receivedAction.buttonKeyPressed) {
       case 'TAKING':
         log('Taking');
-        await MySharedPref.saveDraftMedicineLogs(medicineLog);
+        // await MySharedPref.saveDraftMedicineLogs(medicineLog);
         break;
       case 'SKIP':
         log('Skipped');
-        await MySharedPref.saveDraftMedicineLogs(medicineLog);
+        // await MySharedPref.saveDraftMedicineLogs(medicineLog);
         break;
       case 'SNOOZE':
         log('User snoozed the notification');
