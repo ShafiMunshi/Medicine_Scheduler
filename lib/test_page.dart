@@ -134,7 +134,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         log('User accepted the notification');
 
         await shred_pref.setString("test", "Accepted Notification");
-        await MedicineDraftLogService.addLog([
+        await DraftFileService.addLog([
           MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
         ]);
 
@@ -144,7 +144,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         await shred_pref.setString("test", "rejected Notification");
 
         log('User rejected the notification');
-        await MedicineDraftLogService.clearLogs();
+        await DraftFileService.clearLogs();
 
         // Handle reject action
         break;

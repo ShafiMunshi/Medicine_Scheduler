@@ -17,7 +17,7 @@ class _TestFileLogsPageState extends State<TestFileLogsPage> {
   @override
   void initState() {
     super.initState();
-    MedicineDraftLogService.readLogs().then((logs) {
+    DraftFileService.readLogs().then((logs) {
       log("Logs read successfully. Count: ${logs.length}");
       setState(() {
         _logs = logs;

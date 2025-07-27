@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:path_provider/path_provider.dart';
 
-class MedicineDraftLogService {
+class DraftFileService {
   static const _fileName = 'medicine_draft_logs.json';
 
   /// Set a manual path if path_provider doesn't work in background isolates

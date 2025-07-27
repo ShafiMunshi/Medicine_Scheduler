@@ -231,7 +231,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                                 mediScheduleTime?.minute,
                         orElse: () => MedicineConsumeLogModel(
                               medicineId: medicine.id!,
-                              dosageTaken: 1,
+                              dosageTaken: medicine.dosage,
                               status: isTaken
                                   ? ConsumptionStatus.taken
                                   : ConsumptionStatus.missed,

@@ -1,9 +1,9 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'dart:developer';
+import 'package:medicine_app/service/draft_json_file_service.dart';
 
 class NotificationService {
   static Future<void> sendScheduleNotification({
@@ -116,7 +116,7 @@ class NotificationService {
     final medicineLog = MedicineDraftLog(
       medicineId: medicineId,
       scheduledDateTime: DateTime.parse(scheduled),
-      actualTakenTime: DateTime.now(),
+      actualTakenTime: null,
       status: status,
       dosage: dosage,
     );
@@ -124,11 +124,19 @@ class NotificationService {
     switch (receivedAction.buttonKeyPressed) {
       case 'TAKING':
         log('Taking');
-        // await MySharedPref.saveDraftMedicineLogs(medicineLog);
+        final updatedLog = medicineLog.copyWith(
+          status: ConsumptionStatus.taken,
+          actualTakenTime: DateTime.now(),
+        );
+        await DraftFileService.updateLog(updatedLog);
         break;
       case 'SKIP':
         log('Skipped');
-        // await MySharedPref.saveDraftMedicineLogs(medicineLog);
+        final updatedLog = medicineLog.copyWith(
+          status: ConsumptionStatus.skipped,
+          actualTakenTime: DateTime.now(),
+        );
+        await DraftFileService.updateLog(updatedLog);
         break;
       case 'SNOOZE':
         log('User snoozed the notification');

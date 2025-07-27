@@ -21,7 +21,7 @@ class MedicineRepository {
       final insertedMedicine = medicineData.copyWith(id: rowId);
       // also save the time schedule for alarm to the shared pref
       final draftLogs = MedicineDraftLog.fromMedicineModels(insertedMedicine);
-      await MedicineDraftLogService.addLog(draftLogs);
+      await DraftFileService.addLog(draftLogs);
 
       return rowId;
     } catch (e) {

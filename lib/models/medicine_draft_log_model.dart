@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
@@ -48,16 +47,15 @@ class MedicineDraftLog {
         status: json['status'] != null
             ? ConsumptionStatus.values.firstWhere(
                 (e) => e.name == json['status'],
-                orElse: () => ConsumptionStatus.skipped, // Handle unknown status gracefully
+                orElse: () => ConsumptionStatus
+                    .skipped, // Handle unknown status gracefully
               )
             : null,
         dosage: json['dosage'],
       );
 
-
   /// Converts a MedicineModel to a list of MedicineDraftLog
   static List<MedicineDraftLog> fromMedicineModels(MedicineModel medicine) {
-
     List<MedicineDraftLog> logs = [];
 
     final scheduleTimeList = medicine.medicineScheduleList
@@ -85,5 +83,21 @@ class MedicineDraftLog {
     });
 
     return logs;
+  }
+
+  MedicineDraftLog copyWith({
+    int? medicineId,
+    DateTime? scheduledDateTime,
+    DateTime? actualTakenTime,
+    ConsumptionStatus? status,
+    int? dosage,
+  }) {
+    return MedicineDraftLog(
+      medicineId: medicineId ?? this.medicineId,
+      scheduledDateTime: scheduledDateTime ?? this.scheduledDateTime,
+      actualTakenTime: actualTakenTime ?? this.actualTakenTime,
+      status: status ?? this.status,
+      dosage: dosage ?? this.dosage,
+    );
   }
 }
