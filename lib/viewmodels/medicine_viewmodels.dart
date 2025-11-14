@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/service/notification_service.dart';
 
 class MedicineViewmodels extends ChangeNotifier {
   final MedicineRepository medicineRepository;
@@ -36,6 +37,8 @@ class MedicineViewmodels extends ChangeNotifier {
       }
 
       await get_all_medicine(); // only call this if insertion succeeded
+      await NotificationService
+          .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       _errorMessage = e.toString();
       log("add_medicine error:$e");
@@ -68,7 +71,10 @@ class MedicineViewmodels extends ChangeNotifier {
 
     try {
       await medicineRepository.updateMedicine(medicine);
-      await get_all_medicine(); // Only after success
+      await get_all_medicine();
+
+      await NotificationService
+          .reschedule_all_medicine_notification_for_next_48_hours(); // Only after success
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -87,6 +93,9 @@ class MedicineViewmodels extends ChangeNotifier {
       await medicineRepository.clearSpecificMedicine(id).whenComplete(() async {
         await get_all_medicine();
       });
+
+      await NotificationService
+          .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -121,6 +130,15 @@ class MedicineViewmodels extends ChangeNotifier {
     } finally {
       isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<MedicineModel?> get_medicine_by_id(int id) async {
+    try {
+      return await medicineRepository.getSpecificMedicine(id);
+    } catch (e) {
+      log("Error: $e");
+      throw Exception(e);
     }
   }
 }

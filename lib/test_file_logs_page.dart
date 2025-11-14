@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
-import 'package:medicine_app/service/draft_json_file_service.dart';
+import 'package:medicine_app/service/draft_file_service.dart';
 
 class TestFileLogsPage extends StatefulWidget {
   const TestFileLogsPage({super.key});

@@ -10,35 +10,44 @@ class MedicineDraftLog {
       actualTakenTime; // Actual time when the medicine was taken, can be null if not taken yet
   final ConsumptionStatus? status;
   final int? dosage;
+  final String medicineName; 
+  final bool isSynced; 
 
   MedicineDraftLog({
     required this.medicineId,
     required this.scheduledDateTime,
+    required this.medicineName,
+   required this.isSynced ,
     this.status,
     this.actualTakenTime,
     this.dosage,
   });
 
   Map<String, dynamic> toJson() => {
+        'medicineName': medicineName,
         'medicineId': medicineId,
         'scheduledDateTime': scheduledDateTime.toIso8601String(),
         'actualTakenTime': actualTakenTime?.toIso8601String(),
         'status': status?.name,
         'dosage': dosage,
+        'isSynced': isSynced
       };
 
   /// Converts the MedicineDraftLog to a payload map for notifications
   /// This is used to pass data when scheduling notifications
   Map<String, String>? toPayload() => {
+        'medicineName': medicineName,
         'medicineId': medicineId.toString(),
         'scheduledDateTime': scheduledDateTime.toIso8601String(),
         'actualTakenTime': actualTakenTime?.toIso8601String() ?? '',
         'status': status?.name ?? '',
         'dosage': dosage.toString(),
+        'isSynced': isSynced.toString()
       };
 
   static MedicineDraftLog fromJson(Map<String, dynamic> json) =>
       MedicineDraftLog(
+        medicineName: json['medicineName'] ?? '',
         medicineId: json['medicineId'],
         scheduledDateTime: DateTime.parse(json['scheduledDateTime']),
         actualTakenTime: json['actualTakenTime'] != null
@@ -52,6 +61,7 @@ class MedicineDraftLog {
               )
             : null,
         dosage: json['dosage'],
+        isSynced: json['isSynced'],
       );
 
   /// Converts a MedicineModel to a list of MedicineDraftLog
@@ -68,6 +78,7 @@ class MedicineDraftLog {
       scheduleTimeList?.forEach((time) {
         logs.add(MedicineDraftLog(
           medicineId: medicine.id!,
+          medicineName: medicine.medicineName,
           scheduledDateTime: DateTime(
             date.year,
             date.month,
@@ -78,6 +89,7 @@ class MedicineDraftLog {
           status: null,
           actualTakenTime: null,
           dosage: medicine.dosage,
+          isSynced: false
         ));
       });
     });
@@ -86,18 +98,23 @@ class MedicineDraftLog {
   }
 
   MedicineDraftLog copyWith({
+    String? medicineName,
     int? medicineId,
     DateTime? scheduledDateTime,
     DateTime? actualTakenTime,
     ConsumptionStatus? status,
     int? dosage,
+    bool? isSynced
   }) {
     return MedicineDraftLog(
+      medicineName: medicineName ?? this.medicineName,
       medicineId: medicineId ?? this.medicineId,
       scheduledDateTime: scheduledDateTime ?? this.scheduledDateTime,
       actualTakenTime: actualTakenTime ?? this.actualTakenTime,
       status: status ?? this.status,
       dosage: dosage ?? this.dosage,
+      isSynced: isSynced ?? this.isSynced
+
     );
   }
 }

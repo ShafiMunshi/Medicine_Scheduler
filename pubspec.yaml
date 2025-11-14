@@ -43,8 +43,8 @@ dependencies:
       url: https://github.com/MrLittleWhite/isar_flutter_libs.git
   path_provider: ^2.1.5
   flutter_slidable: ^4.0.0
-  awesome_notifications: ^0.10.1
-  awesome_notifications_core: ^0.10.1
+  awesome_notifications: any
+  awesome_notifications_core: any
   workmanager: ^0.8.0
   
 

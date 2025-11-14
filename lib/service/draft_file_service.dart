@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -72,6 +73,43 @@ class DraftFileService {
       logs[index] = updatedLog;
       await _saveLogs(logs);
     }
+  }
+
+  /// Update a specific log by matching medicineId and scheduledDateTime and isTaken status
+  static Future<void> updateLogByMedicineId(
+      {required int medicineId,
+      required DateTime scheduledDateTime,
+      required bool isSynced,
+      required bool isTaken}) async {
+    final logs = await readLogs();
+
+    final index = logs.indexWhere((log) =>
+        log.medicineId == medicineId &&
+        log.scheduledDateTime.toIso8601String() ==
+            scheduledDateTime.toIso8601String());
+
+    if (index != -1) {
+      final updatedLog = logs[index].copyWith(
+        actualTakenTime: isTaken ? DateTime.now() : null,
+        status: isTaken ? ConsumptionStatus.taken : ConsumptionStatus.missed,
+      );
+      logs[index] = updatedLog;
+      await _saveLogs(logs);
+    }
+  }
+
+  /// clear logs by medicineId
+  static Future<void> clearLogsByMedicineId(int medicineId) async {
+    final logs = await readLogs();
+    final filteredLogs =
+        logs.where((log) => log.medicineId != medicineId).toList();
+    await _saveLogs(filteredLogs);
+  }
+
+  /// get all taken medicine logs
+  static Future<List<MedicineDraftLog>> getAllTakenLogs() async {
+    final logs = await readLogs();
+    return logs.where((log) => log.status == ConsumptionStatus.taken).toList();
   }
 
   /// Clear all logs

@@ -4,7 +4,7 @@ import 'package:medicine_app/config/custom/custom_snackber.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
-import 'package:medicine_app/service/draft_json_file_service.dart';
+import 'package:medicine_app/service/draft_file_service.dart';
 import 'package:medicine_app/test_file_logs_page.dart';
 import 'package:medicine_app/test_logs.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -24,22 +24,22 @@ class _NotificationScreenState extends State<NotificationScreen> {
   // Initialize awesome notifications
   void initializeNotifications() async {
     await AwesomeNotifications().initialize(
-      null, // Use default app icon
-      [
-        NotificationChannel(
-          channelKey: 'scheduled_channel',
-          channelName: 'Scheduled Notifications',
-          channelDescription:
-              'Channel for scheduled notifications with actions',
-          defaultColor: Color(0xFF9D50DD),
-          ledColor: Colors.white,
-          importance: NotificationImportance.High,
-          channelShowBadge: true,
-          playSound: true,
-          enableVibration: true,
-        ),
-      ],
-    );
+        null, // Use default app icon
+        [
+          NotificationChannel(
+            channelKey: 'scheduled_channel',
+            channelName: 'Scheduled Notifications',
+            channelDescription:
+                'Channel for scheduled notifications with actions',
+            defaultColor: Color(0xFF9D50DD),
+            ledColor: Colors.white,
+            importance: NotificationImportance.High,
+            channelShowBadge: true,
+            playSound: true,
+            enableVibration: true,
+          ),
+        ],
+        debug: true);
 
     // Request notification permissions
     await requestNotificationPermissions();
@@ -134,9 +134,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
         log('User accepted the notification');
 
         await shred_pref.setString("test", "Accepted Notification");
-        await DraftFileService.addLog([
-          MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
-        ]);
+        // await DraftFileService.addLog([
+        //   MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
+        // ]);
 
         // Handle accept action
         break;
@@ -249,11 +249,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
           children: [
             ElevatedButton(
               onPressed: () {
-                // Schedule notification for 5 seconds from now
+                // Schedule notification for 20 seconds from now
                 DateTime scheduledTime =
-                    DateTime.now().add(Duration(seconds: 5));
+                    DateTime.now().add(Duration(seconds: 20));
                 scheduleNotification(
-                  id: 1,
+                  id: 1,  
                   title: 'Meeting Reminder',
                   body: 'You have a meeting in 5 minutes',
                   scheduledDate: scheduledTime,
@@ -263,7 +263,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       content: Text('Notification scheduled for 5 seconds!')),
                 );
               },
-              child: Text('Schedule Notification (5 sec)'),
+              child: Text('Schedule Notification (20 sec)'),
             ),
             SizedBox(height: 16),
             ElevatedButton(

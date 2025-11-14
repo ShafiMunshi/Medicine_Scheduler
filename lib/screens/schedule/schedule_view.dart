@@ -405,7 +405,9 @@ class _ScheduleViewState extends State<ScheduleView> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  // TODO: add functionality to set as taken ( not required )
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'dart:developer';
-import 'package:medicine_app/service/draft_json_file_service.dart';
+import 'package:medicine_app/service/draft_file_service.dart';
 
 class NotificationService {
   static Future<void> sendScheduleNotification({
@@ -108,12 +108,17 @@ class NotificationService {
     final int medicineId = int.parse(receivedAction.payload!['medicineId']!);
     final String scheduled = receivedAction.payload!['scheduledDateTime']!;
     final int dosage = int.parse(receivedAction.payload!['dosage']!);
+    final String medicineName = receivedAction.payload!['medicineName']!;
+    final bool isSynced = receivedAction.payload!['isSynced'] == 'true';
+
 
     final status = receivedAction.buttonKeyPressed == "TAKING"
         ? ConsumptionStatus.taken
         : ConsumptionStatus.skipped;
 
     final medicineLog = MedicineDraftLog(
+      isSynced: isSynced,
+      medicineName: medicineName,
       medicineId: medicineId,
       scheduledDateTime: DateTime.parse(scheduled),
       actualTakenTime: null,
@@ -161,7 +166,7 @@ class NotificationService {
   }
 
   // Cancel all notifications
-  static Future<void> cancelAllNotifications() async {
+  static Future<void> _cancelAllNotifications() async {
     await AwesomeNotifications().cancelAll();
   }
 
@@ -173,6 +178,31 @@ class NotificationService {
     log('Scheduled notifications: ${scheduledNotifications.length}');
     for (var notification in scheduledNotifications) {
       log('ID: ${notification.content!.id}, Title: ${notification.content!.title}');
+    }
+  }
+
+  /// this function is used to reschedule all medicine notifications by checking the draft logs which is not taken yet and from current time to next 48 hours
+  static Future<void> reschedule_all_medicine_notification_for_next_48_hours() async {
+    final draftLogs = await DraftFileService.readLogs();
+    final currentTime = DateTime.now();
+    final next48Hours = currentTime.add(Duration(hours: 48));
+
+    await _cancelAllNotifications();
+
+    for (var draftLog in draftLogs) {
+      final scheduledDateTime = draftLog.scheduledDateTime;
+      if (scheduledDateTime.isAfter(currentTime) &&
+          scheduledDateTime.isBefore(next48Hours) &&
+          draftLog.actualTakenTime == null &&
+          draftLog.status != ConsumptionStatus.taken) {
+        await sendScheduleNotification(
+          id: scheduledDateTime.millisecondsSinceEpoch,
+          title: "Did you take ${draftLog.medicineId} ?",
+          body: "Take your medicine now",
+          scheduledDate: scheduledDateTime,
+          payload: draftLog.toPayload(),
+        );
+      }
     }
   }
 }
