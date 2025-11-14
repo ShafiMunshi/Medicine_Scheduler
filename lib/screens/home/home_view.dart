@@ -58,6 +58,14 @@ class _HomeViewState extends State<HomeView> {
                   ]),
                   10.verticalSpace,
                   Consumer<MedicineViewmodels>(builder: (_, vm, child) {
+                    if (vm.isLoading) {
+                      return Center(child: CircularProgressIndicator());
+                    }
+                    if (vm.todaysMedicines.isEmpty) {
+                      return Center(
+                        child: Text("No Medicine for Today"),
+                      );
+                    }
                     return Expanded(
                       child: ListView.builder(
                         itemCount: vm.todaysMedicines.length,
@@ -81,20 +89,24 @@ class _HomeViewState extends State<HomeView> {
                       ),
                     );
                   }),
-                  SizedBox(
-                    height: 100,
-                    width: double.maxFinite,
-                    child: Image.asset(
-                      'assets/images/ads.png',
-                      fit: BoxFit.fill,
-                    ),
-                  ),
+                  // _bannerAdsWidget(),
                 ],
               ),
             ),
           )
         ],
       ).paddingOnly(top: 20),
+    );
+  }
+
+  SizedBox _bannerAdsWidget() {
+    return SizedBox(
+      height: 100,
+      width: double.maxFinite,
+      child: Image.asset(
+        'assets/images/ads.png',
+        fit: BoxFit.fill,
+      ),
     );
   }
 
