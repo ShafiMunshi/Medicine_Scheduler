@@ -50,18 +50,12 @@ class _HomeViewState extends State<HomeView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Next Medication',
-                          style: boldTextStyle(),
-                        ),
-                        Text(
-                          'See All',
-                          style: secondaryTextStyle(),
-                        ),
-                      ]),
+                  Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+                    Text(
+                      'Next Medication',
+                      style: boldTextStyle(),
+                    ),
+                  ]),
                   10.verticalSpace,
                   Consumer<MedicineViewmodels>(builder: (_, vm, child) {
                     return Expanded(
