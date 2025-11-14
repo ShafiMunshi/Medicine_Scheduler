@@ -13,6 +13,7 @@ import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/service/notification_service.dart';
 // import 'package:medicine_app/service/notification_service.dart.';
 import 'package:medicine_app/test_page.dart';
+import 'package:medicine_app/viewmodels/home_viewmodels.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 // import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
@@ -85,8 +86,8 @@ class MyApp extends StatelessWidget {
           ChangeNotifierProvider<ScheduleViewmodels>(
               create: (context) =>
                   ScheduleViewmodels(context.read(), context.read())),
-
-
+          ChangeNotifierProvider<HomeViewmodels>(
+              create: (context) => HomeViewmodels()),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),

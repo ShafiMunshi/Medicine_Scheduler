@@ -4,11 +4,31 @@ import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
+import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/models/medicine_time_schedule.dart';
+import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:nb_utils/nb_utils.dart';
+import 'package:provider/provider.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends StatefulWidget {
   static const String routeName = '/home_view';
   const HomeView({super.key});
+
+  @override
+  State<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends State<HomeView> {
+  @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final medicineVm = context.read<MedicineViewmodels>();
+      medicineVm.get_all_medicine();
+      medicineVm.get_todays_medicine();
+    });
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +63,30 @@ class HomeView extends StatelessWidget {
                         ),
                       ]),
                   10.verticalSpace,
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: 3,
-                      shrinkWrap: true,
-                      itemBuilder: (BuildContext context, int index) {
-                        return medicineWidget();
-                      },
-                    ),
-                  ),
+                  Consumer<MedicineViewmodels>(builder: (_, vm, child) {
+                    return Expanded(
+                      child: ListView.builder(
+                        itemCount: vm.todaysMedicines.length,
+                        shrinkWrap: true,
+                        itemBuilder: (BuildContext context, int index) {
+                          final nearestTimeLeft =
+                              getHowMuchTimeLeftToTakeNearestMedicine(
+                                  vm.todaysMedicines[index]);
+
+                          return MedicineWidget(
+                            medicineName:
+                                vm.todaysMedicines[index].medicineName,
+                            timeLeft: nearestTimeLeft,
+                            lengthNeedToBeColored:
+                                getTotalProgressIndexHowMuchMedicineLeft(
+                                    vm.todaysMedicines[index]),
+                            index: index,
+                            medicine: vm.todaysMedicines[index],
+                          );
+                        },
+                      ),
+                    );
+                  }),
                   SizedBox(
                     height: 100,
                     width: double.maxFinite,
@@ -69,69 +104,79 @@ class HomeView extends StatelessWidget {
     );
   }
 
-  Container medicineWidget() {
-    return Container(
-      padding: EdgeInsets.all(12),
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: boxDecoration(bgColor: white, radius: 16.r),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            // mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                  height: 84.w,
-                  width: 84.w,
-                  child:
-                      Image.asset('assets/images/napa.png', fit: BoxFit.cover)),
-              12.horizontalSpace,
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(
-                  'Napa (500mg)',
-                  style: boldTextStyle(size: 15),
-                ),
-                Text(
-                  'Beximco pharmaceuticals Ltd.',
-                  style: secondaryTextStyle(size: 12),
-                ),
-                6.verticalSpace,
-                Row(
-                  // crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.max,
-                  children: [
-                    _timeOfDay(title: 'Morning', isDone: true),
-                    15.horizontalSpace,
-                    _timeOfDay(title: 'Noon', isDone: false),
-                    15.horizontalSpace,
-                    _timeOfDay(title: 'Night', isDone: false),
-                  ],
-                ),
-                6.verticalSpace,
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Time left',
-                      style: primaryTextStyle(size: 10),
-                    ),
-                    12.horizontalSpace,
-                    _buildProgressWithText(text: '5 hours', value: .5)
-                  ],
-                )
-              ]),
-            ],
-          ),
-          Align(
-            alignment: Alignment.topRight,
-            child: SvgPicture.asset('assets/icons/clock_blue.svg'),
-          )
-        ],
-      ),
-    );
+  // get how much time left to take the next medicine
+  Duration? getHowMuchTimeLeftToTakeNearestMedicine(MedicineModel model) {
+    if (model.finalScheduleDates == null) {
+      return null;
+    }
+
+    if (_isTodayInList(model.finalScheduleDates!)) {
+      if (model.medicineScheduleList != null) {
+        log('1');
+        final result = _getTimeUntilNextSchedule(model.medicineScheduleList!);
+        log("value is $result");
+        return result;
+      }
+    }
+    log("model.medicineScheduleList is ${model.medicineScheduleList}");
+    log("returning null from getHowMuchTimeLeftToTakeNearestMedicine");
+
+    return null;
+  }
+
+  bool _isTodayInList(List<DateTime> dates) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return dates.any((date) {
+      final d = DateTime(date.year, date.month, date.day);
+      return d == today;
+    });
+  }
+
+  Duration? _getTimeUntilNextSchedule(List<ScheduleDayTime> scheduleList) {
+    final nowDateTime = DateTime.now();
+
+    // Convert TimeOfDay to today's DateTime
+    DateTime toTodayDateTime(TimeOfDay time) {
+      return DateTime(nowDateTime.year, nowDateTime.month, nowDateTime.day,
+          time.hour, time.minute);
+    }
+
+    // Filter and find upcoming times
+    final upcomingTimes = scheduleList
+        .where((s) => s.dayTime != null)
+        .map((s) => toTodayDateTime(s.dayTime!))
+        .where((dt) => dt.isAfter(nowDateTime))
+        .toList();
+
+    if (upcomingTimes.isEmpty) return null;
+
+    upcomingTimes.sort(); // sort by soonest
+
+    final nextTime = upcomingTimes.first;
+
+    return nextTime.difference(nowDateTime);
+  }
+
+  // Calculate from how much days go and how much medicine user has taken...
+  int getTotalProgressIndexHowMuchMedicineLeft(MedicineModel model) {
+    double percentage =
+        (model.availableQuantity / model.medicineTakenCount) * 100;
+
+    int progressIndex = (percentage >= 80)
+        ? 5
+        : (percentage >= 60)
+            ? 4
+            : (percentage >= 40)
+                ? 3
+                : (percentage >= 20)
+                    ? 2
+                    : (percentage >= 1)
+                        ? 1
+                        : 0;
+
+    return progressIndex;
   }
 
   // New widget to display progress with text
@@ -211,26 +256,28 @@ class HomeView extends StatelessWidget {
   }
 
   Widget topHorizontalProgressBar() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          child: _topCardWidget(
-              asset: AppAssets.clockk,
-              data: '06',
-              subTitle: 'Remaining today',
-              color: AppColors.mistiColor),
-        ),
-        15.horizontalSpace,
-        Flexible(
-          child: _topCardWidget(
-              asset: AppAssets.tablet,
-              data: '13',
-              subTitle: 'Total Medicine',
-              color: AppColors.purpleLow),
-        ),
-      ],
-    ).paddingSymmetric(horizontal: 20);
+    return Consumer<MedicineViewmodels>(builder: (_, vm, child) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Flexible(
+            child: _topCardWidget(
+                asset: AppAssets.clockk,
+                data: vm.todaysMedicines.length.toString(),
+                subTitle: 'Remaining today',
+                color: AppColors.mistiColor),
+          ),
+          15.horizontalSpace,
+          Flexible(
+            child: _topCardWidget(
+                asset: AppAssets.tablet,
+                data: vm.medicines.length.toString(),
+                subTitle: 'Total Medicine',
+                color: AppColors.purpleLow),
+          ),
+        ],
+      ).paddingSymmetric(horizontal: 20);
+    });
   }
 
   Container _topCardWidget({
