@@ -10,7 +10,6 @@ import 'package:medicine_app/screens/schedule/schedule_time_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
-import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 
@@ -101,7 +100,7 @@ class _ScheduleViewState extends State<ScheduleView> {
     required ScheduleViewmodels vmSchedule,
     required MedicineViewmodels vmMedicine,
   }) {
-    final mediConsume =
+    final todayMediConsume =
         vmSchedule.get_todays_medicine_consume_data_list(medicine.id!);
 
     return SingleChildScrollView(
@@ -198,82 +197,13 @@ class _ScheduleViewState extends State<ScheduleView> {
             ),
             const SizedBox(height: 15),
 
-            Column(
-              spacing: 8,
-              children: List.generate(
-                  medicine.medicineScheduleList?.length ?? 0, (index) {
-                final mediScheduleTime =
-                    medicine.medicineScheduleList?[index].dayTime;
-
-                final isChecked = mediConsume?.any((consume) =>
-                        consume.status == ConsumptionStatus.taken &&
-                        consume.scheduledDateTime.hour ==
-                            mediScheduleTime?.hour &&
-                        consume.scheduledDateTime.minute ==
-                            mediScheduleTime?.minute) ??
-                    false;
-
-                return ScheduleTimeWidget(
-                  timeOfDay:
-                      medicine.medicineScheduleList?[index].dayTimeName ?? '',
-                  time: formatTimeOfDayTo12Hour(
-                      medicine.medicineScheduleList?[index].dayTime ??
-                          TimeOfDay.now(),
-                      context),
-                  isChecked: isChecked,
-                  onChanged: (isTaken) async {
-                    final now = DateTime.now();
-                    final consumeModel = mediConsume?.firstWhere(
-                        (consume) =>
-                            consume.scheduledDateTime.hour ==
-                                mediScheduleTime?.hour &&
-                            consume.scheduledDateTime.minute ==
-                                mediScheduleTime?.minute,
-                        orElse: () => MedicineConsumeLogModel(
-                              medicineId: medicine.id!,
-                              dosageTaken: medicine.dosage,
-                              status: isTaken
-                                  ? ConsumptionStatus.taken
-                                  : ConsumptionStatus.missed,
-                              scheduledDateTime: DateTime(
-                                  now.year,
-                                  now.month,
-                                  now.day,
-                                  mediScheduleTime!.hour,
-                                  mediScheduleTime.minute),
-                              actualTakenTime: isTaken
-                                  ? DateTime(now.year, now.month, now.day,
-                                      now.hour, now.minute)
-                                  : null,
-                            ));
-
-                    log("Is checked: $isChecked");
-                    log("Is taken: $isTaken");
-
-                    log("Consume Model: $consumeModel");
-                    // Update the medicine consumption log
-
-                    if (consumeModel != null) {
-                      if (isTaken) {
-                        await vmSchedule.update_medicine_consume_data(
-                            medicine.id!, consumeModel, medicine);
-                      } else {
-                        // Revert the consume data if unchecked
-                        final updatedConsumeModel = consumeModel.copyWith(
-                          status: ConsumptionStatus.missed,
-                          actualTakenTime: null,
-                        );
-
-                        await vmSchedule.revert_updated_medicine_consume_data(
-                            medicine.id!, updatedConsumeModel, medicine);
-                      }
-
-                      await vmMedicine.get_all_medicine();
-                    }
-                  },
-                );
-              }),
-            ),
+            Consumer<ScheduleViewmodels>(builder: (_, vm, __) {
+              if (vm.isLoading) {
+                return Center(child: CircularProgressIndicator());
+              }
+              return _eachMedicineScheduleTimeDayWidget(
+                  medicine, todayMediConsume, vmSchedule, vmMedicine);
+            }),
 
             const SizedBox(height: 16),
 
@@ -353,10 +283,9 @@ class _ScheduleViewState extends State<ScheduleView> {
                         availableQuantity:
                             medicine.availableQuantity + quantity,
                       );
-                      await context.read<MedicineViewmodels>().update_medicine(
-                            updatedMedicine,
-                          );
-
+                      final vm = context.read<MedicineViewmodels>();
+                      await vm.update_medicine(updatedMedicine);
+                      await vm.get_todays_medicine();
                       setState(() {
                         quantity = 0; // Reset quantity after adding
                       });
@@ -406,7 +335,7 @@ class _ScheduleViewState extends State<ScheduleView> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
-                  // TODO: add functionality to set as taken ( not required )
+                  // TODO: add functionality to set as taken on the top to bottom serial wise auto taken
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -427,6 +356,76 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 
+  Column _eachMedicineScheduleTimeDayWidget(
+      MedicineModel medicine,
+      List<MedicineConsumeLogModel>? todayMediConsume,
+      ScheduleViewmodels vmSchedule,
+      MedicineViewmodels vmMedicine) {
+    final mediScheduleListLen = medicine.medicineScheduleList?.length ?? 0;
+    return Column(
+      spacing: 8,
+      children: List.generate(mediScheduleListLen, (index) {
+        final mediScheduleTime = medicine.medicineScheduleList?[index].dayTime;
+        final now = DateTime.now();
+
+        final indivMediConsume = todayMediConsume?.firstWhere(
+          (consume) =>
+              consume.scheduledDateTime.hour == mediScheduleTime?.hour &&
+              consume.scheduledDateTime.minute == mediScheduleTime?.minute,
+          orElse: () => MedicineConsumeLogModel(
+            medicineId: medicine.id!,
+            dosageTaken: medicine.dosage,
+            status: ConsumptionStatus.missed,
+            scheduledDateTime: DateTime(now.year, now.month, now.day,
+                mediScheduleTime!.hour, mediScheduleTime.minute),
+            actualTakenTime: null,
+          ),
+        );
+
+        return ScheduleTimeWidget(
+          timeOfDay: medicine.medicineScheduleList?[index].dayTimeName ?? '',
+          time: formatTimeOfDayTo12Hour(
+              medicine.medicineScheduleList?[index].dayTime ?? TimeOfDay.now(),
+              context),
+          isChecked: indivMediConsume?.status == ConsumptionStatus.taken,
+          onChanged: (isTaken) async {
+            final now = DateTime.now();
+            final consumeModel = indivMediConsume?.copyWith(
+              status:
+                  isTaken ? ConsumptionStatus.taken : ConsumptionStatus.missed,
+              actualTakenTime: isTaken
+                  ? DateTime(now.year, now.month, now.day, now.hour, now.minute)
+                  : null,
+            );
+            log("Is taken: $isTaken");
+
+            log("New updated Consume Model: $consumeModel");
+            // Update the medicine consumption log
+
+            if (consumeModel != null) {
+              if (isTaken) {
+                await vmSchedule.update_medicine_consume_data(
+                    medicine.id!, consumeModel, medicine);
+              } else {
+                // Revert the consume data if unchecked
+                final updatedConsumeModel = consumeModel.copyWith(
+                  status: ConsumptionStatus.missed,
+                  actualTakenTime: null,
+                );
+
+                await vmSchedule.revert_updated_medicine_consume_data(
+                    medicine.id!, updatedConsumeModel, medicine);
+              }
+
+              await vmMedicine.get_all_medicine();
+              await vmMedicine.get_todays_medicine();
+            }
+          },
+        );
+      }),
+    );
+  }
+
   String getRandomMedicineImage(int index) {
     final rand = index % 3 + 1;
     return 'assets/images/medicine_$rand.png';
@@ -434,11 +433,11 @@ class _ScheduleViewState extends State<ScheduleView> {
 
   // get total estimated medicine will take by the user.
   int getTotalEstimatedMedicine(MedicineModel model) {
-    return (model.medicineScheduleList?.length ?? 1) *
-        model.dosage *
-        (model.finalScheduleDates?.length ?? 1);
+    return (model.medicineScheduleList?.length ?? 0) *
+            model.dosage *
+            (model.finalScheduleDates?.length ?? 0) -
+        model.availableQuantity;
   }
 }
 
 // TODO: Mark medicine as taken to Medicine Consumption Model and track when when took medicine and when didn't
-// TODO: Fix quantity issue, currently it is not updating the quantity in Medicine Model

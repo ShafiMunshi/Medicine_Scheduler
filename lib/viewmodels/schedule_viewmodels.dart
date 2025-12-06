@@ -62,14 +62,15 @@ class ScheduleViewmodels extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await consumeRepository.updateMedicineConsumeData(
-        consumeModel,
-      );
+      await consumeRepository.updateMedicineConsumeData(consumeModel);
+
+      log("before medi taken count: ${medicineModel.medicineTakenCount}");
       final updatedMedicine = medicineModel.copyWith(
         modifiedAt: DateTime.now(),
         availableQuantity: medicineModel.availableQuantity - 1,
         medicineTakenCount: medicineModel.medicineTakenCount + 1,
       );
+      log("after medi taken count: ${updatedMedicine.medicineTakenCount}");
       await medicineRepository.updateMedicine(updatedMedicine);
       await get_all_medicine_consume_data();
       // await NotificationService
@@ -83,6 +84,7 @@ class ScheduleViewmodels extends ChangeNotifier {
     }
   }
 
+  /// Revert the medicine consume data update
   Future<void> revert_updated_medicine_consume_data(int medicineId,
       MedicineConsumeLogModel consumeModel, MedicineModel medicineModel) async {
     isLoading = true;
@@ -90,9 +92,8 @@ class ScheduleViewmodels extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await consumeRepository.clearSpecificMedicineConsume(
-        consumeModel,
-      );
+      await consumeRepository.clearSpecificMedicineConsume(consumeModel);
+
       final updatedMedicine = medicineModel.copyWith(
         modifiedAt: DateTime.now(),
         availableQuantity: medicineModel.availableQuantity + 1,
