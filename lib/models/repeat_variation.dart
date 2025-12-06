@@ -6,7 +6,7 @@ enum RepeatVariation { timely, day, weekly, monthly }
 
 @embedded
 // Stores the day count which will be repeated every after that day.
-class RepeatVariationDays {
+class   RepeatVariationDays {
   String? day;
   RepeatVariationDays({this.day});
 

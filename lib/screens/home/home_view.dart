@@ -255,17 +255,17 @@ class _HomeViewState extends State<HomeView> {
               Row(
                 children: [
                   Text(
-                    'Zahidul',
+                    'Shafi',
                     style: boldTextStyle(),
                   ),
                   Text(
-                    ' Hossain',
+                    ' Munshi',
                     style: primaryTextStyle(),
                   ),
                 ],
               ),
               Text(
-                '24 years old',
+                '21 years old',
                 style: secondaryTextStyle(),
               ),
             ],

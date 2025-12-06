@@ -3,7 +3,6 @@ import 'dart:developer';
 import 'package:isar/isar.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
-import 'package:medicine_app/service/draft_file_service.dart';
 
 class MedicineConsumeRepository {
   final LocalDatabaseService db;
@@ -23,6 +22,18 @@ class MedicineConsumeRepository {
     }
   }
 
+  Future<List<MedicineConsumeLogModel>> getSpecificMedicineConsumeData(int medicineId) async {
+    try {
+      return await db.isar.medicineConsumeLogModels
+          .filter()
+          .medicineIdEqualTo(medicineId)
+          .findAll();
+    } catch (e) {
+      log(e.toString());
+      throw Exception(e);
+    }
+  }
+
   Future<List<MedicineConsumeLogModel>> getAllMedicineConsumedData() async {
     try {
       return await db.isar.medicineConsumeLogModels.where().findAll();
@@ -38,12 +49,6 @@ class MedicineConsumeRepository {
       await db.isar.writeTxn(() async {
         await db.isar.medicineConsumeLogModels.put(consumeData);
       });
-
-      await DraftFileService.updateLogByMedicineId(
-          isSynced: true,
-          medicineId: consumeData.medicineId,
-          scheduledDateTime: consumeData.scheduledDateTime,
-          isTaken: consumeData.status == ConsumptionStatus.taken);
     } catch (e) {
       log(e.toString());
       throw Exception(e);
@@ -57,12 +62,6 @@ class MedicineConsumeRepository {
       await db.isar.writeTxn(() async {
         await db.isar.medicineConsumeLogModels.delete(consumeData.id!);
       });
-
-      await DraftFileService.updateLogByMedicineId(
-          isSynced: false,
-          medicineId: consumeData.medicineId,
-          scheduledDateTime: consumeData.scheduledDateTime,
-          isTaken: consumeData.status == ConsumptionStatus.taken);
     } catch (e) {
       log(e.toString());
       throw Exception(e);

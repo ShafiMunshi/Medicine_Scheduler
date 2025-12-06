@@ -37,8 +37,6 @@ class MedicineViewmodels extends ChangeNotifier {
       }
 
       await get_all_medicine(); // only call this if insertion succeeded
-      await NotificationService
-          .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       _errorMessage = e.toString();
       log("add_medicine error:$e");
@@ -55,6 +53,9 @@ class MedicineViewmodels extends ChangeNotifier {
 
     try {
       _medicines = await medicineRepository.getAllMedicines();
+      await NotificationService
+          .reschedule_all_medicine_notification_for_next_48_hours(
+              _medicines); // Only after success
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -72,9 +73,6 @@ class MedicineViewmodels extends ChangeNotifier {
     try {
       await medicineRepository.updateMedicine(medicine);
       await get_all_medicine();
-
-      await NotificationService
-          .reschedule_all_medicine_notification_for_next_48_hours(); // Only after success
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -93,9 +91,6 @@ class MedicineViewmodels extends ChangeNotifier {
       await medicineRepository.clearSpecificMedicine(id).whenComplete(() async {
         await get_all_medicine();
       });
-
-      await NotificationService
-          .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();

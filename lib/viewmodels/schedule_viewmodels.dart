@@ -5,7 +5,6 @@ import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
-import 'package:medicine_app/service/notification_service.dart';
 
 class ScheduleViewmodels extends ChangeNotifier {
   final MedicineConsumeRepository consumeRepository;
@@ -72,9 +71,9 @@ class ScheduleViewmodels extends ChangeNotifier {
         medicineTakenCount: medicineModel.medicineTakenCount + 1,
       );
       await medicineRepository.updateMedicine(updatedMedicine);
-      await get_all_medicine_consume_data(); // Only after s
-      await NotificationService
-          .reschedule_all_medicine_notification_for_next_48_hours();
+      await get_all_medicine_consume_data();
+      // await NotificationService
+      //     .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
@@ -101,14 +100,26 @@ class ScheduleViewmodels extends ChangeNotifier {
       );
       await medicineRepository.updateMedicine(updatedMedicine);
       await get_all_medicine_consume_data(); // Only after success
-      await NotificationService
-          .reschedule_all_medicine_notification_for_next_48_hours();
+      // TODO: Do something for below this line
+      // await NotificationService
+      //     .reschedule_all_medicine_notification_for_next_48_hours();
     } catch (e) {
       log("error: $e");
       _errorMessage = e.toString();
     } finally {
       isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<List<MedicineConsumeLogModel>> get_specific_medicine_consume_data(
+      int medicineId) async {
+    try {
+      return await consumeRepository.getSpecificMedicineConsumeData(medicineId);
+    } catch (e) {
+      log("error: $e");
+      _errorMessage = e.toString();
+      throw Exception('Failed to get specific medicine consume data $e');
     }
   }
 }

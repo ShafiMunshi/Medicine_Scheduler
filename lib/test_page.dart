@@ -2,7 +2,6 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:medicine_app/config/custom/custom_snackber.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
-import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/service/draft_file_service.dart';
 import 'package:medicine_app/test_file_logs_page.dart';
@@ -74,7 +73,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
         channelKey: 'scheduled_channel',
         title: title,
         body: body,
-        category: NotificationCategory.Reminder,
+        category: NotificationCategory.Alarm,
         notificationLayout: NotificationLayout.Default,
         wakeUpScreen: true,
 
@@ -84,26 +83,26 @@ class _NotificationScreenState extends State<NotificationScreen> {
         // Custom sound (optional)
         customSound: 'resource://raw/notification_sound',
       ),
-      actionButtons: [
-        NotificationActionButton(
-          key: 'ACCEPT',
-          label: 'Accept',
-          color: Colors.green,
-          autoDismissible: true,
-        ),
-        NotificationActionButton(
-          key: 'REJECT',
-          label: 'Reject',
-          color: Colors.red,
-          autoDismissible: true,
-        ),
-        NotificationActionButton(
-          key: 'SNOOZE',
-          label: 'Snooze',
-          color: Colors.orange,
-          autoDismissible: false,
-        ),
-      ],
+      // actionButtons: [
+      //   NotificationActionButton(
+      //     key: 'ACCEPT',
+      //     label: 'Accept',
+      //     color: Colors.green,
+      //     autoDismissible: true,
+      //   ),
+      //   NotificationActionButton(
+      //     key: 'REJECT',
+      //     label: 'Reject',
+      //     color: Colors.red,
+      //     autoDismissible: true,
+      //   ),
+      //   NotificationActionButton(
+      //     key: 'SNOOZE',
+      //     label: 'Snooze',
+      //     color: Colors.orange,
+      //     autoDismissible: false,
+      //   ),
+      // ],
       schedule: NotificationCalendar(
         year: scheduledDate.year,
         month: scheduledDate.month,
@@ -127,43 +126,43 @@ class _NotificationScreenState extends State<NotificationScreen> {
     log('Button key: ${receivedAction.buttonKeyPressed}');
     log('Notification ID: ${receivedAction.id}');
 
-    final shred_pref = await SharedPreferences.getInstance();
+    // final shred_pref = await SharedPreferences.getInstance();
 
-    switch (receivedAction.buttonKeyPressed) {
-      case 'ACCEPT':
-        log('User accepted the notification');
+    // switch (receivedAction.buttonKeyPressed) {
+    //   case 'ACCEPT':
+    //     log('User accepted the notification');
 
-        await shred_pref.setString("test", "Accepted Notification");
-        // await DraftFileService.addLog([
-        //   MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
-        // ]);
+    //     await shred_pref.setString("test", "Accepted Notification");
+    //     // await DraftFileService.addLog([
+    //     //   MedicineDraftLog(medicineId: 1, scheduledDateTime: DateTime.now())
+    //     // ]);
 
-        // Handle accept action
-        break;
-      case 'REJECT':
-        await shred_pref.setString("test", "rejected Notification");
+    //     // Handle accept action
+    //     break;
+    //   case 'REJECT':
+    //     await shred_pref.setString("test", "rejected Notification");
 
-        log('User rejected the notification');
-        await DraftFileService.clearLogs();
+    //     log('User rejected the notification');
+    //     await DraftFileService.clearLogs();
 
-        // Handle reject action
-        break;
-      case 'SNOOZE':
-        log('User snoozed the notification');
+    //     // Handle reject action
+    //     break;
+    //   case 'SNOOZE':
+    //     log('User snoozed the notification');
 
-        // Reschedule notification for 5 minutes later
+    //     // Reschedule notification for 5 minutes later
 
-        break;
-      case 'COMPLETE':
+    //     break;
+    //   case 'COMPLETE':
 
-        // Cancel repeating notification
-        await AwesomeNotifications().cancel(receivedAction.id!);
-        break;
-      case 'POSTPONE':
-        log('User postponed the task');
-        // Handle postpone action
-        break;
-    }
+    //     // Cancel repeating notification
+    //     await AwesomeNotifications().cancel(receivedAction.id!);
+    //     break;
+    //   case 'POSTPONE':
+    //     log('User postponed the task');
+    //     // Handle postpone action
+    //     break;
+    // }
   }
 
   // Snooze notification helper
@@ -251,9 +250,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
               onPressed: () {
                 // Schedule notification for 20 seconds from now
                 DateTime scheduledTime =
-                    DateTime.now().add(Duration(seconds: 20));
+                    DateTime.now().add(Duration(seconds: 40));
                 scheduleNotification(
-                  id: 1,  
+                  id: 1,
                   title: 'Meeting Reminder',
                   body: 'You have a meeting in 5 minutes',
                   scheduledDate: scheduledTime,
