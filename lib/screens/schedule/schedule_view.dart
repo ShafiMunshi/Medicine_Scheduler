@@ -118,6 +118,11 @@ class _ScheduleViewState extends State<ScheduleView> {
                     children: [
                       IconButton(
                           onPressed: () {
+                            if (pageController.page == 0 && currentPage == 0) {
+                              snackBar(context,
+                                  title: "This is the first medicine");
+                              return;
+                            }
                             pageController.previousPage(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.linear);
@@ -155,6 +160,12 @@ class _ScheduleViewState extends State<ScheduleView> {
                       ),
                       IconButton(
                           onPressed: () {
+                            if (currentPage ==
+                                vmMedicine.todaysMedicines.length - 1) {
+                              snackBar(context,
+                                  title: "This is the last medicine");
+                              return;
+                            }
                             pageController.nextPage(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.linear);
