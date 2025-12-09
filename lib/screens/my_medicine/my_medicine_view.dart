@@ -32,11 +32,8 @@ class _MyMedicineViewState extends State<MyMedicineView> {
   Widget build(BuildContext context) {
     print(MediaQuery.of(context).size.width);
     return Scaffold(
-      appBar: commonAppBarWidget(context,
-          title: 'My Medicine',
-          changeIcon: true,
-          iconWidget1: SvgPicture.asset('assets/icons/edit_square.svg')
-              .paddingRight(20)),
+      appBar:
+          commonAppBarWidget(context, title: 'My Medicine', changeIcon: true),
       floatingActionButton: FloatingActionButton(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),

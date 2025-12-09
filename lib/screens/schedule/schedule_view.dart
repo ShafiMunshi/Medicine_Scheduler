@@ -49,11 +49,11 @@ class _ScheduleViewState extends State<ScheduleView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: commonAppBarWidget(context,
-          title: 'Medicine Schedule',
-          changeIcon: true,
-          iconWidget1: SvgPicture.asset('assets/icons/edit_square.svg')
-              .paddingRight(20)),
+      appBar: commonAppBarWidget(
+        context,
+        title: 'Medicine Schedule',
+        changeIcon: true,
+      ),
       body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
         if (vmMedicine.isLoading) {
           return const Center(child: CircularProgressIndicator());
