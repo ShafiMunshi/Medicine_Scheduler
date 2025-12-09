@@ -167,13 +167,12 @@ class _MyProfileViewState extends State<MyProfileView> {
                 final XFile? image =
                     await _picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
-                  setState(() {
-                    _profileImage = File(image.path);
-                  });
-
                   await context
                       .read<ProfileViewmodels>()
                       .updateProfileImg(image);
+                  setState(() {
+                    _profileImage = File(image.path);
+                  });
                 }
               },
             ),

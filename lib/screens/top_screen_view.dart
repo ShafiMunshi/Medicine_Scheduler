@@ -6,6 +6,7 @@ import 'package:medicine_app/screens/home/home_view.dart';
 import 'package:medicine_app/screens/my_medicine/my_medicine_view.dart';
 import 'package:medicine_app/screens/schedule/schedule_view.dart';
 import 'package:medicine_app/screens/settings/settings_view.dart';
+import 'package:medicine_app/viewmodels/profile_viewmodels.dart';
 import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
@@ -39,6 +40,8 @@ class _TopScreenViewState extends State<TopScreenView> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final vmAuth = context.read<AuthViewModels>();
       await vmAuth.signUp();
+      final vmProfile = context.read<ProfileViewmodels>();
+      await vmProfile.fetchUserData();
     });
   }
 

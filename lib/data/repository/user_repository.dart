@@ -10,8 +10,9 @@ class UserRepository {
 
   Future<int> insertUser(UserModel userData) async {
     try {
+      final user = userData.copyWith(id: 1); // Ensure single user with id 1
       final rowId = await db.isar.writeTxn(() async {
-        return await db.isar.userModels.put(userData);
+        return await db.isar.userModels.put(user);
       });
 
       log("Inserted User with rowId: $rowId");

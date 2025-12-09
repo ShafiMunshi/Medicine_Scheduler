@@ -8,6 +8,7 @@ import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/viewmodels/profile_viewmodels.dart';
 import 'package:nb_utils/nb_utils.dart';
 import 'package:provider/provider.dart';
 
@@ -241,45 +242,43 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget topProfileSections() {
-    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Row(
-        children: [
-          SizedBox(
-              height: 50.w,
-              width: 50.w,
-              child: Image.asset('assets/images/avatar.png')),
-          15.horizontalSpace,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'Shafi',
-                    style: boldTextStyle(),
-                  ),
-                  Text(
-                    ' Munshi',
-                    style: primaryTextStyle(),
-                  ),
-                ],
-              ),
-              Text(
-                '21 years old',
-                style: secondaryTextStyle(),
-              ),
-            ],
-          )
-        ],
-      ),
-      Container(
-        padding: EdgeInsets.all(15),
-        decoration: boxDecoration(
-            bgColor: white, radius: 12.r, color: AppColors.greyColor),
-        child: SvgPicture.asset(
-          AppAssets.notifications,
+    return Consumer<ProfileViewmodels>(builder: (_, vm, __) {
+      return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Row(
+          children: [
+            SizedBox(
+                height: 50.w,
+                width: 50.w,
+                child: Image.asset('assets/images/avatar.png')),
+            15.horizontalSpace,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      vm.userModel?.name ?? '',
+                      style: boldTextStyle(),
+                    ),
+                  ],
+                ),
+                Text(
+                  '${vm.userModel?.age ?? ''} years old',
+                  style: secondaryTextStyle(),
+                ),
+              ],
+            )
+          ],
         ),
-      )
-    ]).paddingSymmetric(horizontal: 20);
+        Container(
+          padding: EdgeInsets.all(15),
+          decoration: boxDecoration(
+              bgColor: white, radius: 12.r, color: AppColors.greyColor),
+          child: SvgPicture.asset(
+            AppAssets.notifications,
+          ),
+        )
+      ]).paddingSymmetric(horizontal: 20);
+    });
   }
 }
