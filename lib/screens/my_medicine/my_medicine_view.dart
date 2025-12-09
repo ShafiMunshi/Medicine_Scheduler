@@ -1,3 +1,4 @@
+import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/constant/app_color.dart';
@@ -25,6 +26,9 @@ class _MyMedicineViewState extends State<MyMedicineView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MedicineViewmodels>().get_all_medicine();
+      context
+          .read<MedicineViewmodels>()
+          .get_specific_days_medicine(DateTime.now());
     });
   }
 
@@ -56,25 +60,67 @@ class _MyMedicineViewState extends State<MyMedicineView> {
             child: Text("No Medicine Found"),
           );
         }
-        return ListView.builder(
-          itemCount: vm.medicines.length,
-          shrinkWrap: true,
-          itemBuilder: (BuildContext context, int index) {
-            final medicine = vm.medicines[index];
+        return Column(
+          children: [
+            EasyDateTimeLine(
+              initialDate: DateTime.now(),
+              onDateChange: (selectedDate) {
+                vm.get_specific_days_medicine(selectedDate);
+              },
+              headerProps: const EasyHeaderProps(
+                  monthPickerType: MonthPickerType.dropDown,
 
-            final nearestTimeLeft =
-                getHowMuchTimeLeftToTakeNearestMedicine(medicine);
+                  // dateFormatter: DateFormatter.fullDateDMY(),
+                  showMonthPicker: true,
+                  showSelectedDate: true,
+                  selectedDateFormat: SelectedDateFormat.fullDateDMonthAsStrY),
+              // disabledDates: controller.getDatesFromTodayToLastDayOfMonth(),
+              dayProps: const EasyDayProps(
+                dayStructure: DayStructure.dayStrDayNum,
+                activeDayStyle: DayStyle(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.all(Radius.circular(8)),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        // Color(0xff3371FF),
+                        AppColors.secondaryColor,
+                        Color(0xff8426D6),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (vm.specificDaysMedicines.isEmpty)
+              Center(
+                heightFactor: 10,
+                child: Text("No Medicine Found for this date"),
+              ),
+            Expanded(
+              child: ListView.builder(
+                itemCount: vm.specificDaysMedicines.length,
+                shrinkWrap: true,
+                itemBuilder: (BuildContext context, int index) {
+                  final medicine = vm.specificDaysMedicines[index];
 
-            return MedicineWidget(
-                medicineName: medicine.medicineName,
-                timeLeft: nearestTimeLeft,
-                lengthNeedToBeColored:
-                    getTotalProgressIndexHowMuchMedicineLeft(medicine),
-                index: index,
-                medicine: medicine,
-                imagePath: medicine.imagePath);
-          },
-        ).paddingAll(12);
+                  final nearestTimeLeft =
+                      getHowMuchTimeLeftToTakeNearestMedicine(medicine);
+
+                  return MedicineWidget(
+                      medicineName: medicine.medicineName,
+                      timeLeft: nearestTimeLeft,
+                      lengthNeedToBeColored:
+                          getTotalProgressIndexHowMuchMedicineLeft(medicine),
+                      index: index,
+                      medicine: medicine,
+                      imagePath: medicine.imagePath);
+                },
+              ).paddingAll(12),
+            ),
+          ],
+        );
       }),
     );
   }

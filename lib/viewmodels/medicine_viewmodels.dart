@@ -24,6 +24,10 @@ class MedicineViewmodels extends ChangeNotifier {
 
   List<MedicineModel> get todaysMedicines => _todaysMedicines;
 
+  List<MedicineModel> _specificDaysMedicines = [];
+
+  List<MedicineModel> get specificDaysMedicines => _specificDaysMedicines;
+
   Future<void> add_medicine(MedicineModel medicine) async {
     isLoading = true;
     _errorMessage = null;
@@ -116,6 +120,34 @@ class MedicineViewmodels extends ChangeNotifier {
         return medicine.finalScheduleDates?.any((date) {
               final d = DateTime(date.year, date.month, date.day);
               return d == todayDate;
+            }) ??
+            false;
+      }).toList();
+    } catch (e) {
+      log("Error: $e");
+      _errorMessage = e.toString();
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> get_specific_days_medicine(DateTime specificDate) async {
+    try {
+      if (medicines.isEmpty) {
+        await get_all_medicine();
+      }
+      isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final specific =
+          DateTime(specificDate.year, specificDate.month, specificDate.day);
+
+      _specificDaysMedicines = medicines.where((medicine) {
+        return medicine.finalScheduleDates?.any((date) {
+              final d = DateTime(date.year, date.month, date.day);
+              return d == specific;
             }) ??
             false;
       }).toList();
