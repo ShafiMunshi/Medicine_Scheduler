@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:medicine_app/data/repository/auth_repository.dart';
 import 'package:medicine_app/data/repository/consume_repository.dart';
 import 'package:medicine_app/data/repository/medicine_repository.dart';
+import 'package:medicine_app/data/repository/user_repository.dart';
 import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/routes.dart';
@@ -15,10 +16,11 @@ import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/viewmodels/home_viewmodels.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/viewmodels/profile_viewmodels.dart';
 // import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
+import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
 import 'package:provider/provider.dart';
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -91,6 +93,12 @@ class MyApp extends StatelessWidget {
           ProxyProvider<LocalDatabaseService, MedicineConsumeRepository>(
               update: (_, localDb, __) => MedicineConsumeRepository(localDb)),
 
+          /// ProxyProvider: Inject LocalDatabaseService into UserRepository
+          ProxyProvider<LocalDatabaseService, UserRepository>(
+              update: (_, localDb, __) => UserRepository(localDb)),
+
+          ChangeNotifierProvider<AuthViewModels>(
+              create: (context) => AuthViewModels(context.read(), context.read())),
           ChangeNotifierProvider<MedicineViewmodels>(
               create: (context) => MedicineViewmodels(context.read())),
 
@@ -99,6 +107,8 @@ class MyApp extends StatelessWidget {
                   ScheduleViewmodels(context.read(), context.read())),
           ChangeNotifierProvider<HomeViewmodels>(
               create: (context) => HomeViewmodels()),
+          ChangeNotifierProvider<ProfileViewmodels>(
+              create: (context) => ProfileViewmodels(context.read())),
         ],
         child: ScreenUtilInit(
             designSize: const Size(390, 844),

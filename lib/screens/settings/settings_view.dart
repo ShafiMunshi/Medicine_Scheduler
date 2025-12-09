@@ -1,16 +1,8 @@
-import 'dart:developer';
-
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:medicine_app/data/repository/consume_repository.dart';
-import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
-import 'package:medicine_app/screens/settings/all_medicine_log_view.dart';
 import 'package:medicine_app/screens/settings/my_profile_view.dart';
-import 'package:medicine_app/test_file_logs_page.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
 class SettingsView extends StatelessWidget {
   static String routeName = '/settings_view';
