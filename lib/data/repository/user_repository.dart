@@ -10,6 +10,11 @@ class UserRepository {
 
   Future<int> insertUser(UserModel userData) async {
     try {
+
+      if(await getUserData() != null) {
+        log("User already exists. Skipping insertion.");
+        return -1; // Indicate that insertion was skipped
+      }
       final user = userData.copyWith(id: 1); // Ensure single user with id 1
       final rowId = await db.isar.writeTxn(() async {
         return await db.isar.userModels.put(user);

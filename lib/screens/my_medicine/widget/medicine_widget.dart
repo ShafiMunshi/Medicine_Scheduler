@@ -71,7 +71,7 @@ class MedicineWidget extends StatelessWidget {
                   6.verticalSpace,
                   timeLeft == null
                       ? Text(
-                          "No medicine today",
+                          "Time over.......",
                           style: primaryTextStyle(size: 10),
                         )
                       : CountdownWithValueNotifier(initialDuration: timeLeft!),

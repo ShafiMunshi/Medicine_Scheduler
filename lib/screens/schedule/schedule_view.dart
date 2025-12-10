@@ -186,7 +186,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Every day',
+                        'Today',
                         style: boldTextStyle(size: 18),
                       ),
                       Container(
@@ -320,26 +320,7 @@ class _ScheduleViewState extends State<ScheduleView> {
               ],
             ),
             const SizedBox(height: 10),
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: AppColors.primaryColor,
-                  size: 15,
-                ),
-                8.horizontalSpace,
-                Text(
-                  'Estimated Need',
-                  style: secondaryTextStyle(size: 11),
-                ),
-                5.horizontalSpace,
-                Text(
-                  '${getTotalEstimatedMedicine(medicine)} Pcs',
-                  style:
-                      primaryTextStyle(size: 11, color: AppColors.primaryColor),
-                )
-              ],
-            ),
+            remainingMedicineCountWidget(medicine),
             const SizedBox(height: 10),
             // I Have Taken Button
             SizedBox(
@@ -364,6 +345,29 @@ class _ScheduleViewState extends State<ScheduleView> {
           ],
         ),
       ),
+    );
+  }
+
+  Row remainingMedicineCountWidget(MedicineModel medicine) {
+    final count = getTotalEstimatedMedicine(medicine);
+    return Row(
+      children: [
+        Icon(
+          Icons.info_outline_rounded,
+          color: AppColors.primaryColor,
+          size: 15,
+        ),
+        8.horizontalSpace,
+        Text(
+          count > 0 ? 'Estimated Need' : 'Extra Remaining Medicine',
+          style: secondaryTextStyle(size: 11),
+        ),
+        5.horizontalSpace,
+        Text(
+          '${count.abs()} Pcs',
+          style: primaryTextStyle(size: 11, color: AppColors.primaryColor),
+        )
+      ],
     );
   }
 
