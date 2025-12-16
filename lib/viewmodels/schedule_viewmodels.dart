@@ -22,6 +22,10 @@ class ScheduleViewmodels extends ChangeNotifier {
 
   List<MedicineConsumeLogModel> get medicinesConsume => _medicinesConsume;
 
+  double _specificMedicineTakenCountProgress = 0.0;
+  double get specificMedicineTakenCountProgress =>
+      _specificMedicineTakenCountProgress;
+
   Future<void> get_all_medicine_consume_data() async {
     isLoading = true;
     _errorMessage = null;
@@ -121,6 +125,24 @@ class ScheduleViewmodels extends ChangeNotifier {
       log("error: $e");
       _errorMessage = e.toString();
       throw Exception('Failed to get specific medicine consume data $e');
+    }
+  }
+
+  Future<double> getUserTakenCountProgress(int medicineId) async {
+    try {
+      final logs = await get_specific_medicine_consume_data(medicineId);
+
+      final takenCount = logs.length.toDouble();
+      // Normalize to 0-1 range for indicator
+      final progress = takenCount > 0
+          ? (takenCount / (takenCount + 1)).clamp(0.0, 1.0)
+          : 0.0;
+      final roundedProgress = double.parse(progress.toStringAsFixed(2));
+      return roundedProgress;
+    } catch (e) {
+      log("error: $e");
+      _errorMessage = e.toString();
+      throw Exception('Failed to get user taken count $e');
     }
   }
 }

@@ -22,7 +22,7 @@ dependencies:
   firebase_storage: ^12.4.5
   flutter:
     sdk: flutter
-  flutter_bounceable: ^1.1.0
+  flutter_bounceable: ^1.2.0
   flutter_dotenv: ^5.2.1
   flutter_scalable_ocr: ^2.2.1
   flutter_screenutil: ^5.9.3

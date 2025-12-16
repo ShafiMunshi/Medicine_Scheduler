@@ -1,5 +1,6 @@
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bounceable/flutter_bounceable.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
@@ -7,6 +8,7 @@ import 'package:medicine_app/models/medicine_time_schedule.dart';
 import 'package:medicine_app/models/repeat_variation.dart';
 import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/my_medicine/specific_medicine_view.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:nb_utils/nb_utils.dart';
@@ -78,14 +80,26 @@ class _MyMedicineViewState extends State<MyMedicineView> {
                   final nearestTimeLeft =
                       getHowMuchTimeLeftToTakeNearestMedicine(medicine);
 
-                  return MedicineWidget(
-                      medicineName: medicine.medicineName,
-                      timeLeft: nearestTimeLeft,
-                      lengthNeedToBeColored:
-                          getTotalProgressIndexHowMuchMedicineLeft(medicine),
-                      index: index,
-                      medicine: medicine,
-                      imagePath: medicine.imagePath);
+                  return Bounceable(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SpecificMedicineView(
+                            medicineModel: medicine,
+                          ),
+                        ),
+                      );
+                    },
+                    child: MedicineWidget(
+                        medicineName: medicine.medicineName,
+                        timeLeft: nearestTimeLeft,
+                        lengthNeedToBeColored:
+                            getTotalProgressIndexHowMuchMedicineLeft(medicine),
+                        index: index,
+                        medicine: medicine,
+                        imagePath: medicine.imagePath),
+                  );
                 },
               ).paddingAll(12),
             ),
