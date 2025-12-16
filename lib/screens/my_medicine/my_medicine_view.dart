@@ -62,37 +62,7 @@ class _MyMedicineViewState extends State<MyMedicineView> {
         }
         return Column(
           children: [
-            EasyDateTimeLine(
-              initialDate: DateTime.now(),
-              onDateChange: (selectedDate) {
-                vm.get_specific_days_medicine(selectedDate);
-              },
-              headerProps: const EasyHeaderProps(
-                  monthPickerType: MonthPickerType.dropDown,
-
-                  // dateFormatter: DateFormatter.fullDateDMY(),
-                  showMonthPicker: true,
-                  showSelectedDate: true,
-                  selectedDateFormat: SelectedDateFormat.fullDateDMonthAsStrY),
-              // disabledDates: controller.getDatesFromTodayToLastDayOfMonth(),
-              dayProps: const EasyDayProps(
-                dayStructure: DayStructure.dayStrDayNum,
-                activeDayStyle: DayStyle(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.all(Radius.circular(8)),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        // Color(0xff3371FF),
-                        AppColors.secondaryColor,
-                        Color(0xff8426D6),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            _dateChoose(vm),
             if (vm.specificDaysMedicines.isEmpty)
               Center(
                 heightFactor: 10,
@@ -122,6 +92,40 @@ class _MyMedicineViewState extends State<MyMedicineView> {
           ],
         );
       }),
+    );
+  }
+
+  EasyDateTimeLine _dateChoose(MedicineViewmodels vm) {
+    return EasyDateTimeLine(
+      initialDate: DateTime.now(),
+      onDateChange: (selectedDate) {
+        vm.get_specific_days_medicine(selectedDate);
+      },
+      headerProps: const EasyHeaderProps(
+          monthPickerType: MonthPickerType.dropDown,
+
+          // dateFormatter: DateFormatter.fullDateDMY(),
+          showMonthPicker: true,
+          showSelectedDate: true,
+          selectedDateFormat: SelectedDateFormat.fullDateDMonthAsStrY),
+      // disabledDates: controller.getDatesFromTodayToLastDayOfMonth(),
+      dayProps: const EasyDayProps(
+        dayStructure: DayStructure.dayStrDayNum,
+        activeDayStyle: DayStyle(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                // Color(0xff3371FF),
+                AppColors.secondaryColor,
+                Color(0xff8426D6),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
