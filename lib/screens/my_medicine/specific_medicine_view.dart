@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/my_medicine/widget/circular_progress_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
@@ -20,7 +21,7 @@ class SpecificMedicineView extends StatelessWidget {
     return Scaffold(
       appBar: commonAppBarWidget(
         context,
-        title: 'Medicine Details',
+        title: 'Details',
         changeIcon: true,
       ),
       body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
@@ -48,71 +49,26 @@ class SpecificMedicineView extends StatelessWidget {
                 8.verticalSpace,
                 scheduleAndDurationWidget(context),
                 10.verticalSpace,
-                Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      // color: AppColors.greyColor,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.greyColor),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Progress", style: boldTextStyle()),
-                        Text('Course Started', style: secondaryTextStyle()),
-                        Text(medicineModel.startDate.toFormattedDate(),
-                            style: secondaryTextStyle()),
-                        6.verticalSpace,
-                        FutureBuilder(
-                          future: vmSchedule
-                              .getUserTakenCountProgress(medicineModel.id!),
-                          // initialData: InitialData,
-                          builder:
-                              (BuildContext context, AsyncSnapshot snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return CircularProgressIndicator();
-                            } else if (snapshot.hasData) {
-                              return SizedBox(
-                                width: 120,
-                                height: 120,
-                                child: Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    SizedBox(
-                                      width: 100,
-                                      height: 100,
-                                      child: CircularProgressIndicator(
-                                        value: snapshot.data,
-                                        backgroundColor: AppColors.greyColor,
-                                        color: AppColors.primaryColor,
-                                        strokeWidth: 10,
-                                      ),
-                                    ),
-                                    Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                            '${(snapshot.data * 100).toInt()}%',
-                                            textAlign: TextAlign.center,
-                                            style: boldTextStyle()),
-                                        Text('Completed',
-                                            textAlign: TextAlign.center,
-                                            style:
-                                                secondaryTextStyle(size: 10)),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return SizedBox.shrink();
-                          },
-                        ),
-                      ],
-                    ))
+                Row(
+                  children: [
+                    CircularProgressWidget(
+                        dateString: medicineModel.startDate.toFormattedDate(),
+                        title: 'Progress',
+                        subTitle: 'Course Started',
+                        progressValue: getUserTakenCountProgress(medicineModel),
+                        centerText:
+                            '${(getUserTakenCountProgress(medicineModel) * 100).toInt()}%',
+                        centerSubText: 'Completed'),
+                    CircularProgressWidget(
+                        dateString: medicineModel.endDate.toFormattedDate(),
+                        title: 'Amount Left',
+                        subTitle: 'Will last until',
+                        progressValue: getUserTakenCountProgress(medicineModel),
+                        centerText:
+                            '${medicineModel.medicineTakenCount}/${medicineModel.availableQuantity}',
+                        centerSubText: 'pills left'),
+                  ],
+                )
               ],
             ),
           );
@@ -129,6 +85,26 @@ class SpecificMedicineView extends StatelessWidget {
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
+  }
+
+  double getUserTakenCountProgress(MedicineModel medicineModel) {
+    try {
+      final estimatedCount = (medicineModel.medicineScheduleList?.length ?? 0) *
+          (medicineModel.finalScheduleDates?.length ?? 0);
+
+      final takenCount = medicineModel.medicineTakenCount;
+
+      // Calculate actual progress percentage
+      final progress = estimatedCount > 0
+          ? (takenCount / estimatedCount).clamp(0.0, 1.0)
+          : 0.0;
+
+      final roundedProgress = double.parse(progress.toStringAsFixed(2));
+      return roundedProgress;
+    } catch (e) {
+      log("error: $e");
+      throw Exception('Failed to get user taken count $e');
+    }
   }
 
   Row scheduleAndDurationWidget(BuildContext context) {
