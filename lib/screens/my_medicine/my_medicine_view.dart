@@ -1,7 +1,6 @@
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/models/medicine_time_schedule.dart';
