@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/my_medicine/widget/circular_progress_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
@@ -19,11 +20,18 @@ class SpecificMedicineView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: commonAppBarWidget(
-        context,
-        title: 'Details',
-        changeIcon: true,
-      ),
+      appBar: commonAppBarWidget(context,
+          title: 'Details',
+          changeIcon: true,
+          iconWidget1: IconButton(
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => AddNewMedicineScreen(
+                            existingMedicine: medicineModel)));
+              },
+              icon: Icon(Icons.edit))),
       body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
         if (vmMedicine.isLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -74,6 +82,19 @@ class SpecificMedicineView extends StatelessWidget {
           );
         });
       }),
+      bottomSheet: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: ElevatedButton(
+            onPressed: () {},
+            style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                fixedSize: Size(double.maxFinite - 50, 50)),
+            // minimumSize: Size(double.infinity, 50),
+            child: Text(
+              "Delete Medicine",
+              style: TextStyle(color: Colors.white),
+            )),
+      ),
     );
   }
 
