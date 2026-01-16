@@ -5,7 +5,7 @@ import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/models/medicine_consumption_model.dart';
 import 'package:medicine_app/models/medicine_model.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
-import 'package:medicine_app/screens/schedule/schedule_time_widget.dart';
+import 'package:medicine_app/screens/schedule/widget/schedule_time_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
@@ -376,6 +376,8 @@ class _ScheduleViewState extends State<ScheduleView> {
       ScheduleViewmodels vmSchedule,
       MedicineViewmodels vmMedicine) {
     final mediScheduleListLen = medicine.medicineScheduleList?.length ?? 0;
+    String? nextTimeToTakeMedicine;
+
     return Column(
       spacing: 8,
       children: List.generate(mediScheduleListLen, (index) {
@@ -396,12 +398,35 @@ class _ScheduleViewState extends State<ScheduleView> {
           ),
         );
 
+        if (nextTimeToTakeMedicine != null) {
+          for (var e in medicine.medicineScheduleList!) {
+            log("1n e.dayTimeName: ${e.dayTimeName}");
+            final now = TimeOfDay.now();
+            if (indivMediConsume != null &&
+                indivMediConsume.status == ConsumptionStatus.taken) {
+              continue;
+            }
+
+            log("e.dayTime: ${e.dayTime}, now: $now");
+            if (e.dayTime!.hour > now.hour ||
+                (e.dayTime!.hour == now.hour &&
+                    e.dayTime!.minute > now.minute)) {
+              nextTimeToTakeMedicine = e.dayTimeName;
+              break;
+            }
+          }
+        }
+
+        log("final nextTimeToTakeMedicine: $nextTimeToTakeMedicine");
+
         return ScheduleTimeWidget(
           timeOfDay: medicine.medicineScheduleList?[index].dayTimeName ?? '',
           time: formatTimeOfDayTo12Hour(
               medicine.medicineScheduleList?[index].dayTime ?? TimeOfDay.now(),
               context),
           isChecked: indivMediConsume?.status == ConsumptionStatus.taken,
+          showWaterWave: nextTimeToTakeMedicine ==
+              medicine.medicineScheduleList?[index].dayTimeName,
           onChanged: (isTaken) async {
             final now = DateTime.now();
             final consumeModel = indivMediConsume?.copyWith(

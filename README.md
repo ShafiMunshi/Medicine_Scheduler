@@ -22,3 +22,8 @@ Flutter version 3.32.4
 // TODO: check if there is any recursive isSynced issue when updating the draft logs and medicine consume logs.
 /// - when the medicine is marked as taken from the then it synced. 
 /// - when the medicine is marked from draft logs then it synced.
+
+
+
+Run to build app : 
+`flutter clean && flutter pub get && flutter pub run flutter_launcher_icons:main `
