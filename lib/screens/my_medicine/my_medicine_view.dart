@@ -26,16 +26,18 @@ class _MyMedicineViewState extends State<MyMedicineView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MedicineViewmodels>().get_all_medicine();
-      context
-          .read<MedicineViewmodels>()
-          .get_specific_days_medicine(DateTime.now());
+      if (mounted) {
+        context.read<MedicineViewmodels>().get_all_medicine();
+        context
+            .read<MedicineViewmodels>()
+            .get_specific_days_medicine(DateTime.now());
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    print(MediaQuery.of(context).size.width);
+    debugPrint(MediaQuery.of(context).size.width.toString());
     return Scaffold(
       appBar:
           commonAppBarWidget(context, title: 'My Medicine', changeIcon: true),

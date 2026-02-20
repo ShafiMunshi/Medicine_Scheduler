@@ -233,7 +233,7 @@ class _HomeViewState extends State<HomeView> {
             ),
             Text(
               subTitle,
-              style: secondaryTextStyle(size: 14),
+              style: secondaryTextStyle(size: 13),
             ),
           ],
         )
