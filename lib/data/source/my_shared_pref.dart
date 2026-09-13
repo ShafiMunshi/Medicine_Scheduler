@@ -1,8 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter/foundation.dart';
-import 'package:medicine_app/constant/app_constants.dart';
-import 'package:medicine_app/models/medicine_draft_log_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MySharedPref {
@@ -15,13 +11,13 @@ class MySharedPref {
   }
 
   static Future<void> reload() async {
-    _sharedPreferences.reload();
+    await _sharedPreferences.reload();
   }
 
-  static setValue(String key, String value) {
+  static void setValue(String key, String value) {
     _sharedPreferences.setString(key, value);
     if (kDebugMode) {
-      print("$key = $value (setted)");
+      print("$key = $value (set)");
     }
   }
 
@@ -33,38 +29,13 @@ class MySharedPref {
     await _sharedPreferences.setBool(key, val);
   }
 
-  static isContains(String key) {
-    _sharedPreferences.containsKey(key);
+  static bool? getBool(String key) {
+    return _sharedPreferences.getBool(key);
   }
 
-  // static Future<void> saveDraftMedicineLogs(MedicineDraftLog newLogs) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final oldLogs = await getDraftMedicineLogs();
-  //   final updatedLogs = [...oldLogs, newLogs];
-  //   await prefs.setStringList(
-  //     AppConstants.DRAFT_MEDICINE_LOGS,
-  //     updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
-  //   );
-  // }
-
-  // static Future<void> saveDraftMedicineLogsList(
-  //     List<MedicineDraftLog> newLogs) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final oldLogs = await getDraftMedicineLogs();
-  //   final updatedLogs = [...oldLogs, ...newLogs];
-  //   await prefs.setStringList(
-  //     AppConstants.DRAFT_MEDICINE_LOGS,
-  //     updatedLogs.map((log) => jsonEncode(log.toJson())).toList(),
-  //   );
-  // }
-
-  // static Future<List<MedicineDraftLog>> getDraftMedicineLogs() async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //   final logs = prefs.getStringList(AppConstants.DRAFT_MEDICINE_LOGS) ?? [];
-  //   return logs
-  //       .map((log) => MedicineDraftLog.fromJson(jsonDecode(log)))
-  //       .toList();
-  // }
+  static bool isContains(String key) {
+    return _sharedPreferences.containsKey(key);
+  }
 
   static Future<void> clear() async => await _sharedPreferences.clear();
 }

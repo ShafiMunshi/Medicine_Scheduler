@@ -1,50 +1,15 @@
-import 'dart:developer';
-
-import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:medicine_app/data/repository/auth_repository.dart';
-import 'package:medicine_app/data/repository/consume_repository.dart';
-import 'package:medicine_app/data/repository/medicine_repository.dart';
-import 'package:medicine_app/data/repository/user_repository.dart';
-import 'package:medicine_app/data/source/local_db_source.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
-import 'package:medicine_app/viewmodels/home_viewmodels.dart';
-import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
-import 'package:medicine_app/viewmodels/profile_viewmodels.dart';
-// import 'package:medicine_app/screens/top_screen_view.dart';
-import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
-import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
-import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  ReceivedAction? receivedAction = await AwesomeNotifications()
-      .getInitialNotificationAction(removeFromActionEvents: false);
-  if (receivedAction?.channelKey == 'scheduled_channel') {
-    log('App launched via notification: ${receivedAction.toString()}');
-    // setInitialPageToNotificationScreen(receivedAction!);
-  } else {
-    log('App launched normally without notification');
-  }
-
-  // Workmanager().initialize(
-  //     callbackDispatcher, // The top level function, aka callbackDispatcher
-  //     isInDebugMode:
-  //         true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
-  //     );
-  // Workmanager().registerPeriodicTask(
-  //   "periodic-task-identifier",
-  //   "NotificationRescheduleTask",
-  //   initialDelay: const Duration(seconds: 30),
-  //   frequency: const Duration(minutes: 15),
-  // );
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -53,105 +18,44 @@ Future<void> main() async {
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarIconBrightness: Brightness.light,
-    // statusBarColor: Colors.white, // status bar color
   ));
 
   await MySharedPref.init();
+  await NotificationService.initialize();
+  await NotificationService.requestPermissions();
 
-  final localDbService = LocalDatabaseService();
-  await localDbService.init();
-
-  // Always initialize Awesome Notifications
-  await NotificationService.initializeNotifications();
-
-  runApp(MyApp(
-    localDbService: localDbService,
-  ));
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  MyApp({required this.localDbService, super.key});
-  final LocalDatabaseService localDbService;
+  const MyApp({super.key});
 
   static final navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-        providers: [
-          /// Provide the LocalDatabaseService
-          ChangeNotifierProvider<LocalDatabaseService>.value(
-              value: localDbService),
-
-          Provider<AuthRepository>(create: (context) => AuthRepository()),
-
-          /// ProxyProvider: Inject LocalDatabaseService into MedicineRepository
-          ProxyProvider<LocalDatabaseService, MedicineRepository>(
-              update: (_, localDb, __) => MedicineRepository(localDb)),
-
-          /// ProxyProvider: Inject LocalDatabaseService into MedicineConsumedRepository
-          ProxyProvider<LocalDatabaseService, MedicineConsumeRepository>(
-              update: (_, localDb, __) => MedicineConsumeRepository(localDb)),
-
-          /// ProxyProvider: Inject LocalDatabaseService into UserRepository
-          ProxyProvider<LocalDatabaseService, UserRepository>(
-              update: (_, localDb, __) => UserRepository(localDb)),
-
-          ChangeNotifierProvider<AuthViewModels>(
-              create: (context) => AuthViewModels(context.read(), context.read())),
-          ChangeNotifierProvider<MedicineViewmodels>(
-              create: (context) => MedicineViewmodels(context.read())),
-
-          ChangeNotifierProvider<ScheduleViewmodels>(
-              create: (context) =>
-                  ScheduleViewmodels(context.read(), context.read())),
-          ChangeNotifierProvider<HomeViewmodels>(
-              create: (context) => HomeViewmodels()),
-          ChangeNotifierProvider<ProfileViewmodels>(
-              create: (context) => ProfileViewmodels(context.read())),
-        ],
-        child: ScreenUtilInit(
-            designSize: const Size(390, 844),
-            minTextAdapt: true,
-            splitScreenMode: true,
-            builder: (context, child) => MaterialApp(
-                  debugShowCheckedModeBanner: false,
-                  title: 'Medicine Tracker',
-                  theme: ThemeData(
-                    textTheme: GoogleFonts.lexendTextTheme(
-                      Theme.of(context).textTheme,
-                    ),
-                    colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-                    useMaterial3: true,
-                  ),
-                  home: TopScreenView(),
-                  // home: NotificationScreen(),
-
-                  routes: app_routes,
-                )));
+    return ScreenUtilInit(
+      designSize: const Size(390, 844),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) => MaterialApp(
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Medicine Tracker',
+        theme: ThemeData(
+          textTheme: GoogleFonts.lexendTextTheme(
+            Theme.of(context).textTheme,
+          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+          useMaterial3: true,
+        ),
+        home: const TopScreenView(),
+        routes: app_routes,
+      ),
+    );
   }
 }
-
-// @pragma('vm:entry-point')
-// void callbackDispatcher() {
-//   Workmanager().executeTask((task, inputData) async {
-//     log(" background task: $task"); //simpleTask will be emitted here.
-//     return Future.value(true);
-//   });
-// }
-
-
-// TODO: add / modify data in draft logs based on 
-/// - when the medicine is first time created.  (done)
-/// - when the medicine consume log is updated or reverted then we need to make changes into the draft logs (done)
-/// - when the medicine is deleted then we need to remove the draft logs related to that medicine (done)
-/// - when the medicine is modified ( schedule, dosage, time ) then we need to update the draft logs related to that medicine (done)
-
-// TODO: reschedule in splash screen, workmanager, adding / modifying medicine, modify medicine consume log (done)
-
-// TODO: when user first time open the app, read the draft logs and insert medicine consume logs which medicine was taken and then  (done in top_screen_view.dart)
-
-
-// TODO: check if there is any recursive isSynced issue when updating the draft logs and medicine consume logs.
-/// - when the medicine is marked as taken from the then it synced. 
-/// - when the medicine is marked from draft logs then it synced.

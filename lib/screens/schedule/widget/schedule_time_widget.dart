@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:medicine_app/constant/app_color.dart';
 
 class ScheduleTimeWidget extends StatefulWidget {
-  ScheduleTimeWidget(
-      {super.key,
-      required this.timeOfDay,
-      required this.time,
-      this.isChecked = false,
-      required this.showWaterWave,
-      required this.onChanged});
+  const ScheduleTimeWidget({
+    super.key,
+    required this.timeOfDay,
+    required this.time,
+    this.isChecked = false,
+    this.defaultScale = 1.4,
+    required this.showWaterWave,
+    required this.onChanged,
+  });
 
-  final String timeOfDay, time;
-  bool isChecked;
-
-  double defaultScale = 1.4;
-
+  final String timeOfDay;
+  final String time;
+  final bool isChecked;
+  final double defaultScale;
   final Function(bool) onChanged;
   final bool showWaterWave;
 
@@ -103,10 +104,6 @@ class _ScheduleTimeWidgetState extends State<ScheduleTimeWidget>
                   child: Checkbox(
                     value: widget.isChecked,
                     onChanged: (value) {
-                      setState(() {
-                        widget.isChecked = value!;
-                      });
-
                       if (value != null) {
                         widget.onChanged(value);
                       }

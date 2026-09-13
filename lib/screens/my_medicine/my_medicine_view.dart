@@ -1,129 +1,124 @@
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bounceable/flutter_bounceable.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/models/medicine_model.dart';
-import 'package:medicine_app/models/medicine_time_schedule.dart';
-import 'package:medicine_app/models/repeat_variation.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/my_medicine/specific_medicine_view.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
-import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
-class MyMedicineView extends StatefulWidget {
+class MyMedicineView extends ConsumerWidget {
   static const String routeName = '/my_medicine_view';
   const MyMedicineView({super.key});
 
   @override
-  State<MyMedicineView> createState() => _MyMedicineViewState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allMedsAsync = ref.watch(allMedicinesProvider);
+    final selectedDate = ref.watch(selectedDateProvider);
+    final specificDaysMedicines = ref.watch(medicinesForSelectedDateProvider);
 
-class _MyMedicineViewState extends State<MyMedicineView> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<MedicineViewmodels>().get_all_medicine();
-        context
-            .read<MedicineViewmodels>()
-            .get_specific_days_medicine(DateTime.now());
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    debugPrint(MediaQuery.of(context).size.width.toString());
     return Scaffold(
-      appBar:
-          commonAppBarWidget(context, title: 'My Medicine', changeIcon: true),
+      appBar: commonAppBarWidget(context, title: 'My Medicine', changeIcon: true),
       floatingActionButton: FloatingActionButton(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-          backgroundColor: AppColors.secondaryColor,
-          child: Icon(
-            Icons.add,
-            color: white,
-          ),
-          onPressed: () {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => AddNewMedicineScreen()));
-          }),
-      body: Consumer<MedicineViewmodels>(builder: (_, vm, child) {
-        if (vm.isLoading) return Center(child: CircularProgressIndicator());
-        // if (vm.errorMessage != null) {
-        //   return Center(child: Text("Error: ${vm.errorMessage}"));
-        // }
-        if (vm.medicines.isEmpty) {
-          return Center(
-            child: Text("No Medicine Found"),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
+        backgroundColor: AppColors.secondaryColor,
+        child: const Icon(
+          Icons.add,
+          color: white,
+        ),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const AddNewMedicineScreen()),
           );
-        }
-        return Column(
-          children: [
-            _dateChoose(vm),
-            if (vm.specificDaysMedicines.isEmpty)
-              Center(
-                heightFactor: 10,
-                child: Text("No Medicine Found for this date"),
+        },
+      ),
+      body: allMedsAsync.when(
+        data: (allMeds) {
+          if (allMeds.isEmpty) {
+            return const Center(
+              child: Text(
+                "No Medicine Found. Tap + to add one!",
+                style: TextStyle(color: Colors.grey, fontSize: 16),
               ),
-            Expanded(
-              child: ListView.builder(
-                itemCount: vm.specificDaysMedicines.length,
-                shrinkWrap: true,
-                itemBuilder: (BuildContext context, int index) {
-                  final medicine = vm.specificDaysMedicines[index];
+            );
+          }
 
-                  final nearestTimeLeft =
-                      getHowMuchTimeLeftToTakeNearestMedicine(medicine);
+          return Column(
+            children: [
+              _dateChoose(ref, selectedDate),
+              if (specificDaysMedicines.isEmpty)
+                const Center(
+                  heightFactor: 8,
+                  child: Text(
+                    "No Medicine Scheduled for this date",
+                    style: TextStyle(color: Colors.grey, fontSize: 15),
+                  ),
+                ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: specificDaysMedicines.length,
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    final medicine = specificDaysMedicines[index];
+                    final nearestTimeLeft = ScheduleCalculator.getTimeUntilNextDose(
+                      medicine.scheduleItems,
+                      DateTime.now(),
+                    );
 
-                  return Bounceable(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SpecificMedicineView(
-                            medicineModel: medicine,
+                    final stockIndex = ScheduleCalculator.getStockProgressIndex(
+                      availableQuantity: medicine.medicine.availableQuantity,
+                      medicineTakenCount: medicine.medicine.medicineTakenCount,
+                    );
+
+                    return Bounceable(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => SpecificMedicineView(
+                              medicineModel: medicine,
+                            ),
                           ),
-                        ),
-                      );
-                    },
-                    child: MedicineWidget(
-                        medicineName: medicine.medicineName,
+                        );
+                      },
+                      child: MedicineWidget(
+                        medicineName: medicine.medicine.medicineName,
                         timeLeft: nearestTimeLeft,
-                        lengthNeedToBeColored:
-                            getTotalProgressIndexHowMuchMedicineLeft(medicine),
+                        lengthNeedToBeColored: stockIndex,
                         index: index,
                         medicine: medicine,
-                        imagePath: medicine.imagePath),
-                  );
-                },
-              ).paddingAll(12),
-            ),
-          ],
-        );
-      }),
+                        imagePath: medicine.medicine.imagePath,
+                      ),
+                    );
+                  },
+                ).paddingAll(12),
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text("Error: $e")),
+      ),
     );
   }
 
-  EasyDateTimeLine _dateChoose(MedicineViewmodels vm) {
+  EasyDateTimeLine _dateChoose(WidgetRef ref, DateTime selectedDate) {
     return EasyDateTimeLine(
-      initialDate: DateTime.now(),
-      onDateChange: (selectedDate) {
-        vm.get_specific_days_medicine(selectedDate);
+      initialDate: selectedDate,
+      onDateChange: (date) {
+        ref.read(selectedDateProvider.notifier).state = date;
       },
       headerProps: const EasyHeaderProps(
-          monthPickerType: MonthPickerType.dropDown,
-
-          // dateFormatter: DateFormatter.fullDateDMY(),
-          showMonthPicker: true,
-          showSelectedDate: true,
-          selectedDateFormat: SelectedDateFormat.fullDateDMonthAsStrY),
-      // disabledDates: controller.getDatesFromTodayToLastDayOfMonth(),
+        monthPickerType: MonthPickerType.dropDown,
+        showMonthPicker: true,
+        showSelectedDate: true,
+        selectedDateFormat: SelectedDateFormat.fullDateDMonthAsStrY,
+      ),
       dayProps: const EasyDayProps(
         dayStructure: DayStructure.dayStrDayNum,
         activeDayStyle: DayStyle(
@@ -133,7 +128,6 @@ class _MyMedicineViewState extends State<MyMedicineView> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                // Color(0xff3371FF),
                 AppColors.secondaryColor,
                 Color(0xff8426D6),
               ],
@@ -142,91 +136,5 @@ class _MyMedicineViewState extends State<MyMedicineView> {
         ),
       ),
     );
-  }
-
-  // TODO: this function calculate the remaining time when user will take the pill / cups on nearest time..
-  getRemainingTimeToTakeNearestMedicine(MedicineModel model) {
-    switch (model.repeatVariation) {
-      case RepeatVariation.day:
-        break;
-      default:
-    }
-
-    model.medicineScheduleList;
-  }
-
-  // Calculate from how much days go and how much medicine user has taken...
-  int getTotalProgressIndexHowMuchMedicineLeft(MedicineModel model) {
-    double percentage =
-        (model.availableQuantity / model.medicineTakenCount) * 100;
-
-    int progressIndex = (percentage >= 80)
-        ? 5
-        : (percentage >= 60)
-            ? 4
-            : (percentage >= 40)
-                ? 3
-                : (percentage >= 20)
-                    ? 2
-                    : (percentage >= 1)
-                        ? 1
-                        : 0;
-
-    return progressIndex;
-  }
-
-  // get how much time left to take the next medicine
-  Duration? getHowMuchTimeLeftToTakeNearestMedicine(MedicineModel model) {
-    if (model.finalScheduleDates == null) {
-      return null;
-    }
-
-    if (_isTodayInList(model.finalScheduleDates!)) {
-      if (model.medicineScheduleList != null) {
-        log('1');
-        final result = _getTimeUntilNextSchedule(model.medicineScheduleList!);
-        log("value is $result");
-        return result;
-      }
-    }
-    log("model.medicineScheduleList is ${model.medicineScheduleList}");
-    log("returning null from getHowMuchTimeLeftToTakeNearestMedicine");
-
-    return null;
-  }
-
-  bool _isTodayInList(List<DateTime> dates) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-
-    return dates.any((date) {
-      final d = DateTime(date.year, date.month, date.day);
-      return d == today;
-    });
-  }
-
-  Duration? _getTimeUntilNextSchedule(List<ScheduleDayTime> scheduleList) {
-    final nowDateTime = DateTime.now();
-
-    // Convert TimeOfDay to today's DateTime
-    DateTime toTodayDateTime(TimeOfDay time) {
-      return DateTime(nowDateTime.year, nowDateTime.month, nowDateTime.day,
-          time.hour, time.minute);
-    }
-
-    // Filter and find upcoming times
-    final upcomingTimes = scheduleList
-        .where((s) => s.dayTime != null)
-        .map((s) => toTodayDateTime(s.dayTime!))
-        .where((dt) => dt.isAfter(nowDateTime))
-        .toList();
-
-    if (upcomingTimes.isEmpty) return null;
-
-    upcomingTimes.sort(); // sort by soonest
-
-    final nextTime = upcomingTimes.first;
-
-    return nextTime.difference(nowDateTime);
   }
 }

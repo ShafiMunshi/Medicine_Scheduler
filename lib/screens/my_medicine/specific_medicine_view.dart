@@ -1,161 +1,190 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
+import 'package:medicine_app/data/database/app_database.dart';
+import 'package:medicine_app/models/domain_models.dart';
 import 'package:medicine_app/screens/add_medicine/view/add_new_medicine_view.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/my_medicine/widget/circular_progress_widget.dart';
-import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
-import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:medicine_app/widgets/common_extension.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
-class SpecificMedicineView extends StatelessWidget {
+class SpecificMedicineView extends ConsumerWidget {
   const SpecificMedicineView({super.key, required this.medicineModel});
 
-  final MedicineModel medicineModel;
+  final MedicineWithSchedules medicineModel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch current medicine list to get live updates if updated
+    final allMeds = ref.watch(allMedicinesProvider).value ?? [];
+    final currentMed = allMeds.firstWhere(
+      (m) => m.medicine.id == medicineModel.medicine.id,
+      orElse: () => medicineModel,
+    );
+
+    final scheduledDates = ScheduleCalculator.calculateScheduledDates(
+      startDate: currentMed.medicine.startDate,
+      endDate: currentMed.medicine.endDate,
+      repeatVariation: currentMed.repeatVariationEnum,
+      repeatDays: currentMed.medicine.repeatDays,
+      weekDays: currentMed.weekDaysList,
+      monthDays: currentMed.monthDaysList,
+    );
+
+    final totalDoses = scheduledDates.length * currentMed.schedules.length;
+    final progressValue = ScheduleCalculator.getCourseProgress(
+      totalEstimatedDoses: totalDoses,
+      takenCount: currentMed.medicine.medicineTakenCount,
+    );
+
     return Scaffold(
-      appBar: commonAppBarWidget(context,
-          title: 'Details',
-          changeIcon: true,
-          iconWidget1: IconButton(
-              onPressed: () {
-                Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => AddNewMedicineScreen(
-                            existingMedicine: medicineModel)));
-              },
-              icon: Icon(Icons.edit))),
-      body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
-        if (vmMedicine.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (vmMedicine.todaysMedicines.isEmpty) {
-          return const Center(child: Text("No Medicine Found For Today"));
-        }
-
-        return Consumer<ScheduleViewmodels>(builder: (_, vmSchedule, __) {
-          if (vmSchedule.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return Container(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      appBar: commonAppBarWidget(
+        context,
+        title: 'Details',
+        changeIcon: true,
+        iconWidget1: IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddNewMedicineScreen(existingMedicine: currentMed),
+              ),
+            );
+          },
+          icon: const Icon(Icons.edit),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _medicineImgWidget(currentMed),
+            15.verticalSpace,
+            nameWidget(currentMed),
+            15.verticalSpace,
+            doseAndTypeWidget(currentMed, scheduledDates.length),
+            12.verticalSpace,
+            scheduleAndDurationWidget(context, currentMed, scheduledDates.length),
+            20.verticalSpace,
+            Row(
               children: [
-                _medicineImgWidgt(),
-                nameWidget(),
-                10.verticalSpace,
-                doseAndTypeWidget(),
-                8.verticalSpace,
-                scheduleAndDurationWidget(context),
-                10.verticalSpace,
-                Row(
-                  children: [
-                    CircularProgressWidget(
-                        dateString: medicineModel.startDate.toFormattedDate(),
-                        title: 'Progress',
-                        subTitle: 'Course Started',
-                        progressValue: getUserTakenCountProgress(medicineModel),
-                        centerText:
-                            '${(getUserTakenCountProgress(medicineModel) * 100).toInt()}%',
-                        centerSubText: 'Completed'),
-                    CircularProgressWidget(
-                        dateString: medicineModel.endDate.toFormattedDate(),
-                        title: 'Amount Left',
-                        subTitle: 'Will last until',
-                        progressValue: getUserTakenCountProgress(medicineModel),
-                        centerText:
-                            '${medicineModel.medicineTakenCount}/${medicineModel.availableQuantity}',
-                        centerSubText: 'pills left'),
-                  ],
-                )
+                CircularProgressWidget(
+                  dateString: currentMed.medicine.startDate.toFormattedDate(),
+                  title: 'Progress',
+                  subTitle: 'Course Started',
+                  progressValue: progressValue,
+                  centerText: '${(progressValue * 100).toInt()}%',
+                  centerSubText: 'Completed',
+                ),
+                10.horizontalSpace,
+                CircularProgressWidget(
+                  dateString: currentMed.medicine.endDate.toFormattedDate(),
+                  title: 'Amount Left',
+                  subTitle: 'Will last until',
+                  progressValue: progressValue,
+                  centerText:
+                      '${currentMed.medicine.medicineTakenCount}/${currentMed.medicine.availableQuantity}',
+                  centerSubText: '${currentMed.dosageUnitEnum.displayName} left',
+                ),
               ],
             ),
-          );
-        });
-      }),
-      bottomSheet: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                fixedSize: Size(double.maxFinite - 50, 50)),
-            // minimumSize: Size(double.infinity, 50),
-            child: Text(
-              "Delete Medicine",
-              style: TextStyle(color: Colors.white),
-            )),
+            40.verticalSpace,
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: () => _confirmDelete(context, ref, currentMed.medicine.id),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text(
+                  "Delete Medicine",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Align nameWidget() {
+  void _confirmDelete(BuildContext context, WidgetRef ref, int id) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Medicine'),
+        content: const Text('Are you sure you want to delete this medicine and cancel all its scheduled reminders?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await ref.read(medicineControllerProvider.notifier).deleteMedicine(id);
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Align nameWidget(MedicineWithSchedules med) {
     return Align(
       alignment: Alignment.center,
       child: Text(
-        medicineModel.medicineName,
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        med.medicine.medicineName,
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       ),
     );
   }
 
-  double getUserTakenCountProgress(MedicineModel medicineModel) {
-    try {
-      final estimatedCount = (medicineModel.medicineScheduleList?.length ?? 0) *
-          (medicineModel.finalScheduleDates?.length ?? 0);
-
-      final takenCount = medicineModel.medicineTakenCount;
-
-      // Calculate actual progress percentage
-      final progress = estimatedCount > 0
-          ? (takenCount / estimatedCount).clamp(0.0, 1.0)
-          : 0.0;
-
-      final roundedProgress = double.parse(progress.toStringAsFixed(2));
-      return roundedProgress;
-    } catch (e) {
-      log("error: $e");
-      throw Exception('Failed to get user taken count $e');
-    }
-  }
-
-  Row scheduleAndDurationWidget(BuildContext context) {
+  Row scheduleAndDurationWidget(
+      BuildContext context, MedicineWithSchedules med, int totalDays) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Icon(Icons.alarm_add, size: 20),
+            const Icon(Icons.alarm_add, size: 20),
             10.horizontalSpace,
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Schedule", style: secondaryTextStyle()),
                 3.verticalSpace,
-                ...getScheduleString(context).map((time) => Text(time))
+                ...getScheduleString(context, med).map((time) => Text(time)),
               ],
             ),
           ],
         ),
         Row(
           children: [
-            Icon(Icons.alarm_sharp, size: 20),
+            const Icon(Icons.alarm_sharp, size: 20),
             10.horizontalSpace,
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Duration", style: secondaryTextStyle()),
                 3.verticalSpace,
-                Text(countTotalDays()),
+                Text(countTotalDays(totalDays)),
               ],
             ),
           ],
@@ -164,34 +193,34 @@ class SpecificMedicineView extends StatelessWidget {
     );
   }
 
-  Row doseAndTypeWidget() {
+  Row doseAndTypeWidget(MedicineWithSchedules med, int totalDays) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
           children: [
-            Icon(Icons.category, size: 20),
+            const Icon(Icons.category, size: 20),
             10.horizontalSpace,
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Medicine Type", style: secondaryTextStyle()),
                 3.verticalSpace,
-                Text(getMedicineTypeString(medicineModel.dosageUnit)),
+                Text(med.dosageUnitEnum == DosageUnit.pcs ? 'Tablet' : 'Syrup'),
               ],
             ),
           ],
         ),
         Row(
           children: [
-            Icon(Icons.donut_small_sharp, size: 20),
+            const Icon(Icons.donut_small_sharp, size: 20),
             10.horizontalSpace,
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Dose    ", style: secondaryTextStyle()),
+                Text("Dose", style: secondaryTextStyle()),
                 3.verticalSpace,
-                Text(getDoseString()),
+                Text('${med.medicine.dosage} ${med.dosageUnitEnum.displayName}'),
               ],
             ),
           ],
@@ -200,7 +229,9 @@ class SpecificMedicineView extends StatelessWidget {
     );
   }
 
-  Align _medicineImgWidgt() {
+  Align _medicineImgWidget(MedicineWithSchedules med) {
+    final imagePath = med.medicine.imagePath;
+
     return Align(
       alignment: Alignment.center,
       child: Stack(
@@ -211,23 +242,20 @@ class SpecificMedicineView extends StatelessWidget {
             backgroundColor: AppColors.secondaryColor,
             child: CircleAvatar(
               radius: 68.r,
-              backgroundImage: AssetImage(
-                getRandomMedicineImage(0),
-              ),
+              backgroundImage: imagePath != null && File(imagePath).existsSync()
+                  ? FileImage(File(imagePath)) as ImageProvider
+                  : const AssetImage('assets/images/medicine_1.png'),
             ),
           ),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 7.0),
             decoration: BoxDecoration(
               color: AppColors.secondaryColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              medicineModel.mealTiming == MealTiming.before
-                  ? 'Before meal'
-                  : 'After meal',
-              style: TextStyle(color: Colors.white, fontSize: 14),
+              med.mealTimingEnum.displayName,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
             ),
           ),
         ],
@@ -235,58 +263,18 @@ class SpecificMedicineView extends StatelessWidget {
     );
   }
 
-  String getRandomMedicineImage(int index) {
-    final rand = index % 3 + 1;
-    return 'assets/images/medicine_$rand.png';
+  List<String> getScheduleString(BuildContext context, MedicineWithSchedules med) {
+    if (med.schedules.isEmpty) return ['No Schedule'];
+    return med.schedules.map((s) {
+      final tod = TimeOfDay(hour: s.hour, minute: s.minute);
+      return formatTimeOfDayTo12Hour(tod, context);
+    }).toList();
   }
 
-  String getMedicineTypeString(DosageUnit type) {
-    switch (type) {
-      case DosageUnit.pcs:
-        return 'Tablet';
-      case DosageUnit.cup:
-        return 'Syrup';
-      // case MedicineType.syrup:
-      //   return 'Syrup';
-      // case MedicineType.injection:
-      //   return 'Injection';
-      // case MedicineType.ointment:
-      //   return 'Ointment';
-      default:
-        return 'Unknown';
-    }
-  }
-
-  String getDoseString() {
-    final dosage = medicineModel.dosage;
-    final unit = getMedicineTypeString(medicineModel.dosageUnit);
-    final durationStrLen = countTotalDays().length;
-
-    final doseString = '$dosage $unit';
-
-    if (doseString.length < durationStrLen) {
-      return doseString + ' ' * (durationStrLen - doseString.length + 7);
-    }
-    return doseString;
-  }
-
-  List<String> getScheduleString(BuildContext context) {
-    final scheduleList = medicineModel.medicineScheduleList;
-    if (scheduleList == null || scheduleList.isEmpty) return ['No Schedule'];
-
-    return scheduleList
-        .map((time) =>
-            formatTimeOfDayTo12Hour(time.dayTime ?? TimeOfDay.now(), context))
-        .toList();
-  }
-
-  String countTotalDays() {
-    final totalDays = medicineModel.finalScheduleDates?.length ?? 0;
-
+  String countTotalDays(int totalDays) {
     if (totalDays > 30) {
       final months = totalDays ~/ 30;
       final remainingDays = totalDays % 30;
-
       if (remainingDays == 0) {
         return months == 1 ? '1 month' : '$months months';
       } else {
@@ -295,7 +283,6 @@ class SpecificMedicineView extends StatelessWidget {
             : '$months months $remainingDays days';
       }
     }
-
     return '$totalDays days';
   }
 }

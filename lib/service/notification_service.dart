@@ -1,532 +1,381 @@
+import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 
-import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:flutter/material.dart';
-import 'package:medicine_app/main.dart';
-import 'package:medicine_app/models/medicine_model.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
+import 'package:medicine_app/data/database/app_database.dart';
+import 'package:medicine_app/data/repositories/medicine_log_repository.dart';
+import 'package:medicine_app/models/domain_models.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
+
+/// Top-level background notification action handler (invoked when app is terminated/backgrounded).
+@pragma('vm:entry-point')
+void notificationTapBackground(NotificationResponse notificationResponse) async {
+  log('Notification tapped in background: action=${notificationResponse.actionId}, payload=${notificationResponse.payload}');
+
+  final payloadStr = notificationResponse.payload;
+  if (payloadStr == null) return;
+
+  try {
+    final Map<String, dynamic> data = jsonDecode(payloadStr);
+    final medicineId = data['medicineId'] as int?;
+    final scheduleId = data['scheduleId'] as int?;
+    final scheduledDateStr = data['scheduledDateTime'] as String?;
+    final dosage = data['dosage'] as int? ?? 1;
+
+    if (medicineId != null && scheduledDateStr != null) {
+      final scheduledDateTime = DateTime.parse(scheduledDateStr);
+      final db = AppDatabase();
+      final logRepo = DriftMedicineLogRepository(db);
+
+      if (notificationResponse.actionId == 'TAKE_ACTION') {
+        await logRepo.markDose(
+          medicineId: medicineId,
+          scheduleId: scheduleId,
+          scheduledDateTime: scheduledDateTime,
+          status: ConsumptionStatus.taken,
+          dosageTaken: dosage,
+        );
+        log('Background: Marked dose as TAKEN for medicine $medicineId at $scheduledDateTime');
+      } else if (notificationResponse.actionId == 'SKIP_ACTION') {
+        await logRepo.markDose(
+          medicineId: medicineId,
+          scheduleId: scheduleId,
+          scheduledDateTime: scheduledDateTime,
+          status: ConsumptionStatus.skipped,
+          dosageTaken: dosage,
+        );
+        log('Background: Marked dose as SKIPPED for medicine $medicineId at $scheduledDateTime');
+      }
+
+      await db.close();
+    }
+  } catch (e, stack) {
+    log('Error handling background notification response: $e\n$stack');
+  }
+}
 
 class NotificationService {
-  static Future<void> sendScheduleNotification({
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  static const String _channelId = 'medicine_reminders';
+  static const String _channelName = 'Medicine Reminders';
+  static const String _channelDescription =
+      'Notifications for scheduled medicine intake';
+
+  static bool _isInitialized = false;
+
+  /// Initializes timezone data, notification channels, and platform settings.
+  static Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    // 1. Initialize timezone database
+    tz.initializeTimeZones();
+    try {
+      final String currentTimeZone = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(currentTimeZone));
+      log('Timezone initialized to: $currentTimeZone');
+    } catch (e) {
+      log('Could not obtain device local timezone, defaulting to UTC: $e');
+      tz.setLocalLocation(tz.UTC);
+    }
+
+    // 2. Initialization settings for Android, iOS, macOS, Linux
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/launcher_icon');
+
+    const DarwinInitializationSettings darwinSettings =
+        DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+
+    const LinuxInitializationSettings linuxSettings =
+        LinuxInitializationSettings(defaultActionName: 'Open notification');
+
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: darwinSettings,
+      macOS: darwinSettings,
+      linux: linuxSettings,
+    );
+
+    await _notificationsPlugin.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        log('Foreground notification response received: ${response.actionId}');
+        notificationTapBackground(response);
+      },
+      onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
+    );
+
+    // 3. Create Android notification channel
+    if (Platform.isAndroid) {
+      final androidNotificationPlugin =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidNotificationPlugin != null) {
+        const AndroidNotificationChannel channel = AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: _channelDescription,
+          importance: Importance.max,
+          playSound: true,
+          enableVibration: true,
+        );
+
+        await androidNotificationPlugin.createNotificationChannel(channel);
+      }
+    }
+
+    _isInitialized = true;
+    log('NotificationService initialized successfully.');
+  }
+
+  /// Requests notification and exact alarm permissions from the user.
+  static Future<bool> requestPermissions() async {
+    if (Platform.isAndroid) {
+      final androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidImplementation != null) {
+        // Request standard notification permission (Android 13+)
+        final notifGranted =
+            await androidImplementation.requestNotificationsPermission();
+
+        // Request exact alarm permission (Android 12+)
+        final exactGranted =
+            await androidImplementation.requestExactAlarmsPermission();
+
+        log('Android Permissions: notifications=$notifGranted, exactAlarms=$exactGranted');
+        return notifGranted ?? true;
+      }
+    } else if (Platform.isIOS) {
+      final iosImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin>();
+
+      if (iosImplementation != null) {
+        final granted = await iosImplementation.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        log('iOS Permissions granted: $granted');
+        return granted ?? false;
+      }
+    } else if (Platform.isMacOS) {
+      final macOSImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              MacOSFlutterLocalNotificationsPlugin>();
+
+      if (macOSImplementation != null) {
+        final granted = await macOSImplementation.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        log('macOS Permissions granted: $granted');
+        return granted ?? false;
+      }
+    }
+
+    return true;
+  }
+
+  /// Checks/requests exact alarm permission on this device (Android 12+).
+  static Future<bool> canScheduleExactAlarms() async {
+    if (Platform.isAndroid) {
+      final androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        return await androidImplementation.requestExactAlarmsPermission() ?? true;
+      }
+    }
+    return true;
+  }
+
+  /// Schedules a single exact notification.
+  static Future<void> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
-    Map<String, String>? payload,
+    required Map<String, dynamic> payload,
   }) async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    log("is Notification sending is allowed: $isAllowed");
-    if (!isAllowed) isAllowed = await displayNotificationRationale();
-    if (!isAllowed) return;
     try {
-      await AwesomeNotifications().createNotification(
-        content: NotificationContent(
-          id: id,
-          channelKey: 'scheduled_channel',
-          payload: payload,
-          title: title,
-          body: body,
-          category: NotificationCategory.Reminder,
-          notificationLayout: NotificationLayout.Default,
-          wakeUpScreen: true,
-          fullScreenIntent: false,
-          autoDismissible: true,
-          backgroundColor: Colors.blue,
+      final tzDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
 
-          // Custom sound (optional)
-          customSound: 'resource://raw/notification_sound',
-        ),
-        actionButtons: [
-          NotificationActionButton(
-            key: 'TAKING',
-            label: 'Taking',
-            color: Colors.green,
-            autoDismissible: true,
+      final androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
+        importance: Importance.max,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        category: AndroidNotificationCategory.reminder,
+        actions: const [
+          AndroidNotificationAction(
+            'TAKE_ACTION',
+            'Take',
+            showsUserInterface: false,
+            cancelNotification: true,
           ),
-          NotificationActionButton(
-            key: 'SKIP',
-            label: 'Skip Now',
-            color: Colors.red,
-            autoDismissible: true,
-          ),
-          NotificationActionButton(
-            key: 'SNOOZE',
-            label: 'Snooze',
-            color: Colors.orange,
-            autoDismissible: false,
+          AndroidNotificationAction(
+            'SKIP_ACTION',
+            'Skip',
+            showsUserInterface: false,
+            cancelNotification: true,
           ),
         ],
-        schedule: NotificationCalendar(
-          year: scheduledDate.year,
-          month: scheduledDate.month,
-          day: scheduledDate.day,
-          hour: scheduledDate.hour,
-          minute: scheduledDate.minute,
-          second: 0,
-          millisecond: 0,
-          repeats: false,
-        ),
       );
-    } catch (e) {
-      log("Error scheduling notification: $e");
-      throw Exception(e);
-    }
-  }
 
-  static ReceivedAction? initialAction;
+      const darwinDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        interruptionLevel: InterruptionLevel.timeSensitive,
+      );
 
-  static Future<void> initializeNotifications() async {
-    await AwesomeNotifications().initialize(
-        null, // Use default app icon
-        [
-          NotificationChannel(
-            channelKey: 'scheduled_channel',
-            channelName: 'Scheduled Notifications',
-            channelDescription:
-                'Channel for scheduled notifications with actions',
-            defaultColor: Color(0xFF9D50DD),
-            ledColor: Colors.white,
-            importance: NotificationImportance.High,
-            channelShowBadge: true,
-            playSound: true,
-            enableVibration: true,
-          ),
-        ],
-        debug: true);
+      final notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: darwinDetails,
+        macOS: darwinDetails,
+      );
 
-    // Get initial notification action is optional
-    initialAction = await AwesomeNotifications()
-        .getInitialNotificationAction(removeFromActionEvents: false);
+      await _notificationsPlugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tzDateTime,
+        notificationDetails,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: jsonEncode(payload),
+      );
 
-    // Request notification permissions
-    await requestNotificationPermissions();
-
-    // Listen for notification actions
-    AwesomeNotifications().setListeners(
-      onActionReceivedMethod: _onActionReceivedMethod,
-      onDismissActionReceivedMethod: _onDismissActionReceivedMethod,
-    );
-  }
-
-  // Request notification permissions
-  static Future<void> requestNotificationPermissions() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
-    if (!isAllowed) {
-      await AwesomeNotifications().requestPermissionToSendNotifications();
-    }
-  }
-
-  @pragma("vm:entry-point")
-  static Future<void> _onActionReceivedMethod(
-      ReceivedAction receivedAction) async {
-    log('Notification ID: ${receivedAction.id}');
-
-    // final int medicineId = int.parse(receivedAction.payload!['medicineId']!);
-    // final String scheduled = receivedAction.payload!['scheduledDateTime']!;
-    // final int dosage = int.parse(receivedAction.payload!['dosage']!);
-    // final String medicineName = receivedAction.payload!['medicineName']!;
-    // final bool isSynced = receivedAction.payload!['isSynced'] == 'true';
-
-    // final status = receivedAction.buttonKeyPressed == "TAKING"
-    //     ? ConsumptionStatus.taken
-    //     : ConsumptionStatus.skipped;
-
-    // final medicineLog = MedicineDraftLog(
-    //   isSynced: isSynced,
-    //   medicineName: medicineName,
-    //   medicineId: medicineId,
-    //   scheduledDateTime: DateTime.parse(scheduled),
-    //   actualTakenTime: null,
-    //   status: status,
-    //   dosage: dosage,
-    // );
-
-    // switch (receivedAction.buttonKeyPressed) {
-    //   case 'TAKING':
-    //     log('Taking');
-    //     final updatedLog = medicineLog.copyWith(
-    //       status: ConsumptionStatus.taken,
-    //       actualTakenTime: DateTime.now(),
-    //     );
-    //     await DraftFileService.updateLog(updatedLog);
-    //     break;
-    //   case 'SKIP':
-    //     log('Skipped');
-    //     final updatedLog = medicineLog.copyWith(
-    //       status: ConsumptionStatus.skipped,
-    //       actualTakenTime: DateTime.now(),
-    //     );
-    //     // await DraftFileService.updateLog(updatedLog);
-    //     break;
-    //   case 'SNOOZE':
-    //     log('User snoozed the notification');
-
-    //     // Reschedule notification for 5 minutes later
-    //     final rescheduledDate = DateTime.now().add(Duration(minutes: 5));
-    //     await sendScheduleNotification(
-    //         id: receivedAction.id!,
-    //         title: receivedAction.title!,
-    //         body: "Did you take your medicine?",
-    //         scheduledDate: rescheduledDate,
-    //         payload: medicineLog.toPayload());
-    //     break;
-    // }
-  }
-
-  /// This method is called when a notification is dismissed
-  @pragma("vm:entry-point")
-  static Future<void> _onDismissActionReceivedMethod(
-      ReceivedAction receivedAction) async {
-    log('Notification dismissed: ${receivedAction.id}');
-  }
-
-  // Cancel all notifications
-  static Future<void> _cancelAllNotifications() async {
-    await AwesomeNotifications().cancelAll();
-  }
-
-  // Get scheduled notifications
-  static Future<void> getScheduledNotifications() async {
-    List<NotificationModel> scheduledNotifications =
-        await AwesomeNotifications().listScheduledNotifications();
-
-    log('Scheduled notifications: ${scheduledNotifications.length}');
-    for (var notification in scheduledNotifications) {
-      log('ID: ${notification.content!.id}, Title: ${notification.content!.title}');
-    }
-  }
-
-  /// this function is used to reschedule all medicine notifications by checking the draft logs which is not taken yet and from current time to next 48 hours
-  static Future<void> reschedule_all_medicine_notification_for_next_48_hours(
-      List<MedicineModel> medicineLogs) async {
-    log("Rescheduling all medicine notifications for next 48 hours");
-
-    final currentTime = DateTime.now();
-    final next48Hours = currentTime.add(Duration(hours: 48));
-
-    await _cancelAllNotifications();
-
-    // Analyze all medicine times and create smart notification schedule
-    final optimalNotificationTimes =
-        _analyzeOptimalNotificationTimes(medicineLogs);
-
-    // Schedule smart reminder notifications for next 2 days
-    await _scheduleSmartReminders(optimalNotificationTimes, medicineLogs);
-
-    int idCounter = 1000; // Start with higher ID to avoid conflicts
-
-    for (var mediLog in medicineLogs) {
-      final scheduledDateTime = mediLog.finalScheduleDates;
-      final scheduleList = mediLog.medicineScheduleList;
-
-      if (scheduledDateTime != null && scheduleList != null) {
-        for (var date in scheduledDateTime) {
-          // Only schedule for next 48 hours
-          if (date.isAfter(currentTime) && date.isBefore(next48Hours)) {
-            for (var schedule in scheduleList) {
-              if (schedule.timeString != null) {
-                final timeParts = schedule.timeString!.split(':');
-                if (timeParts.length == 2) {
-                  final hour = int.tryParse(timeParts[0]);
-                  final minute = int.tryParse(timeParts[1]);
-
-                  if (hour != null && minute != null) {
-                    final scheduledTime =
-                        DateTime(date.year, date.month, date.day, hour, minute);
-
-                    if (scheduledTime.isAfter(currentTime)) {
-                      idCounter++;
-                      log("Scheduling medicine notification: ID $idCounter for ${mediLog.medicineName} at $scheduledTime");
-
-                      await sendScheduleNotification(
-                        id: idCounter,
-                        title: "Time for ${mediLog.medicineName}",
-                        body:
-                            "It's time to take your ${mediLog.medicineName}. Dosage: ${mediLog.dosage} ${mediLog.dosageUnit.name}",
-                        scheduledDate: scheduledTime,
-                        payload: {
-                          'medicineId': mediLog.id?.toString() ?? '0',
-                          'medicineName': mediLog.medicineName,
-                          'dosage': mediLog.dosage.toString(),
-                          'scheduledDateTime': scheduledTime.toIso8601String(),
-                          'dayTimeName': schedule.dayTimeName ?? '',
-                        },
-                      );
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+      if (kDebugMode) {
+        log('Scheduled notification ID $id for $scheduledDate ($title)');
       }
+    } catch (e, stack) {
+      log('Failed to schedule notification $id: $e\n$stack');
     }
   }
 
-  /// Analyzes all medicine schedules and determines the best times for general reminders
-  static List<TimeOfDay> _analyzeOptimalNotificationTimes(
-      List<MedicineModel> medicines) {
-    final Map<String, int> timeFrequency = {};
+  /// Reschedules all upcoming medicine notifications for the next 7 days.
+  /// Cancels all existing notifications first to ensure no orphan or duplicate alarms exist.
+  static Future<void> rescheduleAllActiveMedicines(
+      List<MedicineWithSchedules> medicines) async {
+    try {
+      log('Rescheduling all active medicine reminders for ${medicines.length} medicines...');
 
-    // Count frequency of each time across all medicines
-    for (var medicine in medicines) {
-      if (medicine.medicineScheduleList != null) {
-        for (var schedule in medicine.medicineScheduleList!) {
-          if (schedule.timeString != null) {
-            timeFrequency[schedule.timeString!] =
-                (timeFrequency[schedule.timeString!] ?? 0) + 1;
-          }
-        }
-      }
-    }
+      // Cancel all current scheduled notifications
+      await _notificationsPlugin.cancelAll();
 
-    // Sort times by frequency and convert to TimeOfDay
-    final sortedTimes = timeFrequency.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      final now = DateTime.now();
+      final lookAheadDays = 7; // Schedule 7 days ahead offline
 
-    final optimalTimes = <TimeOfDay>[];
-
-    for (var entry in sortedTimes.take(4)) {
-      // Take top 4 most common times
-      final timeParts = entry.key.split(':');
-      if (timeParts.length == 2) {
-        final hour = int.tryParse(timeParts[0]);
-        final minute = int.tryParse(timeParts[1]);
-        if (hour != null && minute != null) {
-          optimalTimes.add(TimeOfDay(hour: hour, minute: minute));
-        }
-      }
-    }
-
-    // If we don't have enough times, add default reminder times
-    if (optimalTimes.isEmpty) {
-      optimalTimes.addAll([
-        const TimeOfDay(hour: 8, minute: 0), // Morning
-        const TimeOfDay(hour: 13, minute: 0), // Afternoon
-        const TimeOfDay(hour: 18, minute: 0), // Evening
-        const TimeOfDay(hour: 21, minute: 0), // Night
-      ]);
-    } else if (optimalTimes.length < 4) {
-      // Fill remaining slots with strategic times
-      final defaultTimes = [
-        const TimeOfDay(hour: 8, minute: 0),
-        const TimeOfDay(hour: 13, minute: 0),
-        const TimeOfDay(hour: 18, minute: 0),
-        const TimeOfDay(hour: 21, minute: 0),
-      ];
-
-      for (var defaultTime in defaultTimes) {
-        if (optimalTimes.length >= 4) break;
-
-        // Check if this time is not too close to existing times
-        bool tooClose = optimalTimes.any((existingTime) {
-          final diff = (existingTime.hour * 60 + existingTime.minute) -
-              (defaultTime.hour * 60 + defaultTime.minute);
-          return diff.abs() < 120; // Less than 2 hours apart
-        });
-
-        if (!tooClose) {
-          optimalTimes.add(defaultTime);
-        }
-      }
-    }
-
-    // Sort by time of day
-    optimalTimes.sort((a, b) {
-      final aMinutes = a.hour * 60 + a.minute;
-      final bMinutes = b.hour * 60 + b.minute;
-      return aMinutes.compareTo(bMinutes);
-    });
-
-    log("Optimal notification times identified: ${optimalTimes.map((t) => '${t.hour}:${t.minute.toString().padLeft(2, '0')}').join(', ')}");
-
-    return optimalTimes;
-  }
-
-  /// Schedules smart reminder notifications at optimal times for next 2 days
-  static Future<void> _scheduleSmartReminders(
-      List<TimeOfDay> optimalTimes, List<MedicineModel> medicines) async {
-    final currentTime = DateTime.now();
-    final today =
-        DateTime(currentTime.year, currentTime.month, currentTime.day);
-
-    int reminderIdStart = 5000; // Use different ID range for reminders
-
-    // Get total count of medicines that user should take
-    final activeMedicineCount = medicines
-        .where((m) =>
-            m.finalScheduleDates != null &&
-            m.finalScheduleDates!.any((date) =>
-                date.isAfter(currentTime.subtract(Duration(days: 1)))))
-        .length;
-
-    // Schedule for today and tomorrow
-    for (int dayOffset = 0; dayOffset <= 1; dayOffset++) {
-      final targetDate = today.add(Duration(days: dayOffset));
-
-      for (int timeIndex = 0; timeIndex < optimalTimes.length; timeIndex++) {
-        final time = optimalTimes[timeIndex];
-        final reminderDateTime = DateTime(
-          targetDate.year,
-          targetDate.month,
-          targetDate.day,
-          time.hour,
-          time.minute,
+      for (var med in medicines) {
+        final scheduleDates = ScheduleCalculator.calculateScheduledDates(
+          startDate: med.medicine.startDate,
+          endDate: med.medicine.endDate,
+          repeatVariation: med.repeatVariationEnum,
+          repeatDays: med.medicine.repeatDays,
+          weekDays: med.weekDaysList,
+          monthDays: med.monthDaysList,
         );
 
-        // Only schedule future notifications
-        if (reminderDateTime.isAfter(currentTime.add(Duration(minutes: 5)))) {
-          final reminderId = reminderIdStart + (dayOffset * 10) + timeIndex;
+        if (scheduleDates.isEmpty || med.schedules.isEmpty) continue;
 
-          // Create contextual reminder message
-          final timeLabel = _getTimeLabel(time);
-          final medicinesDueCount =
-              _countMedicinesDueAroundTime(medicines, targetDate, time);
+        for (int dayOffset = 0; dayOffset < lookAheadDays; dayOffset++) {
+          final targetDate = DateTime(now.year, now.month, now.day + dayOffset);
 
-          String reminderTitle;
-          String reminderBody;
+          // Check if this date is part of the medicine's scheduled dates
+          final isScheduledToday = scheduleDates.any((d) =>
+              d.year == targetDate.year &&
+              d.month == targetDate.month &&
+              d.day == targetDate.day);
 
-          if (medicinesDueCount > 0) {
-            reminderTitle = "$timeLabel Medicine Reminder";
-            reminderBody =
-                "You have $medicinesDueCount medicine(s) to take around this time. Don't forget to stay healthy! 💊";
-          } else {
-            reminderTitle = "Health Check-in";
-            reminderBody =
-                "How are you feeling $timeLabel? Remember to take your medicines on time! 🌟";
-          }
+          if (!isScheduledToday) continue;
 
-          log("Scheduling smart reminder: ID $reminderId at $reminderDateTime - $reminderTitle");
+          for (final schedule in med.schedules) {
+            final scheduledTime = DateTime(
+              targetDate.year,
+              targetDate.month,
+              targetDate.day,
+              schedule.hour,
+              schedule.minute,
+            );
 
-          await sendScheduleNotification(
-            id: reminderId,
-            title: reminderTitle,
-            body: reminderBody,
-            scheduledDate: reminderDateTime,
-            payload: {
-              'type': 'smart_reminder',
-              'timeLabel': timeLabel,
-              'medicineCount': activeMedicineCount.toString(),
-              'dueCount': medicinesDueCount.toString(),
-            },
-          );
-        }
-      }
-    }
-  }
+            // Only schedule if the time is in the future
+            if (scheduledTime.isAfter(now)) {
+              final notificationId = ScheduleCalculator.generateNotificationId(
+                med.medicine.id,
+                schedule.id,
+                scheduledTime,
+              );
 
-  /// Gets a friendly label for the time of day
-  static String _getTimeLabel(TimeOfDay time) {
-    final hour = time.hour;
-    if (hour >= 5 && hour < 12) return "Morning";
-    if (hour >= 12 && hour < 17) return "Afternoon";
-    if (hour >= 17 && hour < 21) return "Evening";
-    return "Night";
-  }
-
-  /// Counts how many medicines are due within 2 hours of the given time
-  static int _countMedicinesDueAroundTime(
-      List<MedicineModel> medicines, DateTime date, TimeOfDay targetTime) {
-    int count = 0;
-    final targetMinutes = targetTime.hour * 60 + targetTime.minute;
-
-    for (var medicine in medicines) {
-      if (medicine.finalScheduleDates != null &&
-          medicine.medicineScheduleList != null) {
-        // Check if medicine is scheduled for this date
-        final isScheduledToday = medicine.finalScheduleDates!.any(
-            (scheduleDate) =>
-                scheduleDate.year == date.year &&
-                scheduleDate.month == date.month &&
-                scheduleDate.day == date.day);
-
-        if (isScheduledToday) {
-          // Check if any medicine time is within 2 hours of target time
-          for (var schedule in medicine.medicineScheduleList!) {
-            if (schedule.timeString != null) {
-              final timeParts = schedule.timeString!.split(':');
-              if (timeParts.length == 2) {
-                final hour = int.tryParse(timeParts[0]);
-                final minute = int.tryParse(timeParts[1]);
-                if (hour != null && minute != null) {
-                  final scheduleMinutes = hour * 60 + minute;
-                  final timeDiff = (scheduleMinutes - targetMinutes).abs();
-
-                  // Within 2 hours (120 minutes)
-                  if (timeDiff <= 120) {
-                    count++;
-                    break; // Count each medicine only once per reminder time
-                  }
-                }
-              }
+              await scheduleNotification(
+                id: notificationId,
+                title: 'Time for ${med.medicine.medicineName}',
+                body:
+                    'Take ${med.medicine.dosage} ${med.dosageUnitEnum.displayName} (${med.mealTimingEnum.displayName})',
+                scheduledDate: scheduledTime,
+                payload: {
+                  'medicineId': med.medicine.id,
+                  'scheduleId': schedule.id,
+                  'medicineName': med.medicine.medicineName,
+                  'dosage': med.medicine.dosage,
+                  'scheduledDateTime': scheduledTime.toIso8601String(),
+                },
+              );
             }
           }
         }
       }
-    }
 
-    return count;
+      log('Finished rescheduling notifications.');
+    } catch (e) {
+      log('NotificationService: rescheduleAllActiveMedicines skipped or failed (likely test environment): $e');
+    }
   }
 
-  ///  *********************************************
-  ///     REQUESTING NOTIFICATION PERMISSIONS
-  ///  *********************************************
-  ///
-  static Future<bool> displayNotificationRationale() async {
-    bool userAuthorized = false;
-    BuildContext context = MyApp.navigatorKey.currentContext!;
-    await showDialog(
-        context: context,
-        builder: (BuildContext ctx) {
-          return AlertDialog(
-            title: Text('Get Notified!',
-                style: Theme.of(context).textTheme.titleLarge),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Image.asset(
-                        'assets/images/animated-bell.gif',
-                        height: MediaQuery.of(context).size.height * 0.3,
-                        fit: BoxFit.fitWidth,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                    'Allow Awesome Notifications to send you beautiful notifications!'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                  },
-                  child: Text(
-                    'Deny',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(color: Colors.red),
-                  )),
-              TextButton(
-                  onPressed: () async {
-                    userAuthorized = true;
-                    Navigator.of(ctx).pop();
-                  },
-                  child: Text(
-                    'Allow',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(color: Colors.deepPurple),
-                  )),
-            ],
-          );
-        });
-    return userAuthorized &&
-        await AwesomeNotifications().requestPermissionToSendNotifications();
+  /// Cancels a specific notification by ID.
+  static Future<void> cancel(int notificationId) async {
+    try {
+      await _notificationsPlugin.cancel(notificationId);
+    } catch (e) {
+      log('NotificationService.cancel failed: $e');
+    }
+  }
+
+  /// Cancels all notifications.
+  static Future<void> cancelAll() async {
+    try {
+      await _notificationsPlugin.cancelAll();
+    } catch (e) {
+      log('NotificationService.cancelAll failed: $e');
+    }
+  }
+
+  /// Returns a list of all currently scheduled pending notifications.
+  static Future<List<PendingNotificationRequest>> getPendingNotifications() async {
+    try {
+      return await _notificationsPlugin.pendingNotificationRequests();
+    } catch (e) {
+      log('NotificationService.getPendingNotifications failed: $e');
+      return [];
+    }
   }
 }

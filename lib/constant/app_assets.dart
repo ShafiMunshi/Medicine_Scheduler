@@ -28,7 +28,7 @@ class AppAssets {
   static const String medicine1 = 'assets/image/medicine_1.png';
 }
 
-extension on String {
+extension AppAssetExtension on String {
   String get png => 'assets/icons/$this.png';
   String get svg => 'assets/icons/$this.svg';
 }
