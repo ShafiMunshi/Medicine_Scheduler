@@ -62,7 +62,7 @@ class SettingsView extends ConsumerWidget {
                         Text(
                           currentFbUser != null
                               ? (currentFbUser.displayName ?? 'Signed In')
-                              : 'Offline / Guest Mode',
+                              : 'Not Signed In',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -71,8 +71,8 @@ class SettingsView extends ConsumerWidget {
                         2.verticalSpace,
                         Text(
                           currentFbUser != null
-                              ? (currentFbUser.email ?? 'Firebase Account')
-                              : 'Sign in to sync with caregiver',
+                              ? (currentFbUser.email ?? 'Active Account')
+                              : 'Sign in to use Medicine Scheduler',
                           style: TextStyle(
                             fontSize: 12,
                             color: Colors.grey.shade600,
@@ -86,13 +86,24 @@ class SettingsView extends ConsumerWidget {
                       onPressed: () async {
                         await ref.read(authControllerProvider.notifier).signOut();
                         toast('Signed out');
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(
+                            context,
+                            SignWithEmailInScreen.routeName,
+                            (route) => false,
+                          );
+                        }
                       },
                       child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
                     )
                   else
                     ElevatedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, SignWithEmailInScreen.routeName);
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          SignWithEmailInScreen.routeName,
+                          (route) => false,
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryColor,

@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/firebase_options.dart';
 import 'package:medicine_app/routes.dart';
+import 'package:medicine_app/screens/auth/auth_gate.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
 
@@ -63,7 +64,7 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
-        home: const TopScreenView(),
+        home: const AuthGate(),
         routes: app_routes,
       ),
     );

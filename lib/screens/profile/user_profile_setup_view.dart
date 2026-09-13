@@ -179,15 +179,17 @@ class _UserProfileSetupViewState extends ConsumerState<UserProfileSetupView> {
     final profileState = ref.watch(profileControllerProvider);
     final isLoading = profileState.isLoading;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.isInitialSetup ? 'Complete Profile' : 'Edit Health Profile',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+    return PopScope(
+      canPop: !widget.isInitialSetup,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(
+            widget.isInitialSetup ? 'Complete Profile' : 'Edit Health Profile',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          automaticallyImplyLeading: !widget.isInitialSetup,
         ),
-        centerTitle: true,
-        automaticallyImplyLeading: !widget.isInitialSetup,
-      ),
       bottomNavigationBar: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -524,7 +526,8 @@ class _UserProfileSetupViewState extends ConsumerState<UserProfileSetupView> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader({

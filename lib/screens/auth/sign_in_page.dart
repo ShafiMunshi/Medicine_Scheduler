@@ -118,30 +118,13 @@ class _SignWithEmailInScreenState extends ConsumerState<SignWithEmailInScreen> {
         showLeadingIcon: false,
       ),
       bottomNavigationBar: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CommonButton(
-              buttonText: _isSigningIn ? "Signing In..." : "Sign In",
-              width: MediaQuery.of(context).size.width,
-              onTap: _isSigningIn ? null : _signInWithEmail,
-            ).paddingSymmetric(horizontal: 16, vertical: 8),
-            TextButton(
-              onPressed: () {
-                // Continue offline without signing in
-                Navigator.pushReplacementNamed(context, TopScreenView.routeName);
-              },
-              child: const Text(
-                "Continue Offline as Guest",
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-            12.verticalSpace,
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: CommonButton(
+            buttonText: _isSigningIn ? "Signing In..." : "Sign In",
+            width: MediaQuery.of(context).size.width,
+            onTap: _isSigningIn ? null : _signInWithEmail,
+          ),
         ),
       ),
       body: SingleChildScrollView(
