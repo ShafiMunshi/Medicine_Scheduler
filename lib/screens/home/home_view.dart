@@ -145,18 +145,25 @@ class HomeView extends ConsumerWidget {
         children: [
           SvgPicture.asset(asset),
           10.horizontalSpace,
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                data,
-                style: boldTextStyle(size: 14),
-              ),
-              Text(
-                subTitle,
-                style: secondaryTextStyle(size: 13),
-              ),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  data,
+                  style: boldTextStyle(size: 14),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subTitle,
+                  style: secondaryTextStyle(size: 12),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           )
         ],
       ),
