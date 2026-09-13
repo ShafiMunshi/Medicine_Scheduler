@@ -22,6 +22,7 @@ void main() {
           todayMedicinesProvider.overrideWithValue(<MedicineWithSchedules>[]),
           userProfileProvider.overrideWith((ref) => Future.value(null)),
           todayLogsProvider.overrideWith((ref) => Stream.value(<MedicineLog>[])),
+          logsForScheduleDateProvider.overrideWith((ref) => Stream.value(<MedicineLog>[])),
           allLogsProvider.overrideWith((ref) => Future.value(<MedicineLog>[])),
         ],
         child: ScreenUtilInit(

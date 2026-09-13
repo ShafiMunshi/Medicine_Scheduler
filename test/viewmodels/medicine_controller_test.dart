@@ -34,9 +34,9 @@ void main() {
 
     final id = await controller.addMedicine(
       medicineName: 'Omeprazole',
-      dosage: 1,
+      dosage: 1.0,
       dosageUnit: DosageUnit.pcs,
-      availableQuantity: 14,
+      availableQuantity: 14.0,
       mealTiming: MealTiming.before,
       repeatVariation: RepeatVariation.day,
       repeatDays: 1,
@@ -63,9 +63,9 @@ void main() {
 
     await controller.addMedicine(
       medicineName: 'Ibuprofen',
-      dosage: 1,
+      dosage: 1.0,
       dosageUnit: DosageUnit.pcs,
-      availableQuantity: 20,
+      availableQuantity: 20.0,
       mealTiming: MealTiming.after,
       repeatVariation: RepeatVariation.day,
       repeatDays: 1,
@@ -91,9 +91,9 @@ void main() {
 
     final medId = await medController.addMedicine(
       medicineName: 'Metformin',
-      dosage: 2,
+      dosage: 2.0,
       dosageUnit: DosageUnit.pcs,
-      availableQuantity: 50,
+      availableQuantity: 50.0,
       mealTiming: MealTiming.after,
       repeatVariation: RepeatVariation.day,
       repeatDays: 1,
@@ -110,13 +110,13 @@ void main() {
     await schedController.markDoseAsTaken(
       medicineId: medId!,
       scheduledDateTime: scheduledDateTime,
-      dosageTaken: 2,
+      dosageTaken: 2.0,
     );
 
     final repo = container.read(medicineRepositoryProvider);
     final updatedMed = await repo.getMedicineById(medId);
 
-    expect(updatedMed?.medicine.availableQuantity, 48); // 50 - 2
+    expect(updatedMed?.medicine.availableQuantity, 48.0); // 50.0 - 2.0
     expect(updatedMed?.medicine.medicineTakenCount, 1);
   });
 }

@@ -9,9 +9,9 @@ class Medicines extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get medicineName => text()();
   TextColumn get imagePath => text().nullable()();
-  IntColumn get dosage => integer().withDefault(const Constant(1))();
+  RealColumn get dosage => real().withDefault(const Constant(1.0))();
   TextColumn get dosageUnit => text()(); // 'pcs' or 'cup'
-  IntColumn get availableQuantity => integer().withDefault(const Constant(0))();
+  RealColumn get availableQuantity => real().withDefault(const Constant(0.0))();
   TextColumn get mealTiming => text()(); // 'before' or 'after'
   TextColumn get repeatVariation => text()(); // 'day', 'weekly', 'monthly', 'timely'
   IntColumn get repeatDays => integer().nullable()();
@@ -40,7 +40,7 @@ class MedicineLogs extends Table {
   DateTimeColumn get scheduledDateTime => dateTime()();
   DateTimeColumn get actualTakenTime => dateTime().nullable()();
   TextColumn get status => text()(); // 'taken', 'skipped', 'missed'
-  IntColumn get dosageTaken => integer().withDefault(const Constant(1))();
+  RealColumn get dosageTaken => real().withDefault(const Constant(1.0))();
 }
 
 class Users extends Table {

@@ -1,13 +1,60 @@
 import 'dart:developer';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/data/database/app_database.dart';
 import 'package:medicine_app/models/domain_models.dart';
 import 'package:medicine_app/viewmodels/database_providers.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
+
+/// The currently selected date in the Schedule screen
+final scheduleSelectedDateProvider = StateProvider<DateTime>((ref) {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month, now.day);
+});
 
 /// Reactive stream of all medicine logs recorded for today
 final todayLogsProvider = StreamProvider<List<MedicineLog>>((ref) {
   final repo = ref.watch(medicineLogRepositoryProvider);
   return repo.watchTodayLogs();
+});
+
+/// Reactive stream of all medicine logs recorded for the selected schedule date
+final logsForScheduleDateProvider = StreamProvider<List<MedicineLog>>((ref) {
+  final repo = ref.watch(medicineLogRepositoryProvider);
+  final targetDate = ref.watch(scheduleSelectedDateProvider);
+  return repo.watchLogsForDate(targetDate);
+});
+
+/// Reactive stream of medicine logs for any specific date
+final logsForSpecificDateProvider =
+    StreamProvider.family<List<MedicineLog>, DateTime>((ref, date) {
+  final repo = ref.watch(medicineLogRepositoryProvider);
+  return repo.watchLogsForDate(date);
+});
+
+/// Medicines scheduled for the selected schedule date
+final medicinesForScheduleDateProvider = Provider<List<MedicineWithSchedules>>((ref) {
+  final allMedsAsync = ref.watch(allMedicinesProvider);
+  final targetDate = ref.watch(scheduleSelectedDateProvider);
+  final date = DateTime(targetDate.year, targetDate.month, targetDate.day);
+
+  return allMedsAsync.when(
+    data: (allMeds) {
+      return allMeds.where((m) {
+        return ScheduleCalculator.isDateScheduled(
+          date: date,
+          startDate: m.medicine.startDate,
+          endDate: m.medicine.endDate,
+          repeatVariation: m.repeatVariationEnum,
+          repeatDays: m.medicine.repeatDays,
+          weekDays: m.weekDaysList,
+          monthDays: m.monthDaysList,
+        );
+      }).toList();
+    },
+    loading: () => [],
+    error: (_, __) => [],
+  );
 });
 
 /// All historical medicine logs
@@ -38,7 +85,7 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
     required int medicineId,
     int? scheduleId,
     required DateTime scheduledDateTime,
-    int? dosageTaken,
+    double? dosageTaken,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -61,7 +108,7 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
     required int medicineId,
     int? scheduleId,
     required DateTime scheduledDateTime,
-    int? dosageTaken,
+    double? dosageTaken,
   }) async {
     state = const AsyncValue.loading();
     try {
@@ -98,14 +145,35 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  /// Bulk action: marks all schedules for the specified medicine for today as taken
-  Future<void> markAllDosesForTodayAsTaken(MedicineWithSchedules med) async {
-    final now = DateTime.now();
+  Future<void> toggleDoseTaken({
+    required int medicineId,
+    int? scheduleId,
+    required DateTime scheduledDateTime,
+    required double dosage,
+    required bool isCurrentlyTaken,
+  }) async {
+    if (isCurrentlyTaken) {
+      await revertDose(
+        medicineId: medicineId,
+        scheduledDateTime: scheduledDateTime,
+      );
+    } else {
+      await markDoseAsTaken(
+        medicineId: medicineId,
+        scheduleId: scheduleId,
+        scheduledDateTime: scheduledDateTime,
+        dosageTaken: dosage,
+      );
+    }
+  }
+
+  /// Bulk action: marks all schedules for the specified medicine for a given date as taken
+  Future<void> markAllDosesForDateAsTaken(DateTime date, MedicineWithSchedules med) async {
     for (final schedule in med.schedules) {
       final scheduledDateTime = DateTime(
-        now.year,
-        now.month,
-        now.day,
+        date.year,
+        date.month,
+        date.day,
         schedule.hour,
         schedule.minute,
       );
@@ -116,6 +184,11 @@ class ScheduleController extends StateNotifier<AsyncValue<void>> {
         dosageTaken: med.medicine.dosage,
       );
     }
+  }
+
+  /// Bulk action: marks all schedules for the specified medicine for today as taken
+  Future<void> markAllDosesForTodayAsTaken(MedicineWithSchedules med) async {
+    await markAllDosesForDateAsTaken(DateTime.now(), med);
   }
 
   Future<void> clearAllLogs() async {

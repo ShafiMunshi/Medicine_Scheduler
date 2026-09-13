@@ -25,7 +25,7 @@ void notificationTapBackground(NotificationResponse notificationResponse) async 
     final medicineId = data['medicineId'] as int?;
     final scheduleId = data['scheduleId'] as int?;
     final scheduledDateStr = data['scheduledDateTime'] as String?;
-    final dosage = data['dosage'] as int? ?? 1;
+    final dosage = (data['dosage'] as num?)?.toDouble() ?? 1.0;
 
     if (medicineId != null && scheduledDateStr != null) {
       final scheduledDateTime = DateTime.parse(scheduledDateStr);
@@ -330,7 +330,7 @@ class NotificationService {
                 id: notificationId,
                 title: 'Time for ${med.medicine.medicineName}',
                 body:
-                    'Take ${med.medicine.dosage} ${med.dosageUnitEnum.displayName} (${med.mealTimingEnum.displayName})',
+                    'Take ${ScheduleCalculator.formatDosage(med.medicine.dosage, med.dosageUnitEnum)} (${med.mealTimingEnum.displayName})',
                 scheduledDate: scheduledTime,
                 payload: {
                   'medicineId': med.medicine.id,

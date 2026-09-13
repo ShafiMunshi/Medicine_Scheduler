@@ -9,6 +9,7 @@ import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/my_medicine/specific_medicine_view.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
+import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class MyMedicineView extends ConsumerWidget {
@@ -20,6 +21,7 @@ class MyMedicineView extends ConsumerWidget {
     final allMedsAsync = ref.watch(allMedicinesProvider);
     final selectedDate = ref.watch(selectedDateProvider);
     final specificDaysMedicines = ref.watch(medicinesForSelectedDateProvider);
+    final logsForDate = ref.watch(logsForSpecificDateProvider(selectedDate)).value ?? [];
 
     return Scaffold(
       appBar: commonAppBarWidget(context, title: 'My Medicine', changeIcon: true),
@@ -93,6 +95,8 @@ class MyMedicineView extends ConsumerWidget {
                         index: index,
                         medicine: medicine,
                         imagePath: medicine.medicine.imagePath,
+                        targetDate: selectedDate,
+                        logs: logsForDate,
                       ),
                     );
                   },

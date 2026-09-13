@@ -83,9 +83,9 @@ class MedicineController extends StateNotifier<AsyncValue<void>> {
 
   Future<int?> addMedicine({
     required String medicineName,
-    required int dosage,
+    required double dosage,
     required DosageUnit dosageUnit,
-    required int availableQuantity,
+    required double availableQuantity,
     required MealTiming mealTiming,
     required RepeatVariation repeatVariation,
     int? repeatDays,
@@ -151,9 +151,9 @@ class MedicineController extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateMedicine({
     required int id,
     required String medicineName,
-    required int dosage,
+    required double dosage,
     required DosageUnit dosageUnit,
-    required int availableQuantity,
+    required double availableQuantity,
     required MealTiming mealTiming,
     required RepeatVariation repeatVariation,
     int? repeatDays,
@@ -238,7 +238,7 @@ class MedicineController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> addStock(int id, int amountToAdd) async {
+  Future<void> addStock(int id, double amountToAdd) async {
     try {
       final repo = ref.read(medicineRepositoryProvider);
       final med = await repo.getMedicineById(id);

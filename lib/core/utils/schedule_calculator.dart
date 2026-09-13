@@ -152,8 +152,8 @@ class ScheduleCalculator {
 
   /// Calculates an integer 0-5 indicating pill stock progress.
   static int getStockProgressIndex({
-    required int availableQuantity,
-    required int medicineTakenCount,
+    required num availableQuantity,
+    required num medicineTakenCount,
   }) {
     if (availableQuantity <= 0) return 0;
     if (medicineTakenCount <= 0) return 5;
@@ -165,6 +165,21 @@ class ScheduleCalculator {
     if (percentage >= 20) return 2;
     if (percentage >= 1) return 1;
     return 0;
+  }
+
+  /// Formats a dosage number nicely (e.g. 1 -> '1', 2.5 -> '2.5') with its unit.
+  static String formatDosage(double dosage, DosageUnit unit) {
+    final dosageStr = (dosage == dosage.truncateToDouble())
+        ? dosage.toInt().toString()
+        : dosage.toStringAsFixed(1);
+    return '$dosageStr ${unit.displayName}';
+  }
+
+  /// Formats a number without unnecessary decimal places.
+  static String formatNumber(num value) {
+    return (value == value.truncateToDouble())
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1);
   }
 
   /// Calculates overall course progress (0.0 to 1.0).
@@ -180,11 +195,11 @@ class ScheduleCalculator {
   /// Calculates estimated additional pills needed (or excess pills if negative).
   static int getEstimatedPillDifference({
     required int totalDosesPerDay,
-    required int dosagePerTime,
+    required num dosagePerTime,
     required int totalScheduledDays,
-    required int availableQuantity,
+    required num availableQuantity,
   }) {
     final totalPillsNeeded = totalDosesPerDay * dosagePerTime * totalScheduledDays;
-    return totalPillsNeeded - availableQuantity;
+    return (totalPillsNeeded - availableQuantity).ceil();
   }
 }

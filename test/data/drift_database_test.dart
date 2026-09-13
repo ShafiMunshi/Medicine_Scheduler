@@ -26,9 +26,9 @@ void main() {
 
     final med = MedicinesCompanion.insert(
       medicineName: 'Paracetamol',
-      dosage: const Value(2),
+      dosage: const Value(2.0),
       dosageUnit: 'pcs',
-      availableQuantity: const Value(20),
+      availableQuantity: const Value(20.0),
       mealTiming: 'after',
       repeatVariation: 'day',
       startDate: now,
@@ -75,7 +75,7 @@ void main() {
     final medId = await medicineRepo.insertMedicine(
       medicine: MedicinesCompanion.insert(
         medicineName: 'Amoxicillin',
-        dosage: const Value(1),
+        dosage: const Value(1.0),
         dosageUnit: 'cup',
         mealTiming: 'before',
         repeatVariation: 'weekly',
@@ -100,7 +100,7 @@ void main() {
       medicineId: medId,
       scheduledDateTime: now,
       status: ConsumptionStatus.taken,
-      dosageTaken: 1,
+      dosageTaken: 1.0,
     );
 
     expect(await db.select(db.medicineSchedules).get(), isNotEmpty);
@@ -125,9 +125,9 @@ void main() {
     final medId = await medicineRepo.insertMedicine(
       medicine: MedicinesCompanion.insert(
         medicineName: 'Vitamin C',
-        dosage: const Value(1),
+        dosage: const Value(1.0),
         dosageUnit: 'pcs',
-        availableQuantity: const Value(30),
+        availableQuantity: const Value(30.0),
         mealTiming: 'after',
         repeatVariation: 'day',
         startDate: now,
@@ -152,11 +152,11 @@ void main() {
       medicineId: medId,
       scheduledDateTime: scheduledTime,
       status: ConsumptionStatus.taken,
-      dosageTaken: 1,
+      dosageTaken: 1.0,
     );
 
     final medAfterTaken = await medicineRepo.getMedicineById(medId);
-    expect(medAfterTaken?.medicine.availableQuantity, 29); // 30 - 1
+    expect(medAfterTaken?.medicine.availableQuantity, 29.0); // 30.0 - 1.0
     expect(medAfterTaken?.medicine.medicineTakenCount, 1); // 0 + 1
 
     // Revert dose
@@ -166,7 +166,7 @@ void main() {
     );
 
     final medAfterRevert = await medicineRepo.getMedicineById(medId);
-    expect(medAfterRevert?.medicine.availableQuantity, 30); // restored
+    expect(medAfterRevert?.medicine.availableQuantity, 30.0); // restored
     expect(medAfterRevert?.medicine.medicineTakenCount, 0); // decremented
   });
 }

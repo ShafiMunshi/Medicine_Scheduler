@@ -4,6 +4,7 @@ import 'package:medicine_app/models/domain_models.dart';
 
 abstract class MedicineLogRepository {
   Stream<List<MedicineLog>> watchTodayLogs();
+  Stream<List<MedicineLog>> watchLogsForDate(DateTime date);
   Future<List<MedicineLog>> getLogsForDate(DateTime date);
   Future<List<MedicineLog>> getAllLogs();
   Future<List<MedicineLog>> getLogsForMedicine(int medicineId);
@@ -12,7 +13,7 @@ abstract class MedicineLogRepository {
     int? scheduleId,
     required DateTime scheduledDateTime,
     required ConsumptionStatus status,
-    int? dosageTaken,
+    double? dosageTaken,
   });
   Future<void> revertDose({
     required int medicineId,
@@ -28,9 +29,13 @@ class DriftMedicineLogRepository implements MedicineLogRepository {
 
   @override
   Stream<List<MedicineLog>> watchTodayLogs() {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+    return watchLogsForDate(DateTime.now());
+  }
+
+  @override
+  Stream<List<MedicineLog>> watchLogsForDate(DateTime date) {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
 
     return (db.select(db.medicineLogs)
           ..where((tbl) =>
@@ -72,7 +77,7 @@ class DriftMedicineLogRepository implements MedicineLogRepository {
     int? scheduleId,
     required DateTime scheduledDateTime,
     required ConsumptionStatus status,
-    int? dosageTaken,
+    double? dosageTaken,
   }) async {
     await db.transaction(() async {
       // Check if a log already exists for this exact scheduled time
@@ -101,7 +106,7 @@ class DriftMedicineLogRepository implements MedicineLogRepository {
                 scheduledDateTime: Value(scheduledDateTime),
                 actualTakenTime: Value(status == ConsumptionStatus.taken ? now : null),
                 status: Value(status.name),
-                dosageTaken: Value(dosageTaken ?? 1),
+                dosageTaken: Value(dosageTaken ?? 1.0),
               ),
             );
       }
@@ -111,12 +116,12 @@ class DriftMedicineLogRepository implements MedicineLogRepository {
           .getSingleOrNull();
 
       if (med != null) {
-        int newAvailable = med.availableQuantity;
+        double newAvailable = med.availableQuantity;
         int newTaken = med.medicineTakenCount;
         final dose = dosageTaken ?? med.dosage;
 
         if (status == ConsumptionStatus.taken && previousStatus != 'taken') {
-          newAvailable = (med.availableQuantity - dose).clamp(0, 99999);
+          newAvailable = (med.availableQuantity - dose).clamp(0.0, 99999.0);
           newTaken = med.medicineTakenCount + 1;
         } else if (status != ConsumptionStatus.taken && previousStatus == 'taken') {
           newAvailable = med.availableQuantity + dose;

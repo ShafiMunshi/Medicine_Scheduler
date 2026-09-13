@@ -10,6 +10,7 @@ import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
+import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeView extends ConsumerWidget {
@@ -20,6 +21,7 @@ class HomeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final todayMedicines = ref.watch(todayMedicinesProvider);
     final allMedicinesAsync = ref.watch(allMedicinesProvider);
+    final todayLogs = ref.watch(todayLogsProvider).value ?? [];
 
     return Scaffold(
       appBar: AppBar(
@@ -85,6 +87,8 @@ class HomeView extends ConsumerWidget {
                               index: index,
                               medicine: medicine,
                               imagePath: medicine.medicine.imagePath,
+                              targetDate: DateTime.now(),
+                              logs: todayLogs,
                             );
                           },
                         ),

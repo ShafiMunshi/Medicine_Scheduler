@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/config/custom/custom_snackber.dart';
 import 'package:medicine_app/constant/app_color.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/data/database/app_database.dart';
 import 'package:medicine_app/models/domain_models.dart';
 import 'package:medicine_app/screens/add_medicine/components/date_picker.dart';
@@ -146,6 +147,20 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
       initialTime: scheduleTime[timesOfDay] ?? TimeOfDay.now(),
     );
     if (picked != null) {
+      final isDuplicate = scheduleTime.entries.any(
+        (entry) =>
+            entry.key != timesOfDay &&
+            entry.value.hour == picked.hour &&
+            entry.value.minute == picked.minute,
+      );
+
+      if (isDuplicate) {
+        CustomSnackBar.showCustomErrorToast(
+          message: 'This schedule time (${picked.format(context)}) is already added!',
+        );
+        return;
+      }
+
       setState(() {
         scheduleTime[timesOfDay] = picked;
       });
@@ -375,12 +390,22 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
             1 => 'Noon',
             2 => 'Evening',
             3 => 'Night',
-            _ => 'Time ${scheduleTime.length + 1}',
+            _ => 'Dose ${scheduleTime.length + 1}',
           };
+
+          // Find candidate hour that is not already scheduled
+          int candidateHour = 8;
+          final usedHours = scheduleTime.values.map((t) => t.hour).toSet();
+          for (final h in [8, 13, 18, 21, 10, 14, 20, 22, 7, 9, 15, 19]) {
+            if (!usedHours.contains(h)) {
+              candidateHour = h;
+              break;
+            }
+          }
+
           setState(() {
-            final now = TimeOfDay.now();
             scheduleTime[newTimesString] = TimeOfDay(
-              hour: (now.hour + 2) % 24,
+              hour: candidateHour,
               minute: 0,
             );
           });
@@ -684,45 +709,47 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
         children: [
           IconButton(
             onPressed: () {
-              int res = availMedicineController.toInt();
-              if (res > 1) res--;
-              availMedicineController.text = res.toString();
+              double res = double.tryParse(availMedicineController.text) ?? 10.0;
+              final step = isPcsSelected ? 1.0 : 5.0;
+              if (res > step) res -= step;
+              availMedicineController.text = ScheduleCalculator.formatNumber(res);
             },
             icon: const Icon(Icons.remove),
           ),
           SizedBox(
-            width: 70,
+            width: 85,
             child: TextFormField(
               controller: availMedicineController,
               validator: (val) {
                 if (val == null || val.isEmpty) {
                   return 'Required';
                 }
-                final num = int.tryParse(val);
+                final num = double.tryParse(val);
                 if (num == null || num < 0) {
                   return 'Invalid';
                 }
                 return null;
               },
-              keyboardType: TextInputType.number,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               textAlign: TextAlign.center,
               inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                LengthLimitingTextInputFormatter(6),
               ],
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
                 hintText: '0',
-                suffixText: 'Pcs',
-                hintStyle: TextStyle(fontSize: 16),
+                suffixText: isPcsSelected ? 'Pcs' : 'ml',
+                hintStyle: const TextStyle(fontSize: 16),
               ),
             ),
           ),
           IconButton(
             onPressed: () {
-              int res = availMedicineController.toInt();
-              res++;
-              availMedicineController.text = res.toString();
+              double res = double.tryParse(availMedicineController.text) ?? 0.0;
+              final step = isPcsSelected ? 1.0 : 5.0;
+              res += step;
+              availMedicineController.text = ScheduleCalculator.formatNumber(res);
             },
             icon: const Icon(Icons.add),
           ),
@@ -743,44 +770,47 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
               children: [
                 IconButton(
                   onPressed: () {
-                    int res = dosageController.toInt();
-                    if (res > 1) res--;
-                    dosageController.text = res.toString();
+                    double res = double.tryParse(dosageController.text) ?? 1.0;
+                    final step = isPcsSelected ? 1.0 : 0.5;
+                    if (res > step) res -= step;
+                    dosageController.text = ScheduleCalculator.formatNumber(res);
                   },
                   icon: const Icon(Icons.remove),
                 ),
                 SizedBox(
-                  width: 70,
+                  width: 85,
                   child: TextFormField(
                     controller: dosageController,
                     validator: (val) {
                       if (val == null || val.isEmpty) {
                         return 'Required';
                       }
-                      final num = int.tryParse(val);
-                      if (num == null || num < 1) {
+                      final num = double.tryParse(val);
+                      if (num == null || num <= 0) {
                         return '> 0';
                       }
                       return null;
                     },
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     textAlign: TextAlign.center,
                     inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
+                      FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                      LengthLimitingTextInputFormatter(5),
                     ],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: '1',
-                      hintStyle: TextStyle(fontSize: 16),
+                      hintText: isPcsSelected ? '1' : '5.0',
+                      suffixText: isPcsSelected ? 'Pcs' : 'ml',
+                      hintStyle: const TextStyle(fontSize: 16),
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () {
-                    int res = dosageController.toInt();
-                    res++;
-                    dosageController.text = res.toString();
+                    double res = double.tryParse(dosageController.text) ?? 0.0;
+                    final step = isPcsSelected ? 1.0 : 0.5;
+                    res += step;
+                    dosageController.text = ScheduleCalculator.formatNumber(res);
                   },
                   icon: const Icon(Icons.add),
                 ),
@@ -798,6 +828,12 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
               onSelected: (selected) {
                 setState(() {
                   isPcsSelected = true;
+                  if (dosageController.text == '5' || dosageController.text == '5.0') {
+                    dosageController.text = '1';
+                  }
+                  if (availMedicineController.text == '100' || availMedicineController.text == '100.0') {
+                    availMedicineController.text = '30';
+                  }
                 });
               },
               selectedColor: AppColors.primaryColor,
@@ -807,11 +843,17 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
             ),
             const SizedBox(width: 8),
             ChoiceChip(
-              label: const Text('Cup'),
+              label: const Text('Cup (ml)'),
               selected: !isPcsSelected,
               onSelected: (selected) {
                 setState(() {
                   isPcsSelected = false;
+                  if (dosageController.text == '1' || dosageController.text == '1.0') {
+                    dosageController.text = '5';
+                  }
+                  if (availMedicineController.text == '30' || availMedicineController.text == '30.0') {
+                    availMedicineController.text = '100';
+                  }
                 });
               },
               checkmarkColor: Colors.white,
@@ -923,6 +965,18 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
       return;
     }
 
+    final seenTimes = <String>{};
+    for (final entry in scheduleTime.entries) {
+      final key = '${entry.value.hour}:${entry.value.minute}';
+      if (seenTimes.contains(key)) {
+        CustomSnackBar.showCustomErrorToast(
+          message: "Duplicate schedule times are not allowed (${entry.value.format(context)})",
+        );
+        return;
+      }
+      seenTimes.add(key);
+    }
+
     if (repeatVariation == RepeatVariation.weekly && _selectedWeekDaysRepeat.isEmpty) {
       CustomSnackBar.showCustomErrorToast(message: "Please select weekdays to repeat");
       return;
@@ -938,8 +992,8 @@ class _AddNewMedicineScreenState extends ConsumerState<AddNewMedicineScreen> {
       permanentImagePath = await _copyImageToPermanentStorage(_capturedImage);
     }
 
-    final dosage = int.parse(dosageController.text.trim());
-    final availableQuantity = int.parse(availMedicineController.text.trim());
+    final dosage = double.tryParse(dosageController.text.trim()) ?? 1.0;
+    final availableQuantity = double.tryParse(availMedicineController.text.trim()) ?? 0.0;
     final medicineName = medicineNameController.text.trim();
     final mealTiming = isBeforeMeal ? MealTiming.before : MealTiming.after;
     final dosageUnit = isPcsSelected ? DosageUnit.pcs : DosageUnit.cup;

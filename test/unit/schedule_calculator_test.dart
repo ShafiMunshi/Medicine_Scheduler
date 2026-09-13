@@ -173,5 +173,17 @@ void main() {
       // 3 * 2 * 10 = 60 pills needed - 50 available = 10 needed
       expect(diff, 10);
     });
+
+    test('formatNumber formats integers cleanly and decimals without trailing zeros', () {
+      expect(ScheduleCalculator.formatNumber(10.0), '10');
+      expect(ScheduleCalculator.formatNumber(2.5), '2.5');
+      expect(ScheduleCalculator.formatNumber(0.0), '0');
+      expect(ScheduleCalculator.formatNumber(15), '15');
+    });
+
+    test('formatDosage formats cups as ml and pcs as pcs', () {
+      expect(ScheduleCalculator.formatDosage(2.5, DosageUnit.cup), '2.5 ml');
+      expect(ScheduleCalculator.formatDosage(1.0, DosageUnit.pcs), '1 Pcs');
+    });
   });
 }

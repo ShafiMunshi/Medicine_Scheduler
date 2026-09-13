@@ -32,11 +32,11 @@ class $MedicinesTable extends Medicines
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _dosageMeta = const VerificationMeta('dosage');
   @override
-  late final GeneratedColumn<int> dosage = GeneratedColumn<int>(
+  late final GeneratedColumn<double> dosage = GeneratedColumn<double>(
       'dosage', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.double,
       requiredDuringInsert: false,
-      defaultValue: const Constant(1));
+      defaultValue: const Constant(1.0));
   static const VerificationMeta _dosageUnitMeta =
       const VerificationMeta('dosageUnit');
   @override
@@ -46,11 +46,11 @@ class $MedicinesTable extends Medicines
   static const VerificationMeta _availableQuantityMeta =
       const VerificationMeta('availableQuantity');
   @override
-  late final GeneratedColumn<int> availableQuantity = GeneratedColumn<int>(
-      'available_quantity', aliasedName, false,
-      type: DriftSqlType.int,
-      requiredDuringInsert: false,
-      defaultValue: const Constant(0));
+  late final GeneratedColumn<double> availableQuantity =
+      GeneratedColumn<double>('available_quantity', aliasedName, false,
+          type: DriftSqlType.double,
+          requiredDuringInsert: false,
+          defaultValue: const Constant(0.0));
   static const VerificationMeta _mealTimingMeta =
       const VerificationMeta('mealTiming');
   @override
@@ -257,11 +257,11 @@ class $MedicinesTable extends Medicines
       imagePath: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
       dosage: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}dosage'])!,
+          .read(DriftSqlType.double, data['${effectivePrefix}dosage'])!,
       dosageUnit: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}dosage_unit'])!,
       availableQuantity: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}available_quantity'])!,
+          DriftSqlType.double, data['${effectivePrefix}available_quantity'])!,
       mealTiming: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}meal_timing'])!,
       repeatVariation: attachedDatabase.typeMapping.read(
@@ -295,9 +295,9 @@ class Medicine extends DataClass implements Insertable<Medicine> {
   final int id;
   final String medicineName;
   final String? imagePath;
-  final int dosage;
+  final double dosage;
   final String dosageUnit;
-  final int availableQuantity;
+  final double availableQuantity;
   final String mealTiming;
   final String repeatVariation;
   final int? repeatDays;
@@ -333,9 +333,9 @@ class Medicine extends DataClass implements Insertable<Medicine> {
     if (!nullToAbsent || imagePath != null) {
       map['image_path'] = Variable<String>(imagePath);
     }
-    map['dosage'] = Variable<int>(dosage);
+    map['dosage'] = Variable<double>(dosage);
     map['dosage_unit'] = Variable<String>(dosageUnit);
-    map['available_quantity'] = Variable<int>(availableQuantity);
+    map['available_quantity'] = Variable<double>(availableQuantity);
     map['meal_timing'] = Variable<String>(mealTiming);
     map['repeat_variation'] = Variable<String>(repeatVariation);
     if (!nullToAbsent || repeatDays != null) {
@@ -391,9 +391,9 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       id: serializer.fromJson<int>(json['id']),
       medicineName: serializer.fromJson<String>(json['medicineName']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
-      dosage: serializer.fromJson<int>(json['dosage']),
+      dosage: serializer.fromJson<double>(json['dosage']),
       dosageUnit: serializer.fromJson<String>(json['dosageUnit']),
-      availableQuantity: serializer.fromJson<int>(json['availableQuantity']),
+      availableQuantity: serializer.fromJson<double>(json['availableQuantity']),
       mealTiming: serializer.fromJson<String>(json['mealTiming']),
       repeatVariation: serializer.fromJson<String>(json['repeatVariation']),
       repeatDays: serializer.fromJson<int?>(json['repeatDays']),
@@ -413,9 +413,9 @@ class Medicine extends DataClass implements Insertable<Medicine> {
       'id': serializer.toJson<int>(id),
       'medicineName': serializer.toJson<String>(medicineName),
       'imagePath': serializer.toJson<String?>(imagePath),
-      'dosage': serializer.toJson<int>(dosage),
+      'dosage': serializer.toJson<double>(dosage),
       'dosageUnit': serializer.toJson<String>(dosageUnit),
-      'availableQuantity': serializer.toJson<int>(availableQuantity),
+      'availableQuantity': serializer.toJson<double>(availableQuantity),
       'mealTiming': serializer.toJson<String>(mealTiming),
       'repeatVariation': serializer.toJson<String>(repeatVariation),
       'repeatDays': serializer.toJson<int?>(repeatDays),
@@ -433,9 +433,9 @@ class Medicine extends DataClass implements Insertable<Medicine> {
           {int? id,
           String? medicineName,
           Value<String?> imagePath = const Value.absent(),
-          int? dosage,
+          double? dosage,
           String? dosageUnit,
-          int? availableQuantity,
+          double? availableQuantity,
           String? mealTiming,
           String? repeatVariation,
           Value<int?> repeatDays = const Value.absent(),
@@ -571,9 +571,9 @@ class MedicinesCompanion extends UpdateCompanion<Medicine> {
   final Value<int> id;
   final Value<String> medicineName;
   final Value<String?> imagePath;
-  final Value<int> dosage;
+  final Value<double> dosage;
   final Value<String> dosageUnit;
-  final Value<int> availableQuantity;
+  final Value<double> availableQuantity;
   final Value<String> mealTiming;
   final Value<String> repeatVariation;
   final Value<int?> repeatDays;
@@ -631,9 +631,9 @@ class MedicinesCompanion extends UpdateCompanion<Medicine> {
     Expression<int>? id,
     Expression<String>? medicineName,
     Expression<String>? imagePath,
-    Expression<int>? dosage,
+    Expression<double>? dosage,
     Expression<String>? dosageUnit,
-    Expression<int>? availableQuantity,
+    Expression<double>? availableQuantity,
     Expression<String>? mealTiming,
     Expression<String>? repeatVariation,
     Expression<int>? repeatDays,
@@ -670,9 +670,9 @@ class MedicinesCompanion extends UpdateCompanion<Medicine> {
       {Value<int>? id,
       Value<String>? medicineName,
       Value<String?>? imagePath,
-      Value<int>? dosage,
+      Value<double>? dosage,
       Value<String>? dosageUnit,
-      Value<int>? availableQuantity,
+      Value<double>? availableQuantity,
       Value<String>? mealTiming,
       Value<String>? repeatVariation,
       Value<int?>? repeatDays,
@@ -716,13 +716,13 @@ class MedicinesCompanion extends UpdateCompanion<Medicine> {
       map['image_path'] = Variable<String>(imagePath.value);
     }
     if (dosage.present) {
-      map['dosage'] = Variable<int>(dosage.value);
+      map['dosage'] = Variable<double>(dosage.value);
     }
     if (dosageUnit.present) {
       map['dosage_unit'] = Variable<String>(dosageUnit.value);
     }
     if (availableQuantity.present) {
-      map['available_quantity'] = Variable<int>(availableQuantity.value);
+      map['available_quantity'] = Variable<double>(availableQuantity.value);
     }
     if (mealTiming.present) {
       map['meal_timing'] = Variable<String>(mealTiming.value);
@@ -1182,11 +1182,11 @@ class $MedicineLogsTable extends MedicineLogs
   static const VerificationMeta _dosageTakenMeta =
       const VerificationMeta('dosageTaken');
   @override
-  late final GeneratedColumn<int> dosageTaken = GeneratedColumn<int>(
+  late final GeneratedColumn<double> dosageTaken = GeneratedColumn<double>(
       'dosage_taken', aliasedName, false,
-      type: DriftSqlType.int,
+      type: DriftSqlType.double,
       requiredDuringInsert: false,
-      defaultValue: const Constant(1));
+      defaultValue: const Constant(1.0));
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -1273,7 +1273,7 @@ class $MedicineLogsTable extends MedicineLogs
       status: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}status'])!,
       dosageTaken: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}dosage_taken'])!,
+          .read(DriftSqlType.double, data['${effectivePrefix}dosage_taken'])!,
     );
   }
 
@@ -1290,7 +1290,7 @@ class MedicineLog extends DataClass implements Insertable<MedicineLog> {
   final DateTime scheduledDateTime;
   final DateTime? actualTakenTime;
   final String status;
-  final int dosageTaken;
+  final double dosageTaken;
   const MedicineLog(
       {required this.id,
       required this.medicineId,
@@ -1312,7 +1312,7 @@ class MedicineLog extends DataClass implements Insertable<MedicineLog> {
       map['actual_taken_time'] = Variable<DateTime>(actualTakenTime);
     }
     map['status'] = Variable<String>(status);
-    map['dosage_taken'] = Variable<int>(dosageTaken);
+    map['dosage_taken'] = Variable<double>(dosageTaken);
     return map;
   }
 
@@ -1343,7 +1343,7 @@ class MedicineLog extends DataClass implements Insertable<MedicineLog> {
           serializer.fromJson<DateTime>(json['scheduledDateTime']),
       actualTakenTime: serializer.fromJson<DateTime?>(json['actualTakenTime']),
       status: serializer.fromJson<String>(json['status']),
-      dosageTaken: serializer.fromJson<int>(json['dosageTaken']),
+      dosageTaken: serializer.fromJson<double>(json['dosageTaken']),
     );
   }
   @override
@@ -1356,7 +1356,7 @@ class MedicineLog extends DataClass implements Insertable<MedicineLog> {
       'scheduledDateTime': serializer.toJson<DateTime>(scheduledDateTime),
       'actualTakenTime': serializer.toJson<DateTime?>(actualTakenTime),
       'status': serializer.toJson<String>(status),
-      'dosageTaken': serializer.toJson<int>(dosageTaken),
+      'dosageTaken': serializer.toJson<double>(dosageTaken),
     };
   }
 
@@ -1367,7 +1367,7 @@ class MedicineLog extends DataClass implements Insertable<MedicineLog> {
           DateTime? scheduledDateTime,
           Value<DateTime?> actualTakenTime = const Value.absent(),
           String? status,
-          int? dosageTaken}) =>
+          double? dosageTaken}) =>
       MedicineLog(
         id: id ?? this.id,
         medicineId: medicineId ?? this.medicineId,
@@ -1435,7 +1435,7 @@ class MedicineLogsCompanion extends UpdateCompanion<MedicineLog> {
   final Value<DateTime> scheduledDateTime;
   final Value<DateTime?> actualTakenTime;
   final Value<String> status;
-  final Value<int> dosageTaken;
+  final Value<double> dosageTaken;
   const MedicineLogsCompanion({
     this.id = const Value.absent(),
     this.medicineId = const Value.absent(),
@@ -1463,7 +1463,7 @@ class MedicineLogsCompanion extends UpdateCompanion<MedicineLog> {
     Expression<DateTime>? scheduledDateTime,
     Expression<DateTime>? actualTakenTime,
     Expression<String>? status,
-    Expression<int>? dosageTaken,
+    Expression<double>? dosageTaken,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1483,7 +1483,7 @@ class MedicineLogsCompanion extends UpdateCompanion<MedicineLog> {
       Value<DateTime>? scheduledDateTime,
       Value<DateTime?>? actualTakenTime,
       Value<String>? status,
-      Value<int>? dosageTaken}) {
+      Value<double>? dosageTaken}) {
     return MedicineLogsCompanion(
       id: id ?? this.id,
       medicineId: medicineId ?? this.medicineId,
@@ -1517,7 +1517,7 @@ class MedicineLogsCompanion extends UpdateCompanion<MedicineLog> {
       map['status'] = Variable<String>(status.value);
     }
     if (dosageTaken.present) {
-      map['dosage_taken'] = Variable<int>(dosageTaken.value);
+      map['dosage_taken'] = Variable<double>(dosageTaken.value);
     }
     return map;
   }
@@ -1914,9 +1914,9 @@ typedef $$MedicinesTableCreateCompanionBuilder = MedicinesCompanion Function({
   Value<int> id,
   required String medicineName,
   Value<String?> imagePath,
-  Value<int> dosage,
+  Value<double> dosage,
   required String dosageUnit,
-  Value<int> availableQuantity,
+  Value<double> availableQuantity,
   required String mealTiming,
   required String repeatVariation,
   Value<int?> repeatDays,
@@ -1932,9 +1932,9 @@ typedef $$MedicinesTableUpdateCompanionBuilder = MedicinesCompanion Function({
   Value<int> id,
   Value<String> medicineName,
   Value<String?> imagePath,
-  Value<int> dosage,
+  Value<double> dosage,
   Value<String> dosageUnit,
-  Value<int> availableQuantity,
+  Value<double> availableQuantity,
   Value<String> mealTiming,
   Value<String> repeatVariation,
   Value<int?> repeatDays,
@@ -2002,13 +2002,13 @@ class $$MedicinesTableFilterComposer
   ColumnFilters<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get dosage => $composableBuilder(
+  ColumnFilters<double> get dosage => $composableBuilder(
       column: $table.dosage, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get dosageUnit => $composableBuilder(
       column: $table.dosageUnit, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get availableQuantity => $composableBuilder(
+  ColumnFilters<double> get availableQuantity => $composableBuilder(
       column: $table.availableQuantity,
       builder: (column) => ColumnFilters(column));
 
@@ -2108,13 +2108,13 @@ class $$MedicinesTableOrderingComposer
   ColumnOrderings<String> get imagePath => $composableBuilder(
       column: $table.imagePath, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get dosage => $composableBuilder(
+  ColumnOrderings<double> get dosage => $composableBuilder(
       column: $table.dosage, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get dosageUnit => $composableBuilder(
       column: $table.dosageUnit, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get availableQuantity => $composableBuilder(
+  ColumnOrderings<double> get availableQuantity => $composableBuilder(
       column: $table.availableQuantity,
       builder: (column) => ColumnOrderings(column));
 
@@ -2171,13 +2171,13 @@ class $$MedicinesTableAnnotationComposer
   GeneratedColumn<String> get imagePath =>
       $composableBuilder(column: $table.imagePath, builder: (column) => column);
 
-  GeneratedColumn<int> get dosage =>
+  GeneratedColumn<double> get dosage =>
       $composableBuilder(column: $table.dosage, builder: (column) => column);
 
   GeneratedColumn<String> get dosageUnit => $composableBuilder(
       column: $table.dosageUnit, builder: (column) => column);
 
-  GeneratedColumn<int> get availableQuantity => $composableBuilder(
+  GeneratedColumn<double> get availableQuantity => $composableBuilder(
       column: $table.availableQuantity, builder: (column) => column);
 
   GeneratedColumn<String> get mealTiming => $composableBuilder(
@@ -2281,9 +2281,9 @@ class $$MedicinesTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> medicineName = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
-            Value<int> dosage = const Value.absent(),
+            Value<double> dosage = const Value.absent(),
             Value<String> dosageUnit = const Value.absent(),
-            Value<int> availableQuantity = const Value.absent(),
+            Value<double> availableQuantity = const Value.absent(),
             Value<String> mealTiming = const Value.absent(),
             Value<String> repeatVariation = const Value.absent(),
             Value<int?> repeatDays = const Value.absent(),
@@ -2317,9 +2317,9 @@ class $$MedicinesTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             required String medicineName,
             Value<String?> imagePath = const Value.absent(),
-            Value<int> dosage = const Value.absent(),
+            Value<double> dosage = const Value.absent(),
             required String dosageUnit,
-            Value<int> availableQuantity = const Value.absent(),
+            Value<double> availableQuantity = const Value.absent(),
             required String mealTiming,
             required String repeatVariation,
             Value<int?> repeatDays = const Value.absent(),
@@ -2780,7 +2780,7 @@ typedef $$MedicineLogsTableCreateCompanionBuilder = MedicineLogsCompanion
   required DateTime scheduledDateTime,
   Value<DateTime?> actualTakenTime,
   required String status,
-  Value<int> dosageTaken,
+  Value<double> dosageTaken,
 });
 typedef $$MedicineLogsTableUpdateCompanionBuilder = MedicineLogsCompanion
     Function({
@@ -2790,7 +2790,7 @@ typedef $$MedicineLogsTableUpdateCompanionBuilder = MedicineLogsCompanion
   Value<DateTime> scheduledDateTime,
   Value<DateTime?> actualTakenTime,
   Value<String> status,
-  Value<int> dosageTaken,
+  Value<double> dosageTaken,
 });
 
 final class $$MedicineLogsTableReferences
@@ -2852,7 +2852,7 @@ class $$MedicineLogsTableFilterComposer
   ColumnFilters<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get dosageTaken => $composableBuilder(
+  ColumnFilters<double> get dosageTaken => $composableBuilder(
       column: $table.dosageTaken, builder: (column) => ColumnFilters(column));
 
   $$MedicinesTableFilterComposer get medicineId {
@@ -2919,7 +2919,7 @@ class $$MedicineLogsTableOrderingComposer
   ColumnOrderings<String> get status => $composableBuilder(
       column: $table.status, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get dosageTaken => $composableBuilder(
+  ColumnOrderings<double> get dosageTaken => $composableBuilder(
       column: $table.dosageTaken, builder: (column) => ColumnOrderings(column));
 
   $$MedicinesTableOrderingComposer get medicineId {
@@ -2984,7 +2984,7 @@ class $$MedicineLogsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<int> get dosageTaken => $composableBuilder(
+  GeneratedColumn<double> get dosageTaken => $composableBuilder(
       column: $table.dosageTaken, builder: (column) => column);
 
   $$MedicinesTableAnnotationComposer get medicineId {
@@ -3058,7 +3058,7 @@ class $$MedicineLogsTableTableManager extends RootTableManager<
             Value<DateTime> scheduledDateTime = const Value.absent(),
             Value<DateTime?> actualTakenTime = const Value.absent(),
             Value<String> status = const Value.absent(),
-            Value<int> dosageTaken = const Value.absent(),
+            Value<double> dosageTaken = const Value.absent(),
           }) =>
               MedicineLogsCompanion(
             id: id,
@@ -3076,7 +3076,7 @@ class $$MedicineLogsTableTableManager extends RootTableManager<
             required DateTime scheduledDateTime,
             Value<DateTime?> actualTakenTime = const Value.absent(),
             required String status,
-            Value<int> dosageTaken = const Value.absent(),
+            Value<double> dosageTaken = const Value.absent(),
           }) =>
               MedicineLogsCompanion.insert(
             id: id,

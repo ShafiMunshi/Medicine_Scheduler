@@ -16,7 +16,7 @@ abstract class MedicineRepository {
   });
   Future<void> updateMedicineStock({
     required int medicineId,
-    required int availableQuantity,
+    required double availableQuantity,
   });
   Future<void> deleteMedicine(int id);
 }
@@ -123,7 +123,7 @@ class DriftMedicineRepository implements MedicineRepository {
   @override
   Future<void> updateMedicineStock({
     required int medicineId,
-    required int availableQuantity,
+    required double availableQuantity,
   }) async {
     await (db.update(db.medicines)..where((tbl) => tbl.id.equals(medicineId))).write(
       MedicinesCompanion(

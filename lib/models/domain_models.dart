@@ -11,7 +11,7 @@ enum DosageUnit {
   pcs,
   cup;
 
-  String get displayName => this == DosageUnit.pcs ? 'Pcs' : 'Cup';
+  String get displayName => this == DosageUnit.pcs ? 'Pcs' : 'ml';
 }
 
 enum RepeatVariation {
