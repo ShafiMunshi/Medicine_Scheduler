@@ -42,18 +42,18 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
 
     return Column(
       children: [
-        // Sleek Dark Calendar Card matching requested design
+        // Sleek Dark Calendar Card matching requested design (Compact)
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
             color: const Color(0xFF131722),
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.18),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
+                blurRadius: 14,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -76,7 +76,7 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                     monthLabel,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 0.3,
                     ),
@@ -91,7 +91,7 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                   ),
                 ],
               ),
-              20.verticalSpace,
+              10.verticalSpace,
 
               // Weekday labels: Mon, Tue, Wed, Thu, Fri, Sat, Sun
               Row(
@@ -103,7 +103,7 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                             day,
                             style: const TextStyle(
                               color: Color(0xFF8E95A5),
-                              fontSize: 13,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -112,12 +112,12 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                     )
                     .toList(),
               ),
-              14.verticalSpace,
+              8.verticalSpace,
 
               // Calendar Days Grid
               ...List.generate(numRows, (row) {
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 6.0),
+                  padding: const EdgeInsets.only(bottom: 2.0),
                   child: Row(
                     children: List.generate(7, (col) {
                       final slotIndex = row * 7 + col;
@@ -150,28 +150,28 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                           },
                           behavior: HitTestBehavior.opaque,
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                            padding: const EdgeInsets.symmetric(vertical: 1.0),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 // 1. Above date text: Done icon if user took all medicine of that day
                                 SizedBox(
-                                  height: 12,
+                                  height: 8,
                                   child: isAllTaken
                                       ? const Icon(
                                           Iconsax.tick_circle,
-                                          size: 12,
+                                          size: 8,
                                           color: Color(0xFF10B981),
                                         )
                                       : null,
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 1),
 
                                 // 2. Center: Date text (circle background if today / selected)
                                 Container(
-                                  width: 26,
-                                  height: 26,
+                                  width: 22,
+                                  height: 22,
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     color: isSelected
@@ -183,7 +183,7 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                                     border: isToday && !isSelected
                                         ? Border.all(
                                             color: const Color(0xFF7C71F5),
-                                            width: 1.5,
+                                            width: 1.2,
                                           )
                                         : null,
                                   ),
@@ -193,18 +193,18 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                                       color: isSelected || isToday
                                           ? Colors.white
                                           : const Color(0xFFCBD5E1),
-                                      fontSize: 12,
+                                      fontSize: 10.5,
                                       fontWeight: isSelected || isToday
                                           ? FontWeight.bold
                                           : FontWeight.w500,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(height: 2),
+                                const SizedBox(height: 1),
 
                                 // 3. Below date text: Shows how much medicine has been missed with meaningful icon
                                 SizedBox(
-                                  height: 11,
+                                  height: 8,
                                   child: hasMissed
                                       ? Row(
                                           mainAxisAlignment: MainAxisAlignment.center,
@@ -212,14 +212,14 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                                           children: [
                                             const Icon(
                                               Iconsax.close_circle,
-                                              size: 9,
+                                              size: 7,
                                               color: Color(0xFFEF4444),
                                             ),
-                                            const SizedBox(width: 1.5),
+                                            const SizedBox(width: 1.0),
                                             Text(
                                               '$missedCount',
                                               style: const TextStyle(
-                                                fontSize: 9,
+                                                fontSize: 7.5,
                                                 color: Color(0xFFEF4444),
                                                 fontWeight: FontWeight.bold,
                                                 height: 1.0,
@@ -239,9 +239,9 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                 );
               }),
 
-              14.verticalSpace,
+              8.verticalSpace,
               const Divider(color: Color(0xFF1E2333), height: 1),
-              12.verticalSpace,
+              8.verticalSpace,
 
               // Legend indicators
               Row(
@@ -278,14 +278,14 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                 icon: Iconsax.tick_circle,
                 color: const Color(0xFF10B981),
               ),
-              10.horizontalSpace,
+              8.horizontalSpace,
               _buildKpiCard(
                 label: 'Missed',
                 value: '${stats.totalMissedDoses} Doses',
                 icon: Iconsax.close_circle,
                 color: const Color(0xFFEF4444),
               ),
-              10.horizontalSpace,
+              8.horizontalSpace,
               _buildKpiCard(
                 label: 'Adherence',
                 value: '${stats.adherencePercentage.toStringAsFixed(0)}%',
@@ -298,7 +298,7 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
 
         // Interactive Selected Day Details
         if (selectedDaySummary != null) ...[
-          12.verticalSpace,
+          8.verticalSpace,
           _buildDayDetailCard(selectedDaySummary),
         ],
       ],
@@ -310,14 +310,14 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
     required VoidCallback onTap,
   }) {
     return Container(
-      width: 36,
-      height: 36,
+      width: 28,
+      height: 28,
       decoration: const BoxDecoration(
         color: Color(0xFF1E2333),
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 20),
+        icon: Icon(icon, color: Colors.white, size: 16),
         padding: EdgeInsets.zero,
         onPressed: onTap,
       ),
@@ -332,13 +332,13 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: color),
-        6.horizontalSpace,
+        Icon(icon, size: 11, color: color),
+        4.horizontalSpace,
         Text(
           label,
           style: const TextStyle(
             color: Color(0xFF8E95A5),
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -354,16 +354,16 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 12,
-          height: 12,
+          width: 9,
+          height: 9,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
-        6.horizontalSpace,
+        4.horizontalSpace,
         Text(
           label,
           style: const TextStyle(
             color: Color(0xFF8E95A5),
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -379,36 +379,36 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.02),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              blurRadius: 4,
+              offset: const Offset(0, 1),
             ),
           ],
         ),
         child: Column(
           children: [
-            Icon(icon, size: 20, color: color),
-            6.verticalSpace,
+            Icon(icon, size: 16, color: color),
+            4.verticalSpace,
             Text(
               value,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
             ),
-            2.verticalSpace,
+            1.verticalSpace,
             Text(
               label,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 9.5,
                 color: Colors.grey.shade600,
               ),
             ),
@@ -439,16 +439,16 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 1.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
