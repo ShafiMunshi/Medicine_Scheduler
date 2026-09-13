@@ -23,9 +23,13 @@ class _CountdownWithValueNotifierState
     super.initState();
     durationNotifier = ValueNotifier(widget.initialDuration);
 
-    timer = Timer.periodic(Duration(seconds: 1), (_) {
+    timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        timer?.cancel();
+        return;
+      }
       if (durationNotifier.value > Duration.zero) {
-        durationNotifier.value -= Duration(seconds: 1);
+        durationNotifier.value -= const Duration(seconds: 1);
       } else {
         timer?.cancel();
       }
@@ -38,6 +42,7 @@ class _CountdownWithValueNotifierState
   @override
   void dispose() {
     timer?.cancel();
+    timer = null;
     durationNotifier.dispose();
     super.dispose();
   }

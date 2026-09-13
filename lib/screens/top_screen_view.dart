@@ -39,7 +39,10 @@ class _TopScreenViewState extends ConsumerState<TopScreenView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: allPages[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: allPages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         type: BottomNavigationBarType.fixed,
