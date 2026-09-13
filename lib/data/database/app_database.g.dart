@@ -1579,9 +1579,88 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   late final GeneratedColumn<String> email = GeneratedColumn<String>(
       'email', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _weightMeta = const VerificationMeta('weight');
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, age, gender, imagePath, email];
+  late final GeneratedColumn<double> weight = GeneratedColumn<double>(
+      'weight', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _heightMeta = const VerificationMeta('height');
+  @override
+  late final GeneratedColumn<double> height = GeneratedColumn<double>(
+      'height', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _bloodGroupMeta =
+      const VerificationMeta('bloodGroup');
+  @override
+  late final GeneratedColumn<String> bloodGroup = GeneratedColumn<String>(
+      'blood_group', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _allergiesMeta =
+      const VerificationMeta('allergies');
+  @override
+  late final GeneratedColumn<String> allergies = GeneratedColumn<String>(
+      'allergies', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _chronicConditionsMeta =
+      const VerificationMeta('chronicConditions');
+  @override
+  late final GeneratedColumn<String> chronicConditions =
+      GeneratedColumn<String>('chronic_conditions', aliasedName, true,
+          type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _emergencyContactMeta =
+      const VerificationMeta('emergencyContact');
+  @override
+  late final GeneratedColumn<String> emergencyContact = GeneratedColumn<String>(
+      'emergency_contact', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _firebaseUidMeta =
+      const VerificationMeta('firebaseUid');
+  @override
+  late final GeneratedColumn<String> firebaseUid = GeneratedColumn<String>(
+      'firebase_uid', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+      'role', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('patient'));
+  static const VerificationMeta _linkingCodeMeta =
+      const VerificationMeta('linkingCode');
+  @override
+  late final GeneratedColumn<String> linkingCode = GeneratedColumn<String>(
+      'linking_code', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isProfileCompletedMeta =
+      const VerificationMeta('isProfileCompleted');
+  @override
+  late final GeneratedColumn<bool> isProfileCompleted = GeneratedColumn<bool>(
+      'is_profile_completed', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("is_profile_completed" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        age,
+        gender,
+        imagePath,
+        email,
+        weight,
+        height,
+        bloodGroup,
+        allergies,
+        chronicConditions,
+        emergencyContact,
+        firebaseUid,
+        role,
+        linkingCode,
+        isProfileCompleted
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -1617,6 +1696,58 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
       context.handle(
           _emailMeta, email.isAcceptableOrUnknown(data['email']!, _emailMeta));
     }
+    if (data.containsKey('weight')) {
+      context.handle(_weightMeta,
+          weight.isAcceptableOrUnknown(data['weight']!, _weightMeta));
+    }
+    if (data.containsKey('height')) {
+      context.handle(_heightMeta,
+          height.isAcceptableOrUnknown(data['height']!, _heightMeta));
+    }
+    if (data.containsKey('blood_group')) {
+      context.handle(
+          _bloodGroupMeta,
+          bloodGroup.isAcceptableOrUnknown(
+              data['blood_group']!, _bloodGroupMeta));
+    }
+    if (data.containsKey('allergies')) {
+      context.handle(_allergiesMeta,
+          allergies.isAcceptableOrUnknown(data['allergies']!, _allergiesMeta));
+    }
+    if (data.containsKey('chronic_conditions')) {
+      context.handle(
+          _chronicConditionsMeta,
+          chronicConditions.isAcceptableOrUnknown(
+              data['chronic_conditions']!, _chronicConditionsMeta));
+    }
+    if (data.containsKey('emergency_contact')) {
+      context.handle(
+          _emergencyContactMeta,
+          emergencyContact.isAcceptableOrUnknown(
+              data['emergency_contact']!, _emergencyContactMeta));
+    }
+    if (data.containsKey('firebase_uid')) {
+      context.handle(
+          _firebaseUidMeta,
+          firebaseUid.isAcceptableOrUnknown(
+              data['firebase_uid']!, _firebaseUidMeta));
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+          _roleMeta, role.isAcceptableOrUnknown(data['role']!, _roleMeta));
+    }
+    if (data.containsKey('linking_code')) {
+      context.handle(
+          _linkingCodeMeta,
+          linkingCode.isAcceptableOrUnknown(
+              data['linking_code']!, _linkingCodeMeta));
+    }
+    if (data.containsKey('is_profile_completed')) {
+      context.handle(
+          _isProfileCompletedMeta,
+          isProfileCompleted.isAcceptableOrUnknown(
+              data['is_profile_completed']!, _isProfileCompletedMeta));
+    }
     return context;
   }
 
@@ -1638,6 +1769,26 @@ class $UsersTable extends Users with TableInfo<$UsersTable, User> {
           .read(DriftSqlType.string, data['${effectivePrefix}image_path']),
       email: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}email']),
+      weight: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}weight']),
+      height: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}height']),
+      bloodGroup: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}blood_group']),
+      allergies: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}allergies']),
+      chronicConditions: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}chronic_conditions']),
+      emergencyContact: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}emergency_contact']),
+      firebaseUid: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}firebase_uid']),
+      role: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}role'])!,
+      linkingCode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}linking_code']),
+      isProfileCompleted: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}is_profile_completed'])!,
     );
   }
 
@@ -1654,13 +1805,33 @@ class User extends DataClass implements Insertable<User> {
   final String? gender;
   final String? imagePath;
   final String? email;
+  final double? weight;
+  final double? height;
+  final String? bloodGroup;
+  final String? allergies;
+  final String? chronicConditions;
+  final String? emergencyContact;
+  final String? firebaseUid;
+  final String role;
+  final String? linkingCode;
+  final bool isProfileCompleted;
   const User(
       {required this.id,
       required this.name,
       required this.age,
       this.gender,
       this.imagePath,
-      this.email});
+      this.email,
+      this.weight,
+      this.height,
+      this.bloodGroup,
+      this.allergies,
+      this.chronicConditions,
+      this.emergencyContact,
+      this.firebaseUid,
+      required this.role,
+      this.linkingCode,
+      required this.isProfileCompleted});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -1676,6 +1847,32 @@ class User extends DataClass implements Insertable<User> {
     if (!nullToAbsent || email != null) {
       map['email'] = Variable<String>(email);
     }
+    if (!nullToAbsent || weight != null) {
+      map['weight'] = Variable<double>(weight);
+    }
+    if (!nullToAbsent || height != null) {
+      map['height'] = Variable<double>(height);
+    }
+    if (!nullToAbsent || bloodGroup != null) {
+      map['blood_group'] = Variable<String>(bloodGroup);
+    }
+    if (!nullToAbsent || allergies != null) {
+      map['allergies'] = Variable<String>(allergies);
+    }
+    if (!nullToAbsent || chronicConditions != null) {
+      map['chronic_conditions'] = Variable<String>(chronicConditions);
+    }
+    if (!nullToAbsent || emergencyContact != null) {
+      map['emergency_contact'] = Variable<String>(emergencyContact);
+    }
+    if (!nullToAbsent || firebaseUid != null) {
+      map['firebase_uid'] = Variable<String>(firebaseUid);
+    }
+    map['role'] = Variable<String>(role);
+    if (!nullToAbsent || linkingCode != null) {
+      map['linking_code'] = Variable<String>(linkingCode);
+    }
+    map['is_profile_completed'] = Variable<bool>(isProfileCompleted);
     return map;
   }
 
@@ -1691,6 +1888,30 @@ class User extends DataClass implements Insertable<User> {
           : Value(imagePath),
       email:
           email == null && nullToAbsent ? const Value.absent() : Value(email),
+      weight:
+          weight == null && nullToAbsent ? const Value.absent() : Value(weight),
+      height:
+          height == null && nullToAbsent ? const Value.absent() : Value(height),
+      bloodGroup: bloodGroup == null && nullToAbsent
+          ? const Value.absent()
+          : Value(bloodGroup),
+      allergies: allergies == null && nullToAbsent
+          ? const Value.absent()
+          : Value(allergies),
+      chronicConditions: chronicConditions == null && nullToAbsent
+          ? const Value.absent()
+          : Value(chronicConditions),
+      emergencyContact: emergencyContact == null && nullToAbsent
+          ? const Value.absent()
+          : Value(emergencyContact),
+      firebaseUid: firebaseUid == null && nullToAbsent
+          ? const Value.absent()
+          : Value(firebaseUid),
+      role: Value(role),
+      linkingCode: linkingCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(linkingCode),
+      isProfileCompleted: Value(isProfileCompleted),
     );
   }
 
@@ -1704,6 +1925,17 @@ class User extends DataClass implements Insertable<User> {
       gender: serializer.fromJson<String?>(json['gender']),
       imagePath: serializer.fromJson<String?>(json['imagePath']),
       email: serializer.fromJson<String?>(json['email']),
+      weight: serializer.fromJson<double?>(json['weight']),
+      height: serializer.fromJson<double?>(json['height']),
+      bloodGroup: serializer.fromJson<String?>(json['bloodGroup']),
+      allergies: serializer.fromJson<String?>(json['allergies']),
+      chronicConditions:
+          serializer.fromJson<String?>(json['chronicConditions']),
+      emergencyContact: serializer.fromJson<String?>(json['emergencyContact']),
+      firebaseUid: serializer.fromJson<String?>(json['firebaseUid']),
+      role: serializer.fromJson<String>(json['role']),
+      linkingCode: serializer.fromJson<String?>(json['linkingCode']),
+      isProfileCompleted: serializer.fromJson<bool>(json['isProfileCompleted']),
     );
   }
   @override
@@ -1716,6 +1948,16 @@ class User extends DataClass implements Insertable<User> {
       'gender': serializer.toJson<String?>(gender),
       'imagePath': serializer.toJson<String?>(imagePath),
       'email': serializer.toJson<String?>(email),
+      'weight': serializer.toJson<double?>(weight),
+      'height': serializer.toJson<double?>(height),
+      'bloodGroup': serializer.toJson<String?>(bloodGroup),
+      'allergies': serializer.toJson<String?>(allergies),
+      'chronicConditions': serializer.toJson<String?>(chronicConditions),
+      'emergencyContact': serializer.toJson<String?>(emergencyContact),
+      'firebaseUid': serializer.toJson<String?>(firebaseUid),
+      'role': serializer.toJson<String>(role),
+      'linkingCode': serializer.toJson<String?>(linkingCode),
+      'isProfileCompleted': serializer.toJson<bool>(isProfileCompleted),
     };
   }
 
@@ -1725,7 +1967,17 @@ class User extends DataClass implements Insertable<User> {
           int? age,
           Value<String?> gender = const Value.absent(),
           Value<String?> imagePath = const Value.absent(),
-          Value<String?> email = const Value.absent()}) =>
+          Value<String?> email = const Value.absent(),
+          Value<double?> weight = const Value.absent(),
+          Value<double?> height = const Value.absent(),
+          Value<String?> bloodGroup = const Value.absent(),
+          Value<String?> allergies = const Value.absent(),
+          Value<String?> chronicConditions = const Value.absent(),
+          Value<String?> emergencyContact = const Value.absent(),
+          Value<String?> firebaseUid = const Value.absent(),
+          String? role,
+          Value<String?> linkingCode = const Value.absent(),
+          bool? isProfileCompleted}) =>
       User(
         id: id ?? this.id,
         name: name ?? this.name,
@@ -1733,6 +1985,20 @@ class User extends DataClass implements Insertable<User> {
         gender: gender.present ? gender.value : this.gender,
         imagePath: imagePath.present ? imagePath.value : this.imagePath,
         email: email.present ? email.value : this.email,
+        weight: weight.present ? weight.value : this.weight,
+        height: height.present ? height.value : this.height,
+        bloodGroup: bloodGroup.present ? bloodGroup.value : this.bloodGroup,
+        allergies: allergies.present ? allergies.value : this.allergies,
+        chronicConditions: chronicConditions.present
+            ? chronicConditions.value
+            : this.chronicConditions,
+        emergencyContact: emergencyContact.present
+            ? emergencyContact.value
+            : this.emergencyContact,
+        firebaseUid: firebaseUid.present ? firebaseUid.value : this.firebaseUid,
+        role: role ?? this.role,
+        linkingCode: linkingCode.present ? linkingCode.value : this.linkingCode,
+        isProfileCompleted: isProfileCompleted ?? this.isProfileCompleted,
       );
   User copyWithCompanion(UsersCompanion data) {
     return User(
@@ -1742,6 +2008,25 @@ class User extends DataClass implements Insertable<User> {
       gender: data.gender.present ? data.gender.value : this.gender,
       imagePath: data.imagePath.present ? data.imagePath.value : this.imagePath,
       email: data.email.present ? data.email.value : this.email,
+      weight: data.weight.present ? data.weight.value : this.weight,
+      height: data.height.present ? data.height.value : this.height,
+      bloodGroup:
+          data.bloodGroup.present ? data.bloodGroup.value : this.bloodGroup,
+      allergies: data.allergies.present ? data.allergies.value : this.allergies,
+      chronicConditions: data.chronicConditions.present
+          ? data.chronicConditions.value
+          : this.chronicConditions,
+      emergencyContact: data.emergencyContact.present
+          ? data.emergencyContact.value
+          : this.emergencyContact,
+      firebaseUid:
+          data.firebaseUid.present ? data.firebaseUid.value : this.firebaseUid,
+      role: data.role.present ? data.role.value : this.role,
+      linkingCode:
+          data.linkingCode.present ? data.linkingCode.value : this.linkingCode,
+      isProfileCompleted: data.isProfileCompleted.present
+          ? data.isProfileCompleted.value
+          : this.isProfileCompleted,
     );
   }
 
@@ -1753,13 +2038,39 @@ class User extends DataClass implements Insertable<User> {
           ..write('age: $age, ')
           ..write('gender: $gender, ')
           ..write('imagePath: $imagePath, ')
-          ..write('email: $email')
+          ..write('email: $email, ')
+          ..write('weight: $weight, ')
+          ..write('height: $height, ')
+          ..write('bloodGroup: $bloodGroup, ')
+          ..write('allergies: $allergies, ')
+          ..write('chronicConditions: $chronicConditions, ')
+          ..write('emergencyContact: $emergencyContact, ')
+          ..write('firebaseUid: $firebaseUid, ')
+          ..write('role: $role, ')
+          ..write('linkingCode: $linkingCode, ')
+          ..write('isProfileCompleted: $isProfileCompleted')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name, age, gender, imagePath, email);
+  int get hashCode => Object.hash(
+      id,
+      name,
+      age,
+      gender,
+      imagePath,
+      email,
+      weight,
+      height,
+      bloodGroup,
+      allergies,
+      chronicConditions,
+      emergencyContact,
+      firebaseUid,
+      role,
+      linkingCode,
+      isProfileCompleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1769,7 +2080,17 @@ class User extends DataClass implements Insertable<User> {
           other.age == this.age &&
           other.gender == this.gender &&
           other.imagePath == this.imagePath &&
-          other.email == this.email);
+          other.email == this.email &&
+          other.weight == this.weight &&
+          other.height == this.height &&
+          other.bloodGroup == this.bloodGroup &&
+          other.allergies == this.allergies &&
+          other.chronicConditions == this.chronicConditions &&
+          other.emergencyContact == this.emergencyContact &&
+          other.firebaseUid == this.firebaseUid &&
+          other.role == this.role &&
+          other.linkingCode == this.linkingCode &&
+          other.isProfileCompleted == this.isProfileCompleted);
 }
 
 class UsersCompanion extends UpdateCompanion<User> {
@@ -1779,6 +2100,16 @@ class UsersCompanion extends UpdateCompanion<User> {
   final Value<String?> gender;
   final Value<String?> imagePath;
   final Value<String?> email;
+  final Value<double?> weight;
+  final Value<double?> height;
+  final Value<String?> bloodGroup;
+  final Value<String?> allergies;
+  final Value<String?> chronicConditions;
+  final Value<String?> emergencyContact;
+  final Value<String?> firebaseUid;
+  final Value<String> role;
+  final Value<String?> linkingCode;
+  final Value<bool> isProfileCompleted;
   const UsersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -1786,6 +2117,16 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.gender = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.email = const Value.absent(),
+    this.weight = const Value.absent(),
+    this.height = const Value.absent(),
+    this.bloodGroup = const Value.absent(),
+    this.allergies = const Value.absent(),
+    this.chronicConditions = const Value.absent(),
+    this.emergencyContact = const Value.absent(),
+    this.firebaseUid = const Value.absent(),
+    this.role = const Value.absent(),
+    this.linkingCode = const Value.absent(),
+    this.isProfileCompleted = const Value.absent(),
   });
   UsersCompanion.insert({
     this.id = const Value.absent(),
@@ -1794,6 +2135,16 @@ class UsersCompanion extends UpdateCompanion<User> {
     this.gender = const Value.absent(),
     this.imagePath = const Value.absent(),
     this.email = const Value.absent(),
+    this.weight = const Value.absent(),
+    this.height = const Value.absent(),
+    this.bloodGroup = const Value.absent(),
+    this.allergies = const Value.absent(),
+    this.chronicConditions = const Value.absent(),
+    this.emergencyContact = const Value.absent(),
+    this.firebaseUid = const Value.absent(),
+    this.role = const Value.absent(),
+    this.linkingCode = const Value.absent(),
+    this.isProfileCompleted = const Value.absent(),
   }) : name = Value(name);
   static Insertable<User> custom({
     Expression<int>? id,
@@ -1802,6 +2153,16 @@ class UsersCompanion extends UpdateCompanion<User> {
     Expression<String>? gender,
     Expression<String>? imagePath,
     Expression<String>? email,
+    Expression<double>? weight,
+    Expression<double>? height,
+    Expression<String>? bloodGroup,
+    Expression<String>? allergies,
+    Expression<String>? chronicConditions,
+    Expression<String>? emergencyContact,
+    Expression<String>? firebaseUid,
+    Expression<String>? role,
+    Expression<String>? linkingCode,
+    Expression<bool>? isProfileCompleted,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1810,6 +2171,17 @@ class UsersCompanion extends UpdateCompanion<User> {
       if (gender != null) 'gender': gender,
       if (imagePath != null) 'image_path': imagePath,
       if (email != null) 'email': email,
+      if (weight != null) 'weight': weight,
+      if (height != null) 'height': height,
+      if (bloodGroup != null) 'blood_group': bloodGroup,
+      if (allergies != null) 'allergies': allergies,
+      if (chronicConditions != null) 'chronic_conditions': chronicConditions,
+      if (emergencyContact != null) 'emergency_contact': emergencyContact,
+      if (firebaseUid != null) 'firebase_uid': firebaseUid,
+      if (role != null) 'role': role,
+      if (linkingCode != null) 'linking_code': linkingCode,
+      if (isProfileCompleted != null)
+        'is_profile_completed': isProfileCompleted,
     });
   }
 
@@ -1819,7 +2191,17 @@ class UsersCompanion extends UpdateCompanion<User> {
       Value<int>? age,
       Value<String?>? gender,
       Value<String?>? imagePath,
-      Value<String?>? email}) {
+      Value<String?>? email,
+      Value<double?>? weight,
+      Value<double?>? height,
+      Value<String?>? bloodGroup,
+      Value<String?>? allergies,
+      Value<String?>? chronicConditions,
+      Value<String?>? emergencyContact,
+      Value<String?>? firebaseUid,
+      Value<String>? role,
+      Value<String?>? linkingCode,
+      Value<bool>? isProfileCompleted}) {
     return UsersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
@@ -1827,6 +2209,16 @@ class UsersCompanion extends UpdateCompanion<User> {
       gender: gender ?? this.gender,
       imagePath: imagePath ?? this.imagePath,
       email: email ?? this.email,
+      weight: weight ?? this.weight,
+      height: height ?? this.height,
+      bloodGroup: bloodGroup ?? this.bloodGroup,
+      allergies: allergies ?? this.allergies,
+      chronicConditions: chronicConditions ?? this.chronicConditions,
+      emergencyContact: emergencyContact ?? this.emergencyContact,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
+      role: role ?? this.role,
+      linkingCode: linkingCode ?? this.linkingCode,
+      isProfileCompleted: isProfileCompleted ?? this.isProfileCompleted,
     );
   }
 
@@ -1851,6 +2243,36 @@ class UsersCompanion extends UpdateCompanion<User> {
     if (email.present) {
       map['email'] = Variable<String>(email.value);
     }
+    if (weight.present) {
+      map['weight'] = Variable<double>(weight.value);
+    }
+    if (height.present) {
+      map['height'] = Variable<double>(height.value);
+    }
+    if (bloodGroup.present) {
+      map['blood_group'] = Variable<String>(bloodGroup.value);
+    }
+    if (allergies.present) {
+      map['allergies'] = Variable<String>(allergies.value);
+    }
+    if (chronicConditions.present) {
+      map['chronic_conditions'] = Variable<String>(chronicConditions.value);
+    }
+    if (emergencyContact.present) {
+      map['emergency_contact'] = Variable<String>(emergencyContact.value);
+    }
+    if (firebaseUid.present) {
+      map['firebase_uid'] = Variable<String>(firebaseUid.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (linkingCode.present) {
+      map['linking_code'] = Variable<String>(linkingCode.value);
+    }
+    if (isProfileCompleted.present) {
+      map['is_profile_completed'] = Variable<bool>(isProfileCompleted.value);
+    }
     return map;
   }
 
@@ -1862,7 +2284,17 @@ class UsersCompanion extends UpdateCompanion<User> {
           ..write('age: $age, ')
           ..write('gender: $gender, ')
           ..write('imagePath: $imagePath, ')
-          ..write('email: $email')
+          ..write('email: $email, ')
+          ..write('weight: $weight, ')
+          ..write('height: $height, ')
+          ..write('bloodGroup: $bloodGroup, ')
+          ..write('allergies: $allergies, ')
+          ..write('chronicConditions: $chronicConditions, ')
+          ..write('emergencyContact: $emergencyContact, ')
+          ..write('firebaseUid: $firebaseUid, ')
+          ..write('role: $role, ')
+          ..write('linkingCode: $linkingCode, ')
+          ..write('isProfileCompleted: $isProfileCompleted')
           ..write(')'))
         .toString();
   }
@@ -3160,6 +3592,16 @@ typedef $$UsersTableCreateCompanionBuilder = UsersCompanion Function({
   Value<String?> gender,
   Value<String?> imagePath,
   Value<String?> email,
+  Value<double?> weight,
+  Value<double?> height,
+  Value<String?> bloodGroup,
+  Value<String?> allergies,
+  Value<String?> chronicConditions,
+  Value<String?> emergencyContact,
+  Value<String?> firebaseUid,
+  Value<String> role,
+  Value<String?> linkingCode,
+  Value<bool> isProfileCompleted,
 });
 typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<int> id,
@@ -3168,6 +3610,16 @@ typedef $$UsersTableUpdateCompanionBuilder = UsersCompanion Function({
   Value<String?> gender,
   Value<String?> imagePath,
   Value<String?> email,
+  Value<double?> weight,
+  Value<double?> height,
+  Value<String?> bloodGroup,
+  Value<String?> allergies,
+  Value<String?> chronicConditions,
+  Value<String?> emergencyContact,
+  Value<String?> firebaseUid,
+  Value<String> role,
+  Value<String?> linkingCode,
+  Value<bool> isProfileCompleted,
 });
 
 class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
@@ -3195,6 +3647,39 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
 
   ColumnFilters<String> get email => $composableBuilder(
       column: $table.email, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get weight => $composableBuilder(
+      column: $table.weight, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<double> get height => $composableBuilder(
+      column: $table.height, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get bloodGroup => $composableBuilder(
+      column: $table.bloodGroup, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get allergies => $composableBuilder(
+      column: $table.allergies, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get chronicConditions => $composableBuilder(
+      column: $table.chronicConditions,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get emergencyContact => $composableBuilder(
+      column: $table.emergencyContact,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get firebaseUid => $composableBuilder(
+      column: $table.firebaseUid, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get linkingCode => $composableBuilder(
+      column: $table.linkingCode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isProfileCompleted => $composableBuilder(
+      column: $table.isProfileCompleted,
+      builder: (column) => ColumnFilters(column));
 }
 
 class $$UsersTableOrderingComposer
@@ -3223,6 +3708,39 @@ class $$UsersTableOrderingComposer
 
   ColumnOrderings<String> get email => $composableBuilder(
       column: $table.email, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get weight => $composableBuilder(
+      column: $table.weight, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<double> get height => $composableBuilder(
+      column: $table.height, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get bloodGroup => $composableBuilder(
+      column: $table.bloodGroup, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get allergies => $composableBuilder(
+      column: $table.allergies, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get chronicConditions => $composableBuilder(
+      column: $table.chronicConditions,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get emergencyContact => $composableBuilder(
+      column: $table.emergencyContact,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get firebaseUid => $composableBuilder(
+      column: $table.firebaseUid, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get linkingCode => $composableBuilder(
+      column: $table.linkingCode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isProfileCompleted => $composableBuilder(
+      column: $table.isProfileCompleted,
+      builder: (column) => ColumnOrderings(column));
 }
 
 class $$UsersTableAnnotationComposer
@@ -3251,6 +3769,36 @@ class $$UsersTableAnnotationComposer
 
   GeneratedColumn<String> get email =>
       $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<double> get weight =>
+      $composableBuilder(column: $table.weight, builder: (column) => column);
+
+  GeneratedColumn<double> get height =>
+      $composableBuilder(column: $table.height, builder: (column) => column);
+
+  GeneratedColumn<String> get bloodGroup => $composableBuilder(
+      column: $table.bloodGroup, builder: (column) => column);
+
+  GeneratedColumn<String> get allergies =>
+      $composableBuilder(column: $table.allergies, builder: (column) => column);
+
+  GeneratedColumn<String> get chronicConditions => $composableBuilder(
+      column: $table.chronicConditions, builder: (column) => column);
+
+  GeneratedColumn<String> get emergencyContact => $composableBuilder(
+      column: $table.emergencyContact, builder: (column) => column);
+
+  GeneratedColumn<String> get firebaseUid => $composableBuilder(
+      column: $table.firebaseUid, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<String> get linkingCode => $composableBuilder(
+      column: $table.linkingCode, builder: (column) => column);
+
+  GeneratedColumn<bool> get isProfileCompleted => $composableBuilder(
+      column: $table.isProfileCompleted, builder: (column) => column);
 }
 
 class $$UsersTableTableManager extends RootTableManager<
@@ -3282,6 +3830,16 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> gender = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             Value<String?> email = const Value.absent(),
+            Value<double?> weight = const Value.absent(),
+            Value<double?> height = const Value.absent(),
+            Value<String?> bloodGroup = const Value.absent(),
+            Value<String?> allergies = const Value.absent(),
+            Value<String?> chronicConditions = const Value.absent(),
+            Value<String?> emergencyContact = const Value.absent(),
+            Value<String?> firebaseUid = const Value.absent(),
+            Value<String> role = const Value.absent(),
+            Value<String?> linkingCode = const Value.absent(),
+            Value<bool> isProfileCompleted = const Value.absent(),
           }) =>
               UsersCompanion(
             id: id,
@@ -3290,6 +3848,16 @@ class $$UsersTableTableManager extends RootTableManager<
             gender: gender,
             imagePath: imagePath,
             email: email,
+            weight: weight,
+            height: height,
+            bloodGroup: bloodGroup,
+            allergies: allergies,
+            chronicConditions: chronicConditions,
+            emergencyContact: emergencyContact,
+            firebaseUid: firebaseUid,
+            role: role,
+            linkingCode: linkingCode,
+            isProfileCompleted: isProfileCompleted,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -3298,6 +3866,16 @@ class $$UsersTableTableManager extends RootTableManager<
             Value<String?> gender = const Value.absent(),
             Value<String?> imagePath = const Value.absent(),
             Value<String?> email = const Value.absent(),
+            Value<double?> weight = const Value.absent(),
+            Value<double?> height = const Value.absent(),
+            Value<String?> bloodGroup = const Value.absent(),
+            Value<String?> allergies = const Value.absent(),
+            Value<String?> chronicConditions = const Value.absent(),
+            Value<String?> emergencyContact = const Value.absent(),
+            Value<String?> firebaseUid = const Value.absent(),
+            Value<String> role = const Value.absent(),
+            Value<String?> linkingCode = const Value.absent(),
+            Value<bool> isProfileCompleted = const Value.absent(),
           }) =>
               UsersCompanion.insert(
             id: id,
@@ -3306,6 +3884,16 @@ class $$UsersTableTableManager extends RootTableManager<
             gender: gender,
             imagePath: imagePath,
             email: email,
+            weight: weight,
+            height: height,
+            bloodGroup: bloodGroup,
+            allergies: allergies,
+            chronicConditions: chronicConditions,
+            emergencyContact: emergencyContact,
+            firebaseUid: firebaseUid,
+            role: role,
+            linkingCode: linkingCode,
+            isProfileCompleted: isProfileCompleted,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -5,12 +5,19 @@ abstract class UserRepository {
   Future<User?> getUser();
   Future<void> saveUser(UsersCompanion user);
   Future<void> updateProfileImage(String imagePath);
+  Stream<User?> watchUser();
+  Future<void> syncFromProfileModel(UsersCompanion companion);
 }
 
 class DriftUserRepository implements UserRepository {
   final AppDatabase db;
 
   DriftUserRepository(this.db);
+
+  @override
+  Stream<User?> watchUser() {
+    return (db.select(db.users)..limit(1)).watchSingleOrNull();
+  }
 
   @override
   Future<User?> getUser() async {
@@ -35,6 +42,16 @@ class DriftUserRepository implements UserRepository {
       await (db.update(db.users)..where((tbl) => tbl.id.equals(existing.id))).write(user);
     } else {
       await db.into(db.users).insert(user);
+    }
+  }
+
+  @override
+  Future<void> syncFromProfileModel(UsersCompanion companion) async {
+    final existing = await getUser();
+    if (existing != null) {
+      await (db.update(db.users)..where((tbl) => tbl.id.equals(existing.id))).write(companion);
+    } else {
+      await db.into(db.users).insert(companion);
     }
   }
 

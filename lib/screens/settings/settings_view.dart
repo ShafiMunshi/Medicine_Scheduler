@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/screens/auth/sign_in_page.dart';
+import 'package:medicine_app/screens/caregiver/caregiver_dashboard_view.dart';
+import 'package:medicine_app/screens/caregiver/parent_linking_view.dart';
+import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/screens/settings/all_medicine_log_view.dart';
 import 'package:medicine_app/screens/settings/my_profile_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
+import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class SettingsView extends ConsumerWidget {
@@ -13,6 +19,8 @@ class SettingsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentFbUser = ref.watch(currentFirebaseUserProvider);
+
     return Scaffold(
       appBar: commonAppBarWidget(
         context,
@@ -23,8 +31,131 @@ class SettingsView extends ConsumerWidget {
         padding: const EdgeInsets.all(12.0),
         child: ListView(
           children: [
+            // Account Status Banner
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: currentFbUser != null
+                    ? AppColors.primaryColor.withOpacity(0.08)
+                    : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: currentFbUser != null
+                      ? AppColors.primaryColor.withOpacity(0.2)
+                      : Colors.grey.shade300,
+                ),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: AppColors.primaryColor,
+                    child: Icon(
+                      currentFbUser != null ? Icons.person : Icons.person_outline,
+                      color: Colors.white,
+                    ),
+                  ),
+                  12.horizontalSpace,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentFbUser != null
+                              ? (currentFbUser.displayName ?? 'Signed In')
+                              : 'Offline / Guest Mode',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        2.verticalSpace,
+                        Text(
+                          currentFbUser != null
+                              ? (currentFbUser.email ?? 'Firebase Account')
+                              : 'Sign in to sync with caregiver',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (currentFbUser != null)
+                    TextButton(
+                      onPressed: () async {
+                        await ref.read(authControllerProvider.notifier).signOut();
+                        toast('Signed out');
+                      },
+                      child: const Text('Sign Out', style: TextStyle(color: Colors.red)),
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, SignWithEmailInScreen.routeName);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      child: const Text('Sign In', style: TextStyle(fontSize: 12)),
+                    ),
+                ],
+              ),
+            ),
+            14.verticalSpace,
+
+            // Health Profile Section
             listCard(
-              title: 'My Profile',
+              title: 'Health Profile & Medical Details',
+              icon: Icons.health_and_safety_outlined,
+              iconColor: Colors.teal,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const UserProfileSetupView(isInitialSetup: false),
+                  ),
+                );
+              },
+            ),
+            10.verticalSpace,
+
+            // Caregiver & Family Linking
+            listCard(
+              title: 'Caregiver & Family Supervision',
+              icon: Icons.family_restroom,
+              iconColor: Colors.indigo,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ParentLinkingView(),
+                  ),
+                );
+              },
+            ),
+            10.verticalSpace,
+
+            // Caregiver Live Dashboard
+            listCard(
+              title: 'Caregiver Dashboard (Monitor Family)',
+              icon: Icons.remove_red_eye_outlined,
+              iconColor: Colors.deepOrange,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CaregiverDashboardView(),
+                  ),
+                );
+              },
+            ),
+            10.verticalSpace,
+
+            listCard(
+              title: 'My Profile (Basic)',
               icon: Icons.person_2_rounded,
               onTap: () {
                 Navigator.push(
@@ -34,6 +165,7 @@ class SettingsView extends ConsumerWidget {
               },
             ),
             10.verticalSpace,
+
             listCard(
               title: 'All Medicine Consumption Logs',
               icon: Icons.history,
@@ -45,6 +177,7 @@ class SettingsView extends ConsumerWidget {
               },
             ),
             10.verticalSpace,
+
             listCard(
               title: 'Notification Status & Permissions',
               icon: Icons.notifications_active_outlined,
@@ -82,6 +215,7 @@ class SettingsView extends ConsumerWidget {
               },
             ),
             10.verticalSpace,
+
             listCard(
               title: 'Test Notification (5 seconds)',
               icon: Icons.alarm,
@@ -101,6 +235,7 @@ class SettingsView extends ConsumerWidget {
               },
             ),
             10.verticalSpace,
+
             listCard(
               title: 'Privacy Policy',
               icon: Icons.privacy_tip_outlined,
@@ -109,6 +244,7 @@ class SettingsView extends ConsumerWidget {
               },
             ),
             10.verticalSpace,
+
             listCard(
               title: 'Rate This App',
               icon: Icons.star_rate_outlined,
@@ -125,6 +261,7 @@ class SettingsView extends ConsumerWidget {
   ListTile listCard({
     required String title,
     IconData? icon,
+    Color? iconColor,
     VoidCallback? onTap,
   }) {
     return ListTile(
@@ -137,14 +274,14 @@ class SettingsView extends ConsumerWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       leading: Container(
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: (iconColor ?? Colors.black87).withOpacity(0.08),
           borderRadius: BorderRadius.circular(10),
         ),
         padding: const EdgeInsets.all(8),
         child: Icon(
           icon ?? Icons.settings,
           size: 22,
-          color: Colors.black87,
+          color: iconColor ?? Colors.black87,
         ),
       ),
       onTap: onTap,

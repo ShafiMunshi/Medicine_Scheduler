@@ -1,15 +1,25 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:medicine_app/data/source/my_shared_pref.dart';
+import 'package:medicine_app/firebase_options.dart';
 import 'package:medicine_app/routes.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization note: $e');
+  }
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

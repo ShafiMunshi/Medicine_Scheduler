@@ -61,33 +61,33 @@ class MedicineWidget extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  height: 84.w,
-                  width: 84.w,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: _buildMedicineImage(),
-                  ),
-                ),
-                12.horizontalSpace,
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      medicineName,
-                      style: boldTextStyle(size: 16),
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    height: 84.w,
+                    width: 84.w,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12.r),
+                      child: _buildMedicineImage(),
                     ),
-                    6.verticalSpace,
-                    SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.57,
-                      child: Wrap(
-                        direction: Axis.horizontal,
-                        spacing: 5.w,
-                        runSpacing: 5.h,
-                        alignment: WrapAlignment.start,
+                  ),
+                  12.horizontalSpace,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          medicineName,
+                          style: boldTextStyle(size: 16),
+                        ),
+                        6.verticalSpace,
+                        Wrap(
+                          direction: Axis.horizontal,
+                          spacing: 5.w,
+                          runSpacing: 5.h,
+                          alignment: WrapAlignment.start,
                         children: medicine.schedules.map((s) {
                           final scheduledDateTime = DateTime(
                             date.year,
@@ -114,9 +114,8 @@ class MedicineWidget extends StatelessWidget {
                           );
                         }).toList(),
                       ),
-                    ),
-                    6.verticalSpace,
-                    if (allTaken)
+                      6.verticalSpace,
+                      if (allTaken)
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -144,26 +143,32 @@ class MedicineWidget extends StatelessWidget {
                       ),
                     10.verticalSpace,
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'Stock left',
                           style: secondaryTextStyle(size: 10),
                         ),
-                        12.horizontalSpace,
-                        SizedBox(
-                          width: 110.w,
-                          height: 8,
-                          child: ListView.builder(
-                            itemCount: 5,
-                            shrinkWrap: true,
-                            scrollDirection: Axis.horizontal,
-                            itemBuilder: (BuildContext context, int i) {
-                              return _littleTablet(
-                                  isColored: i < lengthNeedToBeColored);
-                            },
+                        6.horizontalSpace,
+                        Expanded(
+                          child: Row(
+                            children: List.generate(
+                              5,
+                              (i) => Expanded(
+                                child: Container(
+                                  height: 6,
+                                  margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(4),
+                                    color: i < lengthNeedToBeColored
+                                        ? AppColors.secondaryColor
+                                        : AppColors.greyColor,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
+                        6.horizontalSpace,
                         Text(
                           '${medicine.medicine.medicineTakenCount} / ${ScheduleCalculator.formatNumber(medicine.medicine.availableQuantity)}',
                           style: secondaryTextStyle(size: 10),
@@ -172,8 +177,10 @@ class MedicineWidget extends StatelessWidget {
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+        ),
             Align(
               alignment: Alignment.topRight,
               child: SvgPicture.asset('assets/icons/clock_blue.svg'),

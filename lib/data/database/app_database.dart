@@ -50,6 +50,16 @@ class Users extends Table {
   TextColumn get gender => text().nullable()();
   TextColumn get imagePath => text().nullable()();
   TextColumn get email => text().nullable()();
+  RealColumn get weight => real().nullable()();
+  RealColumn get height => real().nullable()();
+  TextColumn get bloodGroup => text().nullable()();
+  TextColumn get allergies => text().nullable()();
+  TextColumn get chronicConditions => text().nullable()();
+  TextColumn get emergencyContact => text().nullable()();
+  TextColumn get firebaseUid => text().nullable()();
+  TextColumn get role => text().withDefault(const Constant('patient'))();
+  TextColumn get linkingCode => text().nullable()();
+  BoolColumn get isProfileCompleted => boolean().withDefault(const Constant(false))();
 }
 
 class MedicineWithSchedules {

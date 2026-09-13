@@ -7,6 +7,7 @@ import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_assets.dart';
 import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/core/utils/schedule_calculator.dart';
+import 'package:medicine_app/screens/home/widget/monthly_adherence_chart.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
@@ -24,89 +25,115 @@ class HomeView extends ConsumerWidget {
     final todayLogs = ref.watch(todayLogsProvider).value ?? [];
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         toolbarHeight: 0,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          topProfileSection(ref),
-          29.verticalSpace,
-          topHorizontalProgressBar(todayMedicines.length, allMedicinesAsync.value?.length ?? 0),
-          29.verticalSpace,
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              color: const Color(0xFFF3F3F7),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.only(top: 16, bottom: 32),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            topProfileSection(ref),
+            18.verticalSpace,
+            topHorizontalProgressBar(todayMedicines.length, allMedicinesAsync.value?.length ?? 0),
+            16.verticalSpace,
+            const MonthlyAdherenceChart(),
+            16.verticalSpace,
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Next Medication',
-                        style: boldTextStyle(),
+                        'Today\'s Medication',
+                        style: boldTextStyle(size: 16),
+                      ),
+                      Text(
+                        '${todayMedicines.length} scheduled',
+                        style: secondaryTextStyle(size: 12),
                       ),
                     ],
                   ),
-                  10.verticalSpace,
+                  12.verticalSpace,
                   allMedicinesAsync.when(
                     data: (_) {
                       if (todayMedicines.isEmpty) {
-                        return const Expanded(
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 32),
                           child: Center(
-                            child: Text(
-                              "No Medicine Scheduled for Today",
-                              style: TextStyle(color: Colors.grey, fontSize: 16),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.check_circle_outline, size: 48, color: Colors.green),
+                                10.verticalSpace,
+                                const Text(
+                                  "No Medicine Scheduled for Today",
+                                  style: TextStyle(color: Colors.grey, fontSize: 15),
+                                ),
+                              ],
                             ),
                           ),
                         );
                       }
 
-                      return Expanded(
-                        child: ListView.builder(
-                          itemCount: todayMedicines.length,
-                          shrinkWrap: true,
-                          itemBuilder: (BuildContext context, int index) {
-                            final medicine = todayMedicines[index];
-                            final nearestTimeLeft = ScheduleCalculator.getTimeUntilNextDose(
-                              medicine.scheduleItems,
-                              DateTime.now(),
-                            );
+                      return ListView.builder(
+                        itemCount: todayMedicines.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemBuilder: (BuildContext context, int index) {
+                          final medicine = todayMedicines[index];
+                          final nearestTimeLeft = ScheduleCalculator.getTimeUntilNextDose(
+                            medicine.scheduleItems,
+                            DateTime.now(),
+                          );
 
-                            final stockIndex = ScheduleCalculator.getStockProgressIndex(
-                              availableQuantity: medicine.medicine.availableQuantity,
-                              medicineTakenCount: medicine.medicine.medicineTakenCount,
-                            );
+                          final stockIndex = ScheduleCalculator.getStockProgressIndex(
+                            availableQuantity: medicine.medicine.availableQuantity,
+                            medicineTakenCount: medicine.medicine.medicineTakenCount,
+                          );
 
-                            return MedicineWidget(
-                              medicineName: medicine.medicine.medicineName,
-                              timeLeft: nearestTimeLeft,
-                              lengthNeedToBeColored: stockIndex,
-                              index: index,
-                              medicine: medicine,
-                              imagePath: medicine.medicine.imagePath,
-                              targetDate: DateTime.now(),
-                              logs: todayLogs,
-                            );
-                          },
-                        ),
+                          return MedicineWidget(
+                            medicineName: medicine.medicine.medicineName,
+                            timeLeft: nearestTimeLeft,
+                            lengthNeedToBeColored: stockIndex,
+                            index: index,
+                            medicine: medicine,
+                            imagePath: medicine.medicine.imagePath,
+                            targetDate: DateTime.now(),
+                            logs: todayLogs,
+                          );
+                        },
                       );
                     },
-                    loading: () => const Expanded(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(32.0),
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                    error: (e, _) => Expanded(
-                      child: Center(child: Text("Error: $e")),
-                    ),
+                    error: (e, _) => Center(child: Text("Error: $e")),
                   ),
                 ],
               ),
             ),
-          )
-        ],
-      ).paddingOnly(top: 20),
+          ],
+        ),
+      ),
     );
   }
 
