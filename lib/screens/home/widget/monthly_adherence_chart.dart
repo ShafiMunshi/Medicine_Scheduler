@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -13,7 +12,8 @@ class MonthlyAdherenceChart extends ConsumerStatefulWidget {
   const MonthlyAdherenceChart({super.key});
 
   @override
-  ConsumerState<MonthlyAdherenceChart> createState() => _MonthlyAdherenceChartState();
+  ConsumerState<MonthlyAdherenceChart> createState() =>
+      _MonthlyAdherenceChartState();
 }
 
 class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
@@ -31,73 +31,59 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
         ? stats.dailySummaries[_selectedDayIndex!]
         : null;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with Month Selector
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Iconsax.chart_2, size: 18, color: AppColors.primaryColor),
-                    ),
-                    8.horizontalSpace,
-                    Flexible(
-                      child: Text(
-                        'Monthly Adherence',
-                        style: boldTextStyle(size: 16),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+    final now = DateTime.now();
+    final year = selectedMonth.year;
+    final month = selectedMonth.month;
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final firstDayWeekday = DateTime(year, month, 1).weekday; // 1 = Mon, 7 = Sun
+    final leadingEmptyDays = firstDayWeekday - 1;
+    final totalSlots = leadingEmptyDays + daysInMonth;
+    final numRows = ((totalSlots + 6) / 7).floor();
+
+    return Column(
+      children: [
+        // Sleek Dark Calendar Card matching requested design
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF131722),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header with < Month Year >
               Row(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left, size: 20, color: AppColors.primaryColor),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
+                  _buildCircleNavButton(
+                    icon: Icons.chevron_left,
+                    onTap: () {
                       setState(() => _selectedDayIndex = null);
                       ref.read(homeSelectedMonthProvider.notifier).state =
                           DateTime(selectedMonth.year, selectedMonth.month - 1, 1);
                     },
                   ),
-                  8.horizontalSpace,
                   Text(
                     monthLabel,
-                    style: boldTextStyle(size: 13, color: AppColors.primaryColor),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                  8.horizontalSpace,
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right, size: 20, color: AppColors.primaryColor),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () {
+                  _buildCircleNavButton(
+                    icon: Icons.chevron_right,
+                    onTap: () {
                       setState(() => _selectedDayIndex = null);
                       ref.read(homeSelectedMonthProvider.notifier).state =
                           DateTime(selectedMonth.year, selectedMonth.month + 1, 1);
@@ -105,254 +91,366 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
                   ),
                 ],
               ),
+              20.verticalSpace,
+
+              // Weekday labels: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+              Row(
+                children: const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+                    .map(
+                      (day) => Expanded(
+                        child: Center(
+                          child: Text(
+                            day,
+                            style: const TextStyle(
+                              color: Color(0xFF8E95A5),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              14.verticalSpace,
+
+              // Calendar Days Grid
+              ...List.generate(numRows, (row) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Row(
+                    children: List.generate(7, (col) {
+                      final slotIndex = row * 7 + col;
+                      if (slotIndex < leadingEmptyDays || slotIndex >= totalSlots) {
+                        return const Expanded(child: SizedBox());
+                      }
+
+                      final dayNum = slotIndex - leadingEmptyDays + 1;
+                      final dayDate = DateTime(year, month, dayNum);
+                      final isToday = dayDate.year == now.year &&
+                          dayDate.month == now.month &&
+                          dayDate.day == now.day;
+                      final isSelected = _selectedDayIndex == (dayNum - 1);
+                      final summary = (dayNum <= stats.dailySummaries.length)
+                          ? stats.dailySummaries[dayNum - 1]
+                          : null;
+
+                      final isAllTaken = summary?.isAllTaken ?? false;
+                      final missedCount = summary?.missedCount ?? 0;
+                      final hasMissed = missedCount > 0;
+
+                      return Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDayIndex = _selectedDayIndex == (dayNum - 1)
+                                  ? null
+                                  : (dayNum - 1);
+                            });
+                          },
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2.0),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // 1. Above date text: Done icon if user took all medicine of that day
+                                SizedBox(
+                                  height: 12,
+                                  child: isAllTaken
+                                      ? const Icon(
+                                          Iconsax.tick_circle,
+                                          size: 12,
+                                          color: Color(0xFF10B981),
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(height: 2),
+
+                                // 2. Center: Date text (circle background if today / selected)
+                                Container(
+                                  width: 26,
+                                  height: 26,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? const Color(0xFF7C71F5)
+                                        : isToday
+                                            ? const Color(0xFF7C71F5).withValues(alpha: 0.35)
+                                            : Colors.transparent,
+                                    shape: BoxShape.circle,
+                                    border: isToday && !isSelected
+                                        ? Border.all(
+                                            color: const Color(0xFF7C71F5),
+                                            width: 1.5,
+                                          )
+                                        : null,
+                                  ),
+                                  child: Text(
+                                    '$dayNum',
+                                    style: TextStyle(
+                                      color: isSelected || isToday
+                                          ? Colors.white
+                                          : const Color(0xFFCBD5E1),
+                                      fontSize: 12,
+                                      fontWeight: isSelected || isToday
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+
+                                // 3. Below date text: Shows how much medicine has been missed with meaningful icon
+                                SizedBox(
+                                  height: 11,
+                                  child: hasMissed
+                                      ? Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                              Iconsax.close_circle,
+                                              size: 9,
+                                              color: Color(0xFFEF4444),
+                                            ),
+                                            const SizedBox(width: 1.5),
+                                            Text(
+                                              '$missedCount',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Color(0xFFEF4444),
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.0,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : null,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              }),
+
+              14.verticalSpace,
+              const Divider(color: Color(0xFF1E2333), height: 1),
+              12.verticalSpace,
+
+              // Legend indicators
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildLegend(
+                    icon: Iconsax.tick_circle,
+                    color: const Color(0xFF10B981),
+                    label: 'All Taken',
+                  ),
+                  _buildLegend(
+                    icon: Iconsax.close_circle,
+                    color: const Color(0xFFEF4444),
+                    label: 'Missed Doses',
+                  ),
+                  _buildLegendCircle(
+                    color: const Color(0xFF7C71F5),
+                    label: 'Today',
+                  ),
+                ],
+              ),
             ],
           ),
-          14.verticalSpace,
+        ),
 
-          // KPI Summary Chips
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+        // Monthly KPI Summary Cards
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
             children: [
-              _buildKpiChip(
+              _buildKpiCard(
+                label: 'All Taken',
+                value: '${stats.perfectDaysCount} Days',
                 icon: Iconsax.tick_circle,
-                label: '${stats.perfectDaysCount} Days All Taken',
                 color: const Color(0xFF10B981),
               ),
-              _buildKpiChip(
+              10.horizontalSpace,
+              _buildKpiCard(
+                label: 'Missed',
+                value: '${stats.totalMissedDoses} Doses',
                 icon: Iconsax.close_circle,
-                label: '${stats.totalMissedDoses} Missed (${stats.missedDaysCount} Days)',
                 color: const Color(0xFFEF4444),
               ),
-              _buildKpiChip(
+              10.horizontalSpace,
+              _buildKpiCard(
+                label: 'Adherence',
+                value: '${stats.adherencePercentage.toStringAsFixed(0)}%',
                 icon: Iconsax.percentage_circle,
-                label: '${stats.adherencePercentage.toStringAsFixed(0)}% Adherence',
                 color: AppColors.primaryColor,
               ),
             ],
           ),
-          16.verticalSpace,
-
-          // Bar Chart Legend
-          Row(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              _buildLegendIndicator(color: const Color(0xFF10B981), label: 'Taken'),
-              14.horizontalSpace,
-              _buildLegendIndicator(color: const Color(0xFFEF4444), label: 'Missed'),
-            ],
-          ),
-          10.verticalSpace,
-
-          // Bar Chart
-          SizedBox(
-            height: 180,
-            child: stats.dailySummaries.isEmpty
-                ? const Center(child: Text('No data for this month', style: TextStyle(color: Colors.grey)))
-                : BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      maxY: _calculateMaxY(stats.dailySummaries),
-                      barTouchData: BarTouchData(
-                        enabled: true,
-                        touchTooltipData: BarTouchTooltipData(
-                          getTooltipColor: (_) => const Color(0xFF1E293B),
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            if (groupIndex >= stats.dailySummaries.length) return null;
-                            final day = stats.dailySummaries[groupIndex];
-                            final dateStr = DateFormat('d MMM').format(day.date);
-                            final status = day.hasNoSchedule
-                                ? 'No Schedule'
-                                : day.isAllTaken
-                                    ? 'All Taken ✓'
-                                    : '${day.takenCount} Taken, ${day.missedCount} Missed';
-                            return BarTooltipItem(
-                              '$dateStr\n$status',
-                              const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 11,
-                              ),
-                            );
-                          },
-                        ),
-                        touchCallback: (event, response) {
-                          if (event is FlTapUpEvent && response?.spot != null) {
-                            setState(() {
-                              _selectedDayIndex = response!.spot!.touchedBarGroupIndex;
-                            });
-                          }
-                        },
-                      ),
-                      titlesData: FlTitlesData(
-                        show: true,
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              if (value % 2 != 0 && value != 0) return const SizedBox();
-                              return Text(
-                                value.toInt().toString(),
-                                style: const TextStyle(color: Colors.grey, fontSize: 10),
-                              );
-                            },
-                          ),
-                        ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 22,
-                            getTitlesWidget: (value, meta) {
-                              final dayNum = value.toInt() + 1;
-                              // Show every 5 days to avoid clutter
-                              if (dayNum == 1 || dayNum % 5 == 0 || dayNum == stats.totalDaysInMonth) {
-                                return Text(
-                                  dayNum.toString(),
-                                  style: const TextStyle(color: Colors.grey, fontSize: 10),
-                                );
-                              }
-                              return const SizedBox();
-                            },
-                          ),
-                        ),
-                      ),
-                      gridData: FlGridData(
-                        show: true,
-                        drawVerticalLine: false,
-                        getDrawingHorizontalLine: (value) => FlLine(
-                          color: const Color(0xFFF1F5F9),
-                          strokeWidth: 1,
-                        ),
-                      ),
-                      borderData: FlBorderData(show: false),
-                      barGroups: List.generate(stats.dailySummaries.length, (index) {
-                        final summary = stats.dailySummaries[index];
-                        final isSelected = _selectedDayIndex == index;
-
-                        return BarChartGroupData(
-                          x: index,
-                          barRods: [
-                            // Taken Bar (Green)
-                            BarChartRodData(
-                              toY: summary.takenCount.toDouble(),
-                              color: isSelected
-                                  ? const Color(0xFF059669)
-                                  : const Color(0xFF10B981),
-                              width: 4,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                            ),
-                            // Missed Bar (Red)
-                            BarChartRodData(
-                              toY: summary.missedCount.toDouble(),
-                              color: isSelected
-                                  ? const Color(0xFFDC2626)
-                                  : const Color(0xFFEF4444),
-                              width: 4,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(3)),
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
-                  ),
-          ),
-          12.verticalSpace,
-
-          // Day Breakdown Card (when a bar is tapped)
-          if (selectedDaySummary != null)
-            _buildSelectedDayCard(selectedDaySummary)
-          else
-            Center(
-              child: Text(
-                'Tap any bar in the chart to inspect that day\'s intake',
-                style: secondaryTextStyle(size: 11),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildKpiChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.25)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          6.horizontalSpace,
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendIndicator({required Color color, required String label}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
         ),
-        5.horizontalSpace,
-        Text(label, style: secondaryTextStyle(size: 11)),
+
+        // Interactive Selected Day Details
+        if (selectedDaySummary != null) ...[
+          12.verticalSpace,
+          _buildDayDetailCard(selectedDaySummary),
+        ],
       ],
     );
   }
 
-  Widget _buildSelectedDayCard(DayAdherenceSummary summary) {
-    final dateFormatted = DateFormat('EEEE, d MMMM yyyy').format(summary.date);
+  Widget _buildCircleNavButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: const BoxDecoration(
+        color: Color(0xFF1E2333),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white, size: 20),
+        padding: EdgeInsets.zero,
+        onPressed: onTap,
+      ),
+    );
+  }
 
-    Color statusColor;
-    String statusText;
-    IconData statusIcon;
+  Widget _buildLegend({
+    required IconData icon,
+    required Color color,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        6.horizontalSpace,
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF8E95A5),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 
+  Widget _buildLegendCircle({
+    required Color color,
+    required String label,
+  }) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        6.horizontalSpace,
+        Text(
+          label,
+          style: const TextStyle(
+            color: Color(0xFF8E95A5),
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildKpiCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 20, color: color),
+            6.verticalSpace,
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            2.verticalSpace,
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayDetailCard(DayAdherenceSummary summary) {
+    final dateStr = DateFormat('EEEE, MMMM d, yyyy').format(summary.date);
+
+    Color badgeColor;
+    String badgeText;
     if (summary.hasNoSchedule) {
-      statusColor = Colors.grey;
-      statusText = 'No medications scheduled';
-      statusIcon = Iconsax.info_circle;
+      badgeColor = Colors.grey;
+      badgeText = 'No Schedule';
     } else if (summary.isAllTaken) {
-      statusColor = const Color(0xFF10B981);
-      statusText = 'All scheduled medicines taken ✓';
-      statusIcon = Iconsax.tick_circle;
+      badgeColor = const Color(0xFF10B981);
+      badgeText = 'All Taken (${summary.takenCount}/${summary.totalScheduled}) 🎉';
     } else if (summary.isMissed) {
-      statusColor = const Color(0xFFEF4444);
-      statusText = '${summary.missedCount} dose${summary.missedCount > 1 ? 's' : ''} missed!';
-      statusIcon = Iconsax.close_circle;
+      badgeColor = const Color(0xFFEF4444);
+      badgeText = '${summary.missedCount} Missed (${summary.takenCount}/${summary.totalScheduled} Taken)';
     } else {
-      statusColor = AppColors.primaryColor;
-      statusText = '${summary.takenCount}/${summary.totalScheduled} doses taken';
-      statusIcon = Iconsax.clock;
+      badgeColor = Colors.orange;
+      badgeText = '${summary.takenCount}/${summary.totalScheduled} Taken';
     }
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: badgeColor.withValues(alpha: 0.3), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,53 +458,58 @@ class _MonthlyAdherenceChartState extends ConsumerState<MonthlyAdherenceChart> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(dateFormatted, style: boldTextStyle(size: 12, color: const Color(0xFF334155))),
-              Row(
-                children: [
-                  Icon(statusIcon, size: 14, color: statusColor),
-                  4.horizontalSpace,
-                  Text(statusText, style: boldTextStyle(size: 11, color: statusColor)),
-                ],
+              Expanded(
+                child: Text(
+                  dateStr,
+                  style: boldTextStyle(size: 13),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              8.horizontalSpace,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badgeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  badgeText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: badgeColor,
+                  ),
+                ),
               ),
             ],
           ),
           if (summary.scheduledMedicines.isNotEmpty) ...[
-            8.verticalSpace,
-            Wrap(
-              spacing: 6,
-              runSpacing: 4,
-              children: summary.scheduledMedicines.map((med) {
-                final isMedTaken = summary.logs.any((l) => l.medicineId == med.medicine.id && l.status == 'taken');
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: isMedTaken ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    '${med.medicine.medicineName} (${isMedTaken ? "Taken" : "Missed"})',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w600,
-                      color: isMedTaken ? const Color(0xFF166534) : const Color(0xFF991B1B),
+            12.verticalSpace,
+            ...summary.scheduledMedicines.map((med) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6.0),
+                child: Row(
+                  children: [
+                    const Icon(Icons.medication, size: 16, color: AppColors.primaryColor),
+                    8.horizontalSpace,
+                    Expanded(
+                      child: Text(
+                        med.medicine.medicineName,
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
                     ),
-                  ),
-                );
-              }).toList(),
-            ),
+                    Text(
+                      '${med.schedules.length} dose(s)',
+                      style: secondaryTextStyle(size: 11),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ],
       ),
     );
-  }
-
-  double _calculateMaxY(List<DayAdherenceSummary> summaries) {
-    int maxDose = 2;
-    for (final s in summaries) {
-      if (s.totalScheduled > maxDose) maxDose = s.totalScheduled;
-      if (s.takenCount > maxDose) maxDose = s.takenCount;
-      if (s.missedCount > maxDose) maxDose = s.missedCount;
-    }
-    return (maxDose + 1).toDouble();
   }
 }
