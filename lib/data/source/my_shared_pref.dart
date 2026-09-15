@@ -4,38 +4,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 class MySharedPref {
   MySharedPref._();
 
-  static late SharedPreferences _sharedPreferences;
+  static SharedPreferences? _sharedPreferences;
 
   static Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
   }
 
   static Future<void> reload() async {
-    await _sharedPreferences.reload();
+    await _sharedPreferences?.reload();
   }
 
   static void setValue(String key, String value) {
-    _sharedPreferences.setString(key, value);
+    _sharedPreferences?.setString(key, value);
     if (kDebugMode) {
       print("$key = $value (set)");
     }
   }
 
   static String? getValue(String key) {
-    return _sharedPreferences.getString(key);
+    return _sharedPreferences?.getString(key);
   }
 
   static Future<void> setBool(String key, bool val) async {
-    await _sharedPreferences.setBool(key, val);
+    await _sharedPreferences?.setBool(key, val);
   }
 
   static bool? getBool(String key) {
-    return _sharedPreferences.getBool(key);
+    return _sharedPreferences?.getBool(key);
   }
 
   static bool isContains(String key) {
-    return _sharedPreferences.containsKey(key);
+    return _sharedPreferences?.containsKey(key) ?? false;
   }
 
-  static Future<void> clear() async => await _sharedPreferences.clear();
+  static Future<void> clear() async => await _sharedPreferences?.clear();
 }

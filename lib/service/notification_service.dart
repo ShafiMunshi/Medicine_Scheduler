@@ -8,6 +8,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/data/database/app_database.dart';
 import 'package:medicine_app/data/repositories/medicine_log_repository.dart';
+import 'package:medicine_app/data/source/my_shared_pref.dart';
 import 'package:medicine_app/models/domain_models.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -68,7 +69,30 @@ class NotificationService {
   static const String _channelDescription =
       'Notifications for scheduled medicine intake';
 
+  static const String prefKeyNotificationsEnabled = 'pref_notifications_enabled';
+
   static bool _isInitialized = false;
+
+  /// Checks whether notifications are enabled by the user. Defaults to true.
+  static bool areNotificationsEnabled() {
+    try {
+      return MySharedPref.getBool(prefKeyNotificationsEnabled) ?? true;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// Updates whether notifications are enabled by the user.
+  /// If disabled, all currently scheduled notifications are cancelled.
+  static Future<void> setNotificationsEnabled(bool enabled) async {
+    await MySharedPref.setBool(prefKeyNotificationsEnabled, enabled);
+    if (!enabled) {
+      await cancelAll();
+      log('User disabled notifications: cancelled all scheduled alarms.');
+    } else {
+      log('User enabled notifications.');
+    }
+  }
 
   /// Initializes timezone data, notification channels, and platform settings.
   static Future<void> initialize() async {
@@ -213,6 +237,13 @@ class NotificationService {
     required Map<String, dynamic> payload,
   }) async {
     try {
+      if (!areNotificationsEnabled()) {
+        if (kDebugMode) {
+          log('Skipping scheduleNotification $id ($title): notifications are turned off in settings.');
+        }
+        return;
+      }
+
       final tzDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
 
       final androidDetails = AndroidNotificationDetails(
@@ -282,6 +313,11 @@ class NotificationService {
 
       // Cancel all current scheduled notifications
       await _notificationsPlugin.cancelAll();
+
+      if (!areNotificationsEnabled()) {
+        log('Notifications are disabled by user. Cleared all reminders.');
+        return;
+      }
 
       final now = DateTime.now();
       final lookAheadDays = 7; // Schedule 7 days ahead offline

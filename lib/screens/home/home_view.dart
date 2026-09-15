@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -9,9 +8,11 @@ import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/screens/home/widget/monthly_adherence_chart.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
+import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
+import 'package:medicine_app/widgets/user_avatar_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class HomeView extends ConsumerWidget {
@@ -36,7 +37,7 @@ class HomeView extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            topProfileSection(ref),
+            topProfileSection(context, ref),
             18.verticalSpace,
             topHorizontalProgressBar(todayMedicines.length, allMedicinesAsync.value?.length ?? 0),
             16.verticalSpace,
@@ -50,7 +51,7 @@ class HomeView extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
+                    color: Colors.black.withValues(alpha: 0.03),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
@@ -201,7 +202,7 @@ class HomeView extends ConsumerWidget {
     );
   }
 
-  Widget topProfileSection(WidgetRef ref) {
+  Widget topProfileSection(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(userProfileProvider);
 
     return profileAsync.when(
@@ -209,33 +210,40 @@ class HomeView extends ConsumerWidget {
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                SizedBox(
-                  height: 50.w,
-                  width: 50.w,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(25.r),
-                    child: user?.imagePath != null && File(user!.imagePath!).existsSync()
-                        ? Image.file(File(user.imagePath!), fit: BoxFit.cover)
-                        : Image.asset('assets/images/avatar.png', fit: BoxFit.cover),
+            InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const UserProfileSetupView(isInitialSetup: false),
                   ),
-                ),
-                15.horizontalSpace,
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      user?.name ?? 'Shafi Munshi',
-                      style: boldTextStyle(),
-                    ),
-                    Text(
-                      '${user?.age ?? 24} years old',
-                      style: secondaryTextStyle(),
-                    ),
-                  ],
-                )
-              ],
+                );
+              },
+              borderRadius: BorderRadius.circular(25.r),
+              child: Row(
+                children: [
+                  UserAvatarWidget(
+                    avatarPath: user?.imagePath,
+                    radius: 25.r,
+                    borderWidth: 1.5,
+                    borderColor: AppColors.primaryColor.withValues(alpha: 0.3),
+                  ),
+                  15.horizontalSpace,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.name ?? 'Shafi Munshi',
+                        style: boldTextStyle(),
+                      ),
+                      Text(
+                        '${user?.age ?? 24} years old',
+                        style: secondaryTextStyle(),
+                      ),
+                    ],
+                  )
+                ],
+              ),
             ),
             Container(
               padding: const EdgeInsets.all(15),

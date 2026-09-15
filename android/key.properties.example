@@ -1,0 +1,6 @@
+# Keystore configuration for signing release APK/AppBundle
+# Place your real values in android/key.properties (which is git-ignored)
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=app/my-keystore.jks

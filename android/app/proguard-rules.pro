@@ -1,3 +1,13 @@
+# Flutter Local Notifications
+-keep class com.dexterous.flutterlocalnotifications.** { *; }
+
+# SQLite & Drift
+-keep class org.sqlite.** { *; }
+-dontwarn org.sqlite.**
+
+# Desugar JDK
+-dontwarn java.time.**
+
 # Suppress ML Kit text recognizer warnings
 -dontwarn com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions$Builder
 -dontwarn com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions

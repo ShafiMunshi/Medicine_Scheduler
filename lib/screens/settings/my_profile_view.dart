@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
+import 'package:medicine_app/widgets/user_avatar_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
 
 class MyProfileView extends ConsumerStatefulWidget {
@@ -63,18 +63,16 @@ class _MyProfileViewState extends ConsumerState<MyProfileView> {
         child: profileAsync.when(
           data: (user) {
             final imagePath = user?.imagePath;
-            final hasImage = imagePath != null && File(imagePath).existsSync();
 
             return Column(
               children: [
                 Stack(
                   children: [
-                    CircleAvatar(
+                    UserAvatarWidget(
+                      avatarPath: imagePath,
                       radius: 50,
-                      backgroundImage: hasImage ? FileImage(File(imagePath)) : null,
-                      child: !hasImage
-                          ? const Icon(Icons.person, size: 50)
-                          : null,
+                      borderWidth: 2,
+                      borderColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                     ),
                     Positioned(
                       bottom: 0,

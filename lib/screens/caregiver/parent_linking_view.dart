@@ -6,7 +6,6 @@ import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/caregiver/caregiver_dashboard_view.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
-import 'package:medicine_app/viewmodels/caregiver_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
 

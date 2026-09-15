@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:medicine_app/data/database/app_database.dart';
-import 'package:medicine_app/models/domain_models.dart';
 import 'package:medicine_app/screens/auth/auth_gate.dart';
 import 'package:medicine_app/screens/auth/sign_in_page.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';

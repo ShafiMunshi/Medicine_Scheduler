@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
