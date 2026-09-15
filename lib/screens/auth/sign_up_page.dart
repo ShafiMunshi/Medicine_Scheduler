@@ -1,161 +1,251 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:medicine_app/constant/app_assets.dart';
-import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/data/repository/auth_repository.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
-import 'package:medicine_app/viewmodels/viewmodels_auth.dart';
-import 'package:medicine_app/screens/top_screen_view.dart';
+import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
+import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
-class SignUpScreen extends StatefulWidget {
+class SignUpScreen extends ConsumerStatefulWidget {
   static const String routeName = '/sign_up_screen';
+  const SignUpScreen({super.key});
+
   @override
-  _SignUpScreenState createState() => _SignUpScreenState();
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
-  TextEditingController emailCont = TextEditingController();
-  TextEditingController passwordCont = TextEditingController();
-
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
+  final emailCont = TextEditingController();
+  final passwordCont = TextEditingController();
+  final nameCont = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  FocusNode emailfocus = FocusNode();
-  FocusNode passwordfocus = FocusNode();
+  final nameFocus = FocusNode();
+  final emailFocus = FocusNode();
+  final passwordFocus = FocusNode();
+
+  bool _isSigningUp = false;
 
   @override
-  void initState() {
-    super.initState();
-    init();
+  void dispose() {
+    emailCont.dispose();
+    passwordCont.dispose();
+    nameCont.dispose();
+    nameFocus.dispose();
+    emailFocus.dispose();
+    passwordFocus.dispose();
+    super.dispose();
   }
 
-  void init() async {
-    //
+  Future<void> _signUpWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _isSigningUp = true);
+
+    try {
+      final user = await ref.read(authControllerProvider.notifier).signUpWithEmail(
+            email: emailCont.text.trim(),
+            password: passwordCont.text.trim(),
+            name: nameCont.text.trim(),
+          );
+      if (user != null && mounted) {
+        toast('Account created successfully!');
+        Navigator.pushReplacementNamed(
+          context,
+          UserProfileSetupView.routeName,
+        );
+      }
+    } catch (e) {
+      toast('Sign-Up Error: $e');
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
   }
 
-  @override
-  void setState(fn) {
-    if (mounted) super.setState(fn);
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isSigningUp = true);
+    try {
+      final user =
+          await ref.read(authControllerProvider.notifier).signInWithGoogle();
+      if (user != null && mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          UserProfileSetupView.routeName,
+        );
+      }
+    } catch (e) {
+      toast('Google Sign-In Error: $e');
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() => _isSigningUp = true);
+    try {
+      final user =
+          await ref.read(authControllerProvider.notifier).signInWithApple();
+      if (user != null && mounted) {
+        Navigator.pushReplacementNamed(
+          context,
+          UserProfileSetupView.routeName,
+        );
+      }
+    } catch (e) {
+      toast('Apple Sign-In Error: $e');
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final authController = Provider.of<AuthViewModels>(context, listen: false);
     return Scaffold(
-      appBar: commonAppBarWidget(context,
-          changeIcon: true, title: "", showLeadingIcon: false),
-      bottomNavigationBar: Padding(
-        padding: EdgeInsets.all(12),
-        child: authController.isLoading
-            ? Center(child: CircularProgressIndicator())
-            : CommonButton(
-                buttonText: "Sign Up",
-                width: MediaQuery.of(context).size.width,
-                onTap: () {
-                  if (_formKey.currentState!.validate()) {
-                    if (emailCont.text.isNotEmpty &&
-                        passwordCont.text.isNotEmpty) {
-                      // Get.offAll(() => TopScreenView());
-                    }
-                  }
-                }),
+      appBar: commonAppBarWidget(
+        context,
+        changeIcon: true,
+        title: "",
+        showLeadingIcon: true,
+      ),
+      bottomNavigationBar: SafeArea(
+        child: CommonButton(
+          buttonText: _isSigningUp ? "Creating Account..." : "Create Account & Continue",
+          width: MediaQuery.of(context).size.width,
+          onTap: _isSigningUp ? null : _signUpWithEmail,
+        ).paddingAll(16),
       ),
       body: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Register', style: boldTextStyle(size: 24)),
-              16.height,
-              Row(
-                children: [
-                  Text("Already have an account?",
-                      style:
-                          secondaryTextStyle(size: 16, color: Colors.black87)),
-                  TextButton(
-                      onPressed: () {},
-                      child: Text('Sign In',
-                          style: boldTextStyle(color: Colors.blue)))
-                ],
-              ),
-              28.height,
-              AppTextField(
-                textFieldType: TextFieldType.NAME,
-                controller: emailCont,
-                focus: emailfocus,
-                nextFocus: passwordfocus,
-                validator: (val) {
-                  if (val!.isEmpty) {
-                    return 'This field is empty';
-                  }
-
-                  return null;
-                },
-                decoration: inputDecoration(
-                  context,
-                  labelText: "Name",
-                  // prefixIcon: ic_message.iconImage(size: 10).paddingAll(14),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                16.verticalSpace,
+                const Text(
+                  "Create Account",
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
-              ),
-              16.height,
-              AppTextField(
-                textFieldType: TextFieldType.EMAIL,
-                controller: emailCont,
-                focus: emailfocus,
-                nextFocus: passwordfocus,
-                validator: (val) {
-                  if (val!.isEmpty) {
-                    return 'This field is empty';
-                  } else if (!val.validateEmail()) {
-                    return 'Email is not valid';
-                  }
+                8.verticalSpace,
+                const Text(
+                  "Keep your medicine reminders safe offline and let family stay in sync.",
+                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                24.verticalSpace,
 
-                  return null;
-                },
-                decoration: inputDecoration(context,
-                    labelText: "Email",
-                    prefixIcon: ic_message.iconImage(size: 10).paddingAll(14)),
-              ),
-              16.height,
-              AppTextField(
-                textFieldType: TextFieldType.PASSWORD,
-                controller: passwordCont,
-                focus: passwordfocus,
-                validator: (val) {
-                  if (val!.isEmpty) {
-                    return 'This field is empty';
-                  } else if (val.length < 4) {
-                    return 'Password must have at least 5 length';
-                  }
+                // Social Buttons
+                _buildSocialButton(
+                  iconAsset: google_logo,
+                  label: "Sign up with Google",
+                  onTap: _isSigningUp ? null : _signInWithGoogle,
+                ),
+                12.verticalSpace,
+                _buildSocialButton(
+                  iconAsset: apple_logo,
+                  label: "Sign up with Apple",
+                  onTap: _isSigningUp ? null : _signInWithApple,
+                ),
+                20.verticalSpace,
 
-                  return null;
-                },
-                suffixPasswordVisibleWidget:
-                    ic_show.iconImage(size: 10).paddingAll(14),
-                suffixPasswordInvisibleWidget:
-                    ic_hide.iconImage(size: 10).paddingAll(14),
-                decoration: inputDecoration(context,
-                    labelText: "Password",
-                    prefixIcon: ic_lock.iconImage(size: 10).paddingAll(14)),
-              ),
-              // 8.height,
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                      child: Text(
+                        "OR USE EMAIL",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+                20.verticalSpace,
 
-              20.verticalSpace,
-              Row(
-                children: [
-                  Container(color: gray.withOpacity(0.2), height: 1).expand(),
-                  12.width,
-                  Text('Or sign in with email', style: secondaryTextStyle()),
-                  12.width,
-                  Container(color: gray.withOpacity(0.2), height: 1).expand(),
-                ],
+                AppTextField(
+                  textFieldType: TextFieldType.NAME,
+                  controller: nameCont,
+                  focus: nameFocus,
+                  nextFocus: emailFocus,
+                  decoration: inputDecoration(
+                    context,
+                    labelText: "Full Name",
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                ),
+                16.verticalSpace,
+                AppTextField(
+                  textFieldType: TextFieldType.EMAIL,
+                  controller: emailCont,
+                  focus: emailFocus,
+                  nextFocus: passwordFocus,
+                  decoration: inputDecoration(
+                    context,
+                    labelText: "Email Address",
+                    prefixIcon: const Icon(Icons.email_outlined),
+                  ),
+                ),
+                16.verticalSpace,
+                AppTextField(
+                  textFieldType: TextFieldType.PASSWORD,
+                  controller: passwordCont,
+                  focus: passwordFocus,
+                  decoration: inputDecoration(
+                    context,
+                    labelText: "Password (min 6 chars)",
+                    prefixIcon: const Icon(Icons.lock_outline),
+                  ),
+                ),
+                24.verticalSpace,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton({
+    required String iconAsset,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: OutlinedButton(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: Colors.grey.shade300),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          backgroundColor: Colors.white,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              iconAsset,
+              height: 22,
+              width: 22,
+              errorBuilder: (_, __, ___) => const Icon(Icons.login, size: 22),
+            ),
+            12.horizontalSpace,
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.black87,
               ),
-              24.verticalSpace,
-              commonSocialLoginButton(context),
-            ],
-          ).paddingAll(16),
+            ),
+          ],
         ),
       ),
     );

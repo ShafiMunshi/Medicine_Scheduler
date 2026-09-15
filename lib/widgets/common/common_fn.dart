@@ -30,9 +30,11 @@ TimeOfDay? stringToTimeOfDay(String? timeString) {
   }
 }
 
-String formatTimeOfDayTo12Hour(TimeOfDay time, BuildContext context) {
-  final localizations = MaterialLocalizations.of(context);
-  return localizations.formatTimeOfDay(time);
+String formatTimeOfDayTo12Hour(TimeOfDay time, [BuildContext? context]) {
+  final hour = time.hourOfPeriod == 0 ? 12 : time.hourOfPeriod;
+  final minute = time.minute.toString().padLeft(2, '0');
+  final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+  return '$hour:$minute $period';
 }
 
 int generateNotificationId(int medicineId, DateTime scheduleTime) {

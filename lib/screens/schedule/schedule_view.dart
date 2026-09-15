@@ -1,42 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 import 'package:medicine_app/config/app_styles.dart';
 import 'package:medicine_app/constant/app_color.dart';
-import 'package:medicine_app/models/medicine_consumption_model.dart';
-import 'package:medicine_app/models/medicine_model.dart';
+import 'package:medicine_app/core/utils/schedule_calculator.dart';
+import 'package:medicine_app/data/database/app_database.dart';
+import 'package:medicine_app/models/domain_models.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/schedule/widget/schedule_time_widget.dart';
-import 'package:medicine_app/viewmodels/medicine_viewmodels.dart';
-import 'package:medicine_app/viewmodels/schedule_viewmodels.dart';
+import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
+import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
 import 'package:medicine_app/widgets/common/common_fn.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
-class ScheduleView extends StatefulWidget {
+class ScheduleView extends ConsumerStatefulWidget {
   static const String routeName = '/schedule_screen';
   const ScheduleView({super.key});
 
   @override
-  State<ScheduleView> createState() => _ScheduleViewState();
+  ConsumerState<ScheduleView> createState() => _ScheduleViewState();
 }
 
-class _ScheduleViewState extends State<ScheduleView> {
-  late PageController pageController;
-  int quantity = 0;
+class _ScheduleViewState extends ConsumerState<ScheduleView> {
+  late final PageController pageController;
+  double quantityToAdd = 0.0;
   int currentPage = 0;
 
   @override
   void initState() {
-    pageController = PageController();
-    getTodaysMedicineAndConsumeData();
     super.initState();
-  }
-
-  void getTodaysMedicineAndConsumeData() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MedicineViewmodels>().get_todays_medicine();
-      context.read<ScheduleViewmodels>().get_all_medicine_consume_data();
-    });
+    pageController = PageController();
   }
 
   @override
@@ -47,60 +41,194 @@ class _ScheduleViewState extends State<ScheduleView> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDate = ref.watch(scheduleSelectedDateProvider);
+    final scheduledMedicines = ref.watch(medicinesForScheduleDateProvider);
+    final logsAsync = ref.watch(logsForScheduleDateProvider);
+    final logs = logsAsync.value ?? [];
+
     return Scaffold(
       appBar: commonAppBarWidget(
         context,
         title: 'Medicine Schedule',
         changeIcon: true,
       ),
-      body: Consumer<MedicineViewmodels>(builder: (_, vmMedicine, __) {
-        if (vmMedicine.isLoading) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (vmMedicine.todaysMedicines.isEmpty) {
-          return const Center(child: Text("No Medicine Found For Today"));
-        }
+      body: Column(
+        children: [
+          _buildDateSelector(context, selectedDate),
+          Expanded(
+            child: scheduledMedicines.isEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.event_available, size: 54, color: Colors.grey),
+                          16.verticalSpace,
+                          Text(
+                            "No Medicine Scheduled for ${DateFormat('d MMM, yyyy').format(selectedDate)}",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : PageView.builder(
+                    controller: pageController,
+                    onPageChanged: (index) {
+                      setState(() {
+                        currentPage = index;
+                        quantityToAdd = 0.0;
+                      });
+                    },
+                    itemCount: scheduledMedicines.length,
+                    itemBuilder: (context, index) {
+                      final medicine = scheduledMedicines[index];
 
-        return Consumer<ScheduleViewmodels>(builder: (_, vmSchedule, __) {
-          if (vmSchedule.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (pageController.hasClients &&
-                pageController.page != currentPage) {
-              pageController.jumpToPage(currentPage);
-            }
-          });
-
-          return PageView.builder(
-            controller: pageController,
-            onPageChanged: (index) {
-              currentPage = index;
-            },
-            itemCount: vmMedicine.todaysMedicines.length,
-            itemBuilder: (context, index) {
-              return eachMedicine(
-                medicine: vmMedicine.todaysMedicines[index],
-                index: index,
-                vmSchedule: vmSchedule,
-                vmMedicine: vmMedicine,
-              );
-            },
-          );
-        });
-      }),
+                      return _buildEachMedicineView(
+                        medicine: medicine,
+                        index: index,
+                        totalCount: scheduledMedicines.length,
+                        logs: logs,
+                        selectedDate: selectedDate,
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 
-  SingleChildScrollView eachMedicine({
-    required MedicineModel medicine,
+  Widget _buildDateSelector(BuildContext context, DateTime selectedDate) {
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+    final isYesterday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day - 1;
+
+    String dateLabel;
+    if (isToday) {
+      dateLabel = 'Today, ${DateFormat('d MMM').format(selectedDate)}';
+    } else if (isYesterday) {
+      dateLabel = 'Yesterday, ${DateFormat('d MMM').format(selectedDate)}';
+    } else {
+      dateLabel = DateFormat('EEE, d MMM yyyy').format(selectedDate);
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.chevron_left, color: AppColors.primaryColor),
+            onPressed: () {
+              ref.read(scheduleSelectedDateProvider.notifier).state =
+                  selectedDate.subtract(const Duration(days: 1));
+            },
+          ),
+          InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: selectedDate,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2050),
+              );
+              if (picked != null) {
+                ref.read(scheduleSelectedDateProvider.notifier).state = picked;
+              }
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.calendar_month, size: 18, color: AppColors.primaryColor),
+                6.horizontalSpace,
+                Text(
+                  dateLabel,
+                  style: boldTextStyle(size: 14, color: AppColors.primaryColor),
+                ),
+              ],
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (!isToday)
+                GestureDetector(
+                  onTap: () {
+                    ref.read(scheduleSelectedDateProvider.notifier).state =
+                        DateTime(now.year, now.month, now.day);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Today',
+                      style: primaryTextStyle(size: 11, color: AppColors.primaryColor),
+                    ),
+                  ),
+                ),
+              IconButton(
+                icon: const Icon(Icons.chevron_right, color: AppColors.primaryColor),
+                onPressed: () {
+                  ref.read(scheduleSelectedDateProvider.notifier).state =
+                      selectedDate.add(const Duration(days: 1));
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEachMedicineView({
+    required MedicineWithSchedules medicine,
     required int index,
-    required ScheduleViewmodels vmSchedule,
-    required MedicineViewmodels vmMedicine,
+    required int totalCount,
+    required List<MedicineLog> logs,
+    required DateTime selectedDate,
   }) {
-    final todayMediConsume =
-        vmSchedule.get_todays_medicine_consume_data_list(medicine.id!);
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+    final isYesterday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day - 1;
+    final isTomorrow = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day + 1;
+
+    String dateSectionHeader = isToday
+        ? 'Today'
+        : isYesterday
+            ? 'Yesterday'
+            : isTomorrow
+                ? 'Tomorrow'
+                : DateFormat('d MMM').format(selectedDate);
+
+    final step = medicine.dosageUnitEnum == DosageUnit.cup ? 5.0 : 1.0;
 
     return SingleChildScrollView(
       child: Padding(
@@ -108,7 +236,6 @@ class _ScheduleViewState extends State<ScheduleView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Medication Info
             Center(
               child: Column(
                 children: [
@@ -116,17 +243,18 @@ class _ScheduleViewState extends State<ScheduleView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                          onPressed: () {
-                            if (pageController.page == 0 && currentPage == 0) {
-                              snackBar(context,
-                                  title: "This is the first medicine");
-                              return;
-                            }
-                            pageController.previousPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.linear);
-                          },
-                          icon: Icon(Icons.arrow_back_ios_new_outlined)),
+                        onPressed: () {
+                          if (currentPage == 0) {
+                            snackBar(context, title: "This is the first medicine");
+                            return;
+                          }
+                          pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_back_ios_new_outlined),
+                      ),
                       Stack(
                         alignment: Alignment.bottomCenter,
                         children: [
@@ -148,35 +276,32 @@ class _ScheduleViewState extends State<ScheduleView> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              medicine.mealTiming == MealTiming.before
-                                  ? 'Before meal'
-                                  : 'After meal',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 14),
+                              medicine.mealTimingEnum.displayName,
+                              style: const TextStyle(color: Colors.white, fontSize: 14),
                             ),
                           ),
                         ],
                       ),
                       IconButton(
-                          onPressed: () {
-                            if (currentPage ==
-                                vmMedicine.todaysMedicines.length - 1) {
-                              snackBar(context,
-                                  title: "This is the last medicine");
-                              return;
-                            }
-                            pageController.nextPage(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.linear);
-                          },
-                          icon: Icon(Icons.arrow_forward_ios_rounded)),
+                        onPressed: () {
+                          if (currentPage == totalCount - 1) {
+                            snackBar(context, title: "This is the last medicine");
+                            return;
+                          }
+                          pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                        icon: const Icon(Icons.arrow_forward_ios_rounded),
+                      ),
                     ],
                   ),
                   15.verticalSpace,
                   Text(
-                    medicine.medicineName,
-                    style: TextStyle(
-                      fontSize: 20,
+                    medicine.medicine.medicineName,
+                    style: const TextStyle(
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -185,7 +310,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Today',
+                        dateSectionHeader,
                         style: boldTextStyle(size: 18),
                       ),
                       Container(
@@ -196,7 +321,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          '${medicine.medicineScheduleList?.length ?? 0} times',
+                          '${medicine.schedules.length} times',
                           style: boldTextStyle(color: white),
                         ),
                       ),
@@ -206,18 +331,8 @@ class _ScheduleViewState extends State<ScheduleView> {
               ),
             ),
             const SizedBox(height: 15),
-
-            Consumer<ScheduleViewmodels>(builder: (_, vm, __) {
-              if (vm.isLoading) {
-                return Center(child: CircularProgressIndicator());
-              }
-              return _eachMedicineScheduleTimeDayWidget(
-                  medicine, todayMediConsume, vmSchedule, vmMedicine);
-            }),
-
+            _buildScheduleTimesList(medicine, logs, selectedDate),
             const SizedBox(height: 16),
-
-            // Add More Medicines Link
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -227,7 +342,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                 ),
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.info_outline_rounded,
                       color: AppColors.primaryColor,
                       size: 15,
@@ -239,43 +354,46 @@ class _ScheduleViewState extends State<ScheduleView> {
                     ),
                     5.horizontalSpace,
                     Text(
-                      '${medicine.availableQuantity} Pcs',
+                      '${ScheduleCalculator.formatNumber(medicine.medicine.availableQuantity)} ${medicine.dosageUnitEnum.displayName}',
                       style: primaryTextStyle(
-                          size: 11, color: AppColors.primaryColor),
+                        size: 11,
+                        color: AppColors.primaryColor,
+                      ),
                     )
                   ],
                 )
               ],
             ),
             10.verticalSpace,
-
-            // Quantity Selector
             Row(
               children: [
                 Flexible(
                   flex: 2,
                   child: Container(
-                    decoration:
-                        boxDecoration(radius: 10, color: AppColors.greyColor),
+                    decoration: boxDecoration(radius: 10, color: AppColors.greyColor),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         IconButton(
                           onPressed: () {
                             setState(() {
-                              if (quantity > 0) quantity--;
+                              if (quantityToAdd >= step) {
+                                quantityToAdd -= step;
+                              } else {
+                                quantityToAdd = 0.0;
+                              }
                             });
                           },
                           icon: const Icon(Icons.remove),
                         ),
                         Text(
-                          '$quantity Pcs',
+                          '${ScheduleCalculator.formatNumber(quantityToAdd)} ${medicine.dosageUnitEnum.displayName}',
                           style: const TextStyle(fontSize: 16),
                         ),
                         IconButton(
                           onPressed: () {
                             setState(() {
-                              quantity++;
+                              quantityToAdd += step;
                             });
                           },
                           icon: const Icon(Icons.add),
@@ -289,22 +407,22 @@ class _ScheduleViewState extends State<ScheduleView> {
                   flex: 1,
                   child: InkWell(
                     onTap: () async {
-                      final updatedMedicine = medicine.copyWith(
-                        availableQuantity:
-                            medicine.availableQuantity + quantity,
-                      );
-                      final vm = context.read<MedicineViewmodels>();
-                      await vm.update_medicine(updatedMedicine);
-                      await vm.get_todays_medicine();
-                      setState(() {
-                        quantity = 0; // Reset quantity after adding
-                      });
+                      if (quantityToAdd > 0) {
+                        await ref
+                            .read(medicineControllerProvider.notifier)
+                            .addStock(medicine.medicine.id, quantityToAdd);
+                        setState(() {
+                          quantityToAdd = 0.0;
+                        });
+                        if (context.mounted) {
+                          toast("Stock updated!");
+                        }
+                      }
                     },
                     child: Container(
                       alignment: Alignment.center,
                       width: double.maxFinite,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 14),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                       decoration: BoxDecoration(
                         color: AppColors.secondaryColor,
                         borderRadius: BorderRadius.circular(10),
@@ -319,14 +437,18 @@ class _ScheduleViewState extends State<ScheduleView> {
               ],
             ),
             const SizedBox(height: 10),
-            remainingMedicineCountWidget(medicine),
-            const SizedBox(height: 10),
-            // I Have Taken Button
+            _remainingMedicineCountWidget(medicine),
+            const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  // TODO: add functionality to set as taken on the top to bottom serial wise auto taken
+                onPressed: () async {
+                  await ref
+                      .read(scheduleControllerProvider.notifier)
+                      .markAllDosesForDateAsTaken(selectedDate, medicine);
+                  if (context.mounted) {
+                    toast("Marked doses for $dateSectionHeader as taken!");
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -337,7 +459,7 @@ class _ScheduleViewState extends State<ScheduleView> {
                 ),
                 child: const Text(
                   'I have taken medicine',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                  style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -347,121 +469,111 @@ class _ScheduleViewState extends State<ScheduleView> {
     );
   }
 
-  Row remainingMedicineCountWidget(MedicineModel medicine) {
-    final count = getTotalEstimatedMedicine(medicine);
+  Widget _buildScheduleTimesList(
+    MedicineWithSchedules medicine,
+    List<MedicineLog> logs,
+    DateTime selectedDate,
+  ) {
+    final now = DateTime.now();
+    final isSelectedDateToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+
+    return Column(
+      children: medicine.schedules.map((schedule) {
+        final scheduledDateTime = DateTime(
+          selectedDate.year,
+          selectedDate.month,
+          selectedDate.day,
+          schedule.hour,
+          schedule.minute,
+        );
+
+        final matchingLog = logs.where((log) {
+          return log.medicineId == medicine.medicine.id &&
+              log.scheduledDateTime.year == scheduledDateTime.year &&
+              log.scheduledDateTime.month == scheduledDateTime.month &&
+              log.scheduledDateTime.day == scheduledDateTime.day &&
+              log.scheduledDateTime.hour == scheduledDateTime.hour &&
+              log.scheduledDateTime.minute == scheduledDateTime.minute;
+        }).firstOrNull;
+
+        final isTaken = matchingLog?.status == 'taken';
+        final isNextUpcoming = isSelectedDateToday &&
+            !isTaken &&
+            scheduledDateTime.isAfter(now) &&
+            medicine.schedules.where((s) {
+                  final dt = DateTime(now.year, now.month, now.day, s.hour, s.minute);
+                  return dt.isAfter(now);
+                }).firstOrNull?.id ==
+                schedule.id;
+
+        final tod = TimeOfDay(hour: schedule.hour, minute: schedule.minute);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: ScheduleTimeWidget(
+            timeOfDay: schedule.dayTimeName,
+            time: formatTimeOfDayTo12Hour(tod, context),
+            isChecked: isTaken,
+            showWaterWave: isNextUpcoming,
+            onChanged: (checked) async {
+              final scheduleController = ref.read(scheduleControllerProvider.notifier);
+              if (checked) {
+                await scheduleController.markDoseAsTaken(
+                  medicineId: medicine.medicine.id,
+                  scheduleId: schedule.id,
+                  scheduledDateTime: scheduledDateTime,
+                  dosageTaken: medicine.medicine.dosage,
+                );
+              } else {
+                await scheduleController.revertDose(
+                  medicineId: medicine.medicine.id,
+                  scheduledDateTime: scheduledDateTime,
+                );
+              }
+            },
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _remainingMedicineCountWidget(MedicineWithSchedules medicine) {
+    final scheduledDates = ScheduleCalculator.calculateScheduledDates(
+      startDate: medicine.medicine.startDate,
+      endDate: medicine.medicine.endDate,
+      repeatVariation: medicine.repeatVariationEnum,
+      repeatDays: medicine.medicine.repeatDays,
+      weekDays: medicine.weekDaysList,
+      monthDays: medicine.monthDaysList,
+    );
+
+    final diff = ScheduleCalculator.getEstimatedPillDifference(
+      totalDosesPerDay: medicine.schedules.length,
+      dosagePerTime: medicine.medicine.dosage,
+      totalScheduledDays: scheduledDates.length,
+      availableQuantity: medicine.medicine.availableQuantity,
+    );
+
     return Row(
       children: [
-        Icon(
+        const Icon(
           Icons.info_outline_rounded,
           color: AppColors.primaryColor,
           size: 15,
         ),
         8.horizontalSpace,
         Text(
-          count > 0 ? 'Estimated Need' : 'Extra Remaining Medicine',
+          diff > 0 ? 'Estimated Need' : 'Extra Remaining Medicine',
           style: secondaryTextStyle(size: 11),
         ),
         5.horizontalSpace,
         Text(
-          '${count.abs()} Pcs',
+          '${ScheduleCalculator.formatNumber(diff.abs())} ${medicine.dosageUnitEnum.displayName}',
           style: primaryTextStyle(size: 11, color: AppColors.primaryColor),
         )
       ],
-    );
-  }
-
-  Column _eachMedicineScheduleTimeDayWidget(
-      MedicineModel medicine,
-      List<MedicineConsumeLogModel>? todayMediConsume,
-      ScheduleViewmodels vmSchedule,
-      MedicineViewmodels vmMedicine) {
-    final mediScheduleListLen = medicine.medicineScheduleList?.length ?? 0;
-    String? nextTimeToTakeMedicine;
-
-    return Column(
-      spacing: 8,
-      children: List.generate(mediScheduleListLen, (index) {
-        final mediScheduleTime = medicine.medicineScheduleList?[index].dayTime;
-        final now = DateTime.now();
-
-        final indivMediConsume = todayMediConsume?.firstWhere(
-          (consume) =>
-              consume.scheduledDateTime.hour == mediScheduleTime?.hour &&
-              consume.scheduledDateTime.minute == mediScheduleTime?.minute,
-          orElse: () => MedicineConsumeLogModel(
-            medicineId: medicine.id!,
-            dosageTaken: medicine.dosage,
-            status: ConsumptionStatus.missed,
-            scheduledDateTime: DateTime(now.year, now.month, now.day,
-                mediScheduleTime!.hour, mediScheduleTime.minute),
-            actualTakenTime: null,
-          ),
-        );
-
-        if (nextTimeToTakeMedicine != null) {
-          for (var e in medicine.medicineScheduleList!) {
-            log("1n e.dayTimeName: ${e.dayTimeName}");
-            final now = TimeOfDay.now();
-            if (indivMediConsume != null &&
-                indivMediConsume.status == ConsumptionStatus.taken) {
-              continue;
-            }
-
-            log("e.dayTime: ${e.dayTime}, now: $now");
-            if (e.dayTime!.hour > now.hour ||
-                (e.dayTime!.hour == now.hour &&
-                    e.dayTime!.minute > now.minute)) {
-              nextTimeToTakeMedicine = e.dayTimeName;
-              break;
-            }
-          }
-        }
-
-        log("final nextTimeToTakeMedicine: $nextTimeToTakeMedicine");
-
-        return ScheduleTimeWidget(
-          timeOfDay: medicine.medicineScheduleList?[index].dayTimeName ?? '',
-          time: formatTimeOfDayTo12Hour(
-              medicine.medicineScheduleList?[index].dayTime ?? TimeOfDay.now(),
-              context),
-          isChecked: indivMediConsume?.status == ConsumptionStatus.taken,
-          showWaterWave: nextTimeToTakeMedicine ==
-              medicine.medicineScheduleList?[index].dayTimeName,
-          onChanged: (isTaken) async {
-            final now = DateTime.now();
-            final consumeModel = indivMediConsume?.copyWith(
-              status:
-                  isTaken ? ConsumptionStatus.taken : ConsumptionStatus.missed,
-              actualTakenTime: isTaken
-                  ? DateTime(now.year, now.month, now.day, now.hour, now.minute)
-                  : null,
-            );
-            log("Is taken: $isTaken");
-
-            log("New updated Consume Model: $consumeModel");
-            // Update the medicine consumption log
-
-            if (consumeModel != null) {
-              if (isTaken) {
-                await vmSchedule.update_medicine_consume_data(
-                    medicine.id!, consumeModel, medicine);
-              } else {
-                // Revert the consume data if unchecked
-                final updatedConsumeModel = consumeModel.copyWith(
-                  status: ConsumptionStatus.missed,
-                  actualTakenTime: null,
-                );
-
-                await vmSchedule.revert_updated_medicine_consume_data(
-                    medicine.id!, updatedConsumeModel, medicine);
-              }
-
-              await vmMedicine.get_all_medicine();
-              await vmMedicine.get_todays_medicine();
-            }
-          },
-        );
-      }),
     );
   }
 
@@ -469,14 +581,4 @@ class _ScheduleViewState extends State<ScheduleView> {
     final rand = index % 3 + 1;
     return 'assets/images/medicine_$rand.png';
   }
-
-  // get total estimated medicine will take by the user.
-  int getTotalEstimatedMedicine(MedicineModel model) {
-    return (model.medicineScheduleList?.length ?? 0) *
-            model.dosage *
-            (model.finalScheduleDates?.length ?? 0) -
-        model.availableQuantity;
-  }
 }
-
-// TODO: Mark medicine as taken to Medicine Consumption Model and track when when took medicine and when didn't

@@ -1,52 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:medicine_app/screens/auth/component/common_fn.dart';
-import 'dart:io';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:medicine_app/viewmodels/profile_viewmodels.dart';
+import 'package:medicine_app/screens/auth/component/common_fn.dart';
+import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
+import 'package:medicine_app/widgets/user_avatar_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
-import 'package:provider/provider.dart';
 
-class MyProfileView extends StatefulWidget {
+class MyProfileView extends ConsumerStatefulWidget {
   const MyProfileView({super.key});
 
   @override
-  State<MyProfileView> createState() => _MyProfileViewState();
+  ConsumerState<MyProfileView> createState() => _MyProfileViewState();
 }
 
-class _MyProfileViewState extends State<MyProfileView> {
+class _MyProfileViewState extends ConsumerState<MyProfileView> {
   final _nameController = TextEditingController();
+  final _ageController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
+
   bool _isEditing = false;
-  File? _profileImage;
   final ImagePicker _picker = ImagePicker();
-
-  getUserData() async {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final vm = context.read<ProfileViewmodels>();
-
-      await vm.fetchUserData();
-
-      _profileImage = vm.userModel?.imagePath != null
-          ? File(vm.userModel!.imagePath!)
-          : null;
-      _nameController.text = vm.userModel?.name ?? '';
-      _emailController.text = vm.userModel?.email ?? '';
-      _phoneController.text = '01XXXXXXXXX';
-      _addressController.text = 'Temporary Address';
-    });
-  }
 
   @override
   void initState() {
-    getUserData();
     super.initState();
+    Future.microtask(() async {
+      final user = await ref.read(userProfileProvider.future);
+      if (user != null && mounted) {
+        _nameController.text = user.name;
+        _ageController.text = user.age.toString();
+        _emailController.text = user.email ?? 'shafi@example.com';
+        _phoneController.text = '+880 1700-000000';
+        _addressController.text = 'Dhaka, Bangladesh';
+      }
+    });
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _ageController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
     _addressController.dispose();
@@ -55,6 +50,8 @@ class _MyProfileViewState extends State<MyProfileView> {
 
   @override
   Widget build(BuildContext context) {
+    final profileAsync = ref.watch(userProfileProvider);
+
     return Scaffold(
       appBar: commonAppBarWidget(
         context,
@@ -63,22 +60,19 @@ class _MyProfileViewState extends State<MyProfileView> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Consumer<ProfileViewmodels>(builder: (_, vm, __) {
-          if (vm.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else {
+        child: profileAsync.when(
+          data: (user) {
+            final imagePath = user?.imagePath;
+
             return Column(
               children: [
                 Stack(
                   children: [
-                    CircleAvatar(
+                    UserAvatarWidget(
+                      avatarPath: imagePath,
                       radius: 50,
-                      backgroundImage: _profileImage != null
-                          ? FileImage(_profileImage!)
-                          : null,
-                      child: _profileImage == null
-                          ? const Icon(Icons.person, size: 50)
-                          : null,
+                      borderWidth: 2,
+                      borderColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                     ),
                     Positioned(
                       bottom: 0,
@@ -110,6 +104,14 @@ class _MyProfileViewState extends State<MyProfileView> {
                 ),
                 const SizedBox(height: 16),
                 _buildTextField(
+                  controller: _ageController,
+                  label: 'Age',
+                  icon: Icons.calendar_today,
+                  enabled: _isEditing,
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 16),
+                _buildTextField(
                   controller: _emailController,
                   label: 'Email',
                   icon: Icons.email,
@@ -128,27 +130,45 @@ class _MyProfileViewState extends State<MyProfileView> {
                   label: 'Address',
                   icon: Icons.location_on,
                   enabled: _isEditing,
-                  maxLines: 3,
+                  maxLines: 2,
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      if (_isEditing) {
+                        final name = _nameController.text.trim();
+                        final age = int.tryParse(_ageController.text.trim()) ?? 25;
+                        final email = _emailController.text.trim();
+
+                        await ref
+                            .read(profileControllerProvider.notifier)
+                            .updateProfileInfo(
+                              name: name.isEmpty ? 'User' : name,
+                              age: age,
+                              email: email,
+                            );
+
+                        toast('Profile updated successfully!');
+                      }
                       setState(() {
                         _isEditing = !_isEditing;
                       });
-                      if (!_isEditing) {
-                        // Save data logic here
-                      }
                     },
-                    child: Text(_isEditing ? 'Save' : 'Edit Profile'),
+                    child: Text(
+                      _isEditing ? 'Save' : 'Edit Profile',
+                      style: const TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ],
             );
-          }
-        }),
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (e, _) => Center(child: Text('Error: $e')),
+        ),
       ),
     );
   }
@@ -167,12 +187,9 @@ class _MyProfileViewState extends State<MyProfileView> {
                 final XFile? image =
                     await _picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
-                  await context
-                      .read<ProfileViewmodels>()
-                      .updateProfileImg(image);
-                  setState(() {
-                    _profileImage = File(image.path);
-                  });
+                  await ref
+                      .read(profileControllerProvider.notifier)
+                      .updateProfileImage(image);
                 }
               },
             ),
@@ -184,9 +201,9 @@ class _MyProfileViewState extends State<MyProfileView> {
                 final XFile? image =
                     await _picker.pickImage(source: ImageSource.camera);
                 if (image != null) {
-                  setState(() {
-                    _profileImage = File(image.path);
-                  });
+                  await ref
+                      .read(profileControllerProvider.notifier)
+                      .updateProfileImage(image);
                 }
               },
             ),
@@ -202,14 +219,15 @@ class _MyProfileViewState extends State<MyProfileView> {
     required IconData icon,
     required bool enabled,
     int maxLines = 1,
+    TextInputType? keyboardType,
   }) {
     return AppTextField(
       textFieldType: TextFieldType.NAME,
       controller: controller,
       enabled: enabled,
       maxLines: maxLines,
-      decoration:
-          inputDecoration(context, labelText: label, prefixIcon: Icon(icon)),
+      keyboardType: keyboardType,
+      decoration: inputDecoration(context, labelText: label, prefixIcon: Icon(icon)),
     );
   }
 }

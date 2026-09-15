@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:medicine_app/constant/app_color.dart';
 
 class ScheduleTimeWidget extends StatefulWidget {
-  ScheduleTimeWidget(
-      {super.key,
-      required this.timeOfDay,
-      required this.time,
-      this.isChecked = false,
-      required this.showWaterWave,
-      required this.onChanged});
+  const ScheduleTimeWidget({
+    super.key,
+    required this.timeOfDay,
+    required this.time,
+    this.isChecked = false,
+    this.defaultScale = 1.4,
+    required this.showWaterWave,
+    required this.onChanged,
+  });
 
-  final String timeOfDay, time;
-  bool isChecked;
-
-  double defaultScale = 1.4;
-
+  final String timeOfDay;
+  final String time;
+  final bool isChecked;
+  final double defaultScale;
   final Function(bool) onChanged;
   final bool showWaterWave;
 
@@ -24,41 +25,47 @@ class ScheduleTimeWidget extends StatefulWidget {
 
 class _ScheduleTimeWidgetState extends State<ScheduleTimeWidget>
     with SingleTickerProviderStateMixin {
-  late final AnimationController animationController = AnimationController(
-      vsync: this, duration: const Duration(milliseconds: 2000));
+  late final AnimationController animationController;
 
   @override
   void initState() {
     super.initState();
-    _startWaveAnimation();
-  }
-
-  void _startWaveAnimation() {
-    if (!widget.isChecked) {
-      animationController.forward().then((_) {
-        if (!widget.isChecked && mounted) {
-          animationController.reset();
-          _startWaveAnimation();
-        }
-      });
+    animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
+    if (widget.showWaterWave && !widget.isChecked) {
+      animationController.repeat();
     }
   }
 
   @override
   void didUpdateWidget(ScheduleTimeWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.isChecked != widget.isChecked) {
-      if (!widget.isChecked) {
-        _startWaveAnimation();
+    if (oldWidget.isChecked != widget.isChecked ||
+        oldWidget.showWaterWave != widget.showWaterWave) {
+      if (widget.showWaterWave && !widget.isChecked) {
+        if (!animationController.isAnimating) {
+          animationController.repeat();
+        }
       } else {
-        animationController.stop();
-        animationController.reset();
+        if (animationController.isAnimating) {
+          animationController.stop();
+          animationController.reset();
+        }
       }
     }
   }
 
   @override
+  void deactivate() {
+    animationController.stop();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    animationController.stop();
     animationController.dispose();
     super.dispose();
   }
@@ -73,8 +80,8 @@ class _ScheduleTimeWidgetState extends State<ScheduleTimeWidget>
             Stack(
               alignment: Alignment.center,
               children: [
-                // Water wave animation
-                if (!widget.isChecked)
+                // Water wave animation for next upcoming dose
+                if (widget.showWaterWave && !widget.isChecked)
                   AnimatedBuilder(
                     animation: animationController,
                     builder: (context, child) {
@@ -103,10 +110,6 @@ class _ScheduleTimeWidgetState extends State<ScheduleTimeWidget>
                   child: Checkbox(
                     value: widget.isChecked,
                     onChanged: (value) {
-                      setState(() {
-                        widget.isChecked = value!;
-                      });
-
                       if (value != null) {
                         widget.onChanged(value);
                       }
