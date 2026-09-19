@@ -1,6 +1,9 @@
 # Flutter Local Notifications
 -keep class com.dexterous.flutterlocalnotifications.** { *; }
 
+# Flutter Timezone
+-keep class com.whelksoft.flutter_timezone.** { *; }
+
 # SQLite & Drift
 -keep class org.sqlite.** { *; }
 -dontwarn org.sqlite.**
