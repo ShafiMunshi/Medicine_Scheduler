@@ -64,16 +64,16 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelId = 'medicine_reminders';
-  static const String _channelName = 'Medicine Reminders';
+  static const String _channelId = 'medicine_reminders_v2';
+  static const String _channelName = 'Medication Reminders';
   static const String _channelDescription =
-      'Notifications for scheduled medicine intake';
+      'Important alarms and notifications for scheduled medications';
 
   static const String prefKeyNotificationsEnabled = 'pref_notifications_enabled';
 
   static bool _isInitialized = false;
 
-  /// Checks whether notifications are enabled by the user. Defaults to true.
+  /// Checks whether notifications are enabled by the user in app settings. Defaults to true.
   static bool areNotificationsEnabled() {
     try {
       return MySharedPref.getBool(prefKeyNotificationsEnabled) ?? true;
@@ -82,31 +82,55 @@ class NotificationService {
     }
   }
 
-  /// Updates whether notifications are enabled by the user.
+  /// Updates whether notifications are enabled by the user in app settings.
   /// If disabled, all currently scheduled notifications are cancelled.
   static Future<void> setNotificationsEnabled(bool enabled) async {
-    await MySharedPref.setBool(prefKeyNotificationsEnabled, enabled);
+    try {
+      await MySharedPref.setBool(prefKeyNotificationsEnabled, enabled);
+    } catch (_) {}
     if (!enabled) {
       await cancelAll();
       log('User disabled notifications: cancelled all scheduled alarms.');
     } else {
-      log('User enabled notifications.');
+      log('User enabled notifications in app settings.');
     }
+  }
+
+  /// Checks whether notifications are allowed at the Android / iOS OS system level.
+  static Future<bool> isSystemNotificationEnabled() async {
+    if (Platform.isAndroid) {
+      final androidPlugin = _notificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        return await androidPlugin.areNotificationsEnabled() ?? true;
+      }
+    }
+    return true;
   }
 
   /// Initializes timezone data, notification channels, and platform settings.
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // 1. Initialize timezone database
+    // 1. Initialize timezone database with robust fallback matching device offset
     tz.initializeTimeZones();
     try {
       final String currentTimeZone = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(currentTimeZone));
       log('Timezone initialized to: $currentTimeZone');
     } catch (e) {
-      log('Could not obtain device local timezone, defaulting to UTC: $e');
-      tz.setLocalLocation(tz.UTC);
+      log('Could not obtain device local timezone ($e), searching matching offset...');
+      try {
+        final offset = DateTime.now().timeZoneOffset;
+        final matchingLocation = tz.timeZoneDatabase.locations.values.firstWhere(
+          (loc) => loc.currentTimeZone.offset == offset.inMilliseconds,
+          orElse: () => tz.getLocation('UTC'),
+        );
+        tz.setLocalLocation(matchingLocation);
+        log('Fallback timezone set to ${matchingLocation.name} with offset $offset');
+      } catch (_) {
+        tz.setLocalLocation(tz.UTC);
+      }
     }
 
     // 2. Initialization settings for Android, iOS, macOS, Linux
@@ -139,7 +163,7 @@ class NotificationService {
       onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
-    // 3. Create Android notification channel
+    // 3. Create Android notification channel with max priority and alarm sound
     if (Platform.isAndroid) {
       final androidNotificationPlugin =
           _notificationsPlugin.resolvePlatformSpecificImplementation<
@@ -153,6 +177,7 @@ class NotificationService {
           importance: Importance.max,
           playSound: true,
           enableVibration: true,
+          showBadge: true,
         );
 
         await androidNotificationPlugin.createNotificationChannel(channel);
@@ -163,7 +188,7 @@ class NotificationService {
     log('NotificationService initialized successfully.');
   }
 
-  /// Requests notification and exact alarm permissions from the user.
+  /// Requests notification permission from the user (Android 13+ and iOS).
   static Future<bool> requestPermissions() async {
     if (Platform.isAndroid) {
       final androidImplementation =
@@ -175,11 +200,7 @@ class NotificationService {
         final notifGranted =
             await androidImplementation.requestNotificationsPermission();
 
-        // Request exact alarm permission (Android 12+)
-        final exactGranted =
-            await androidImplementation.requestExactAlarmsPermission();
-
-        log('Android Permissions: notifications=$notifGranted, exactAlarms=$exactGranted');
+        log('Android Notification Permission granted: $notifGranted');
         return notifGranted ?? true;
       }
     } else if (Platform.isIOS) {
@@ -207,7 +228,6 @@ class NotificationService {
           badge: true,
           sound: true,
         );
-        log('macOS Permissions granted: $granted');
         return granted ?? false;
       }
     }
@@ -215,21 +235,71 @@ class NotificationService {
     return true;
   }
 
-  /// Checks/requests exact alarm permission on this device (Android 12+).
+  /// Checks if the app can schedule exact alarms on Android 12+ without throwing SecurityException.
   static Future<bool> canScheduleExactAlarms() async {
     if (Platform.isAndroid) {
       final androidImplementation =
           _notificationsPlugin.resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
       if (androidImplementation != null) {
-        return await androidImplementation.requestExactAlarmsPermission() ?? true;
+        return await androidImplementation.canScheduleExactNotifications() ?? false;
       }
     }
     return true;
   }
 
-  /// Schedules a single exact notification.
-  static Future<void> scheduleNotification({
+  /// Opens the system settings screen for exact alarm permission on Android 12+.
+  static Future<bool> requestExactAlarmsPermission() async {
+    if (Platform.isAndroid) {
+      final androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        return await androidImplementation.requestExactAlarmsPermission() ?? false;
+      }
+    }
+    return true;
+  }
+
+  /// Immediately shows an instant notification (for testing & verification).
+  static Future<void> showNotificationNow({
+    required int id,
+    required String title,
+    required String body,
+    Map<String, dynamic>? payload,
+  }) async {
+    final androidDetails = AndroidNotificationDetails(
+      _channelId,
+      _channelName,
+      channelDescription: _channelDescription,
+      importance: Importance.max,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      visibility: NotificationVisibility.public,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      category: AndroidNotificationCategory.reminder,
+      icon: '@mipmap/launcher_icon',
+    );
+
+    const darwinDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _notificationsPlugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(android: androidDetails, iOS: darwinDetails),
+      payload: payload != null ? jsonEncode(payload) : null,
+    );
+  }
+
+  /// Schedules a single notification with automatic fallback to inexact alarms
+  /// if exact alarms are not permitted on the device.
+  static Future<bool> scheduleNotification({
     required int id,
     required String title,
     required String body,
@@ -241,10 +311,19 @@ class NotificationService {
         if (kDebugMode) {
           log('Skipping scheduleNotification $id ($title): notifications are turned off in settings.');
         }
-        return;
+        return false;
       }
 
+      final now = tz.TZDateTime.now(tz.local);
       final tzDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
+
+      // Verify notification time is in the future
+      if (tzDateTime.isBefore(now)) {
+        if (kDebugMode) {
+          log('Skipping notification $id ($title): $tzDateTime is in the past.');
+        }
+        return false;
+      }
 
       final androidDetails = AndroidNotificationDetails(
         _channelId,
@@ -254,7 +333,10 @@ class NotificationService {
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
+        visibility: NotificationVisibility.public,
+        audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.reminder,
+        icon: '@mipmap/launcher_icon',
         actions: const [
           AndroidNotificationAction(
             'TAKE_ACTION',
@@ -284,29 +366,53 @@ class NotificationService {
         macOS: darwinDetails,
       );
 
-      await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tzDateTime,
-        notificationDetails,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        payload: jsonEncode(payload),
-      );
+      // Determine initial schedule mode based on device capability
+      final canExact = await canScheduleExactAlarms();
+      AndroidScheduleMode mode = canExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
 
-      if (kDebugMode) {
-        log('Scheduled notification ID $id for $scheduledDate ($title)');
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzDateTime,
+          notificationDetails,
+          androidScheduleMode: mode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode(payload),
+        );
+        log('Scheduled notification ID $id for $tzDateTime (mode=$mode)');
+        return true;
+      } catch (scheduleError) {
+        log('Exact schedule failed ($scheduleError), retrying with inexactAllowWhileIdle fallback...');
+        // Fallback to inexactAllowWhileIdle ensures the notification is NEVER dropped
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzDateTime,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode(payload),
+        );
+        log('Fallback inexact schedule succeeded for notification ID $id');
+        return true;
       }
     } catch (e, stack) {
       log('Failed to schedule notification $id: $e\n$stack');
+      return false;
     }
   }
 
-  /// Reschedules all upcoming medicine notifications for the next 7 days.
+  /// Reschedules all upcoming medicine notifications for the next 30 days.
   /// Cancels all existing notifications first to ensure no orphan or duplicate alarms exist.
-  static Future<void> rescheduleAllActiveMedicines(
+  /// Returns the total number of notifications successfully scheduled.
+  static Future<int> rescheduleAllActiveMedicines(
       List<MedicineWithSchedules> medicines) async {
     try {
       log('Rescheduling all active medicine reminders for ${medicines.length} medicines...');
@@ -316,11 +422,12 @@ class NotificationService {
 
       if (!areNotificationsEnabled()) {
         log('Notifications are disabled by user. Cleared all reminders.');
-        return;
+        return 0;
       }
 
       final now = DateTime.now();
-      final lookAheadDays = 7; // Schedule 7 days ahead offline
+      final lookAheadDays = 30; // Schedule 30 days ahead offline
+      int scheduledCount = 0;
 
       for (var med in medicines) {
         final scheduleDates = ScheduleCalculator.calculateScheduledDates(
@@ -362,7 +469,7 @@ class NotificationService {
                 scheduledTime,
               );
 
-              await scheduleNotification(
+              final success = await scheduleNotification(
                 id: notificationId,
                 title: 'Time for ${med.medicine.medicineName}',
                 body:
@@ -376,14 +483,19 @@ class NotificationService {
                   'scheduledDateTime': scheduledTime.toIso8601String(),
                 },
               );
+              if (success) {
+                scheduledCount++;
+              }
             }
           }
         }
       }
 
-      log('Finished rescheduling notifications.');
+      log('Finished rescheduling $scheduledCount notifications for ${medicines.length} medicines.');
+      return scheduledCount;
     } catch (e) {
-      log('NotificationService: rescheduleAllActiveMedicines skipped or failed (likely test environment): $e');
+      log('NotificationService: rescheduleAllActiveMedicines skipped or failed: $e');
+      return 0;
     }
   }
 

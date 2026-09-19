@@ -12,6 +12,7 @@ import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
+import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/widgets/user_avatar_widget.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -245,15 +246,103 @@ class HomeView extends ConsumerWidget {
                 ],
               ),
             ),
-            Container(
-              padding: const EdgeInsets.all(15),
-              decoration: boxDecoration(
-                bgColor: white,
-                radius: 12.r,
-                color: AppColors.greyColor,
-              ),
-              child: SvgPicture.asset(
-                AppAssets.notifications,
+            InkWell(
+              onTap: () async {
+                final pending = await NotificationService.getPendingNotifications();
+                final isSysEnabled = await NotificationService.isSystemNotificationEnabled();
+                if (context.mounted) {
+                  showModalBottomSheet(
+                    context: context,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                    ),
+                    backgroundColor: Colors.white,
+                    builder: (ctx) => SafeArea(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.notifications_active, color: AppColors.primaryColor),
+                                10.horizontalSpace,
+                                const Text(
+                                  'Medication Reminders Status',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            14.verticalSpace,
+                            Text(
+                              '• Notification Permissions: ${isSysEnabled ? "Allowed ✅" : "Blocked ❌ (Enable in System Settings)"}',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            8.verticalSpace,
+                            Text(
+                              '• Active Offline Alarms: ${pending.length} scheduled',
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                            16.verticalSpace,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () async {
+                                      Navigator.pop(ctx);
+                                      final fireTime = DateTime.now().add(const Duration(seconds: 5));
+                                      await NotificationService.scheduleNotification(
+                                        id: 99999,
+                                        title: 'Test Reminder 💊',
+                                        body: 'Medication alarm is ringing on time!',
+                                        scheduledDate: fireTime,
+                                        payload: {
+                                          'type': 'test',
+                                          'scheduledDateTime': fireTime.toIso8601String(),
+                                        },
+                                      );
+                                      toast('Test reminder scheduled for 5s from now!');
+                                    },
+                                    child: const Text('Test (5s)'),
+                                  ),
+                                ),
+                                10.horizontalSpace,
+                                Expanded(
+                                  child: ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primaryColor,
+                                      foregroundColor: Colors.white,
+                                    ),
+                                    onPressed: () async {
+                                      Navigator.pop(ctx);
+                                      final allMeds = await ref.read(allMedicinesProvider.future);
+                                      final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
+                                      toast('Refreshed $count reminders for 30 days');
+                                    },
+                                    child: const Text('Reschedule'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }
+              },
+              borderRadius: BorderRadius.circular(12.r),
+              child: Container(
+                padding: const EdgeInsets.all(15),
+                decoration: boxDecoration(
+                  bgColor: white,
+                  radius: 12.r,
+                  color: AppColors.greyColor,
+                ),
+                child: SvgPicture.asset(
+                  AppAssets.notifications,
+                ),
               ),
             )
           ],

@@ -48,11 +48,21 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
       }
 
       final allMeds = await ref.read(allMedicinesProvider.future);
-      await NotificationService.rescheduleAllActiveMedicines(allMeds);
-      toast('Medication reminders enabled');
+      final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
+      toast('Medication reminders enabled ($count scheduled)');
     } else {
       toast('Medication reminders disabled');
     }
+  }
+
+  Future<void> _rescheduleAllNow() async {
+    final granted = await NotificationService.requestPermissions();
+    if (!granted && mounted) {
+      toast('Please grant notification permission in system settings');
+    }
+    final allMeds = await ref.read(allMedicinesProvider.future);
+    final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
+    toast('$count medication reminders scheduled for the next 30 days');
   }
 
   Future<void> _rateApp() async {
@@ -214,37 +224,87 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
               icon: Icons.notifications_active_rounded,
               iconColor: Colors.deepPurple,
               title: 'Medication Reminders',
-              subtitle: 'Receive exact alarm alerts for scheduled doses',
+              subtitle: 'Receive alarm alerts for scheduled doses',
               value: _notificationsEnabled,
               onChanged: _toggleNotifications,
             ),
             _buildDivider(),
             _buildSettingsTile(
-              icon: Icons.access_alarm_rounded,
+              icon: Icons.alarm,
+              iconColor: Colors.blue,
+              title: 'Test Reminder (5 seconds)',
+              subtitle: 'Test sound, vibration, and offline alarm delivery',
+              onTap: () async {
+                final fireTime = DateTime.now().add(const Duration(seconds: 5));
+                await NotificationService.scheduleNotification(
+                  id: 99999,
+                  title: 'Test Reminder 💊',
+                  body: 'Medication alarm is working accurately!',
+                  scheduledDate: fireTime,
+                  payload: {
+                    'type': 'test',
+                    'scheduledDateTime': fireTime.toIso8601String(),
+                  },
+                );
+                toast('Reminder scheduled for 5 seconds from now!');
+              },
+            ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.refresh_rounded,
               iconColor: Colors.teal,
-              title: 'Exact Alarm Precision',
-              subtitle: 'Optimized for timely alerts even in Doze mode',
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Text(
-                  'Enabled',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-              ),
+              title: 'Reschedule All Doses',
+              subtitle: 'Refresh upcoming 30-day offline notification schedule',
+              onTap: _rescheduleAllNow,
+            ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.access_alarm_rounded,
+              iconColor: Colors.amber.shade800,
+              title: 'Exact Alarm & Permission Status',
+              subtitle: 'Check system permissions & pending notifications',
               onTap: () async {
                 final canExact = await NotificationService.canScheduleExactAlarms();
-                toast(canExact
-                    ? 'Exact alarms are supported and permitted ✅'
-                    : 'Please grant exact alarm permissions in settings');
+                final isSysEnabled = await NotificationService.isSystemNotificationEnabled();
+                final pending = await NotificationService.getPendingNotifications();
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Notification Status'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('System Permission: ${isSysEnabled ? "Granted ✅" : "Blocked ❌ (Enable in Settings)"}'),
+                          const SizedBox(height: 8),
+                          Text('Exact Alarms: ${canExact ? "Enabled ✅" : "Using battery-optimized fallback ⚠️"}'),
+                          const SizedBox(height: 8),
+                          Text('Active Pending Alarms: ${pending.length}'),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Alarms are scheduled offline for 30 days ahead and trigger even in Doze mode.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        if (!canExact)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              NotificationService.requestExactAlarmsPermission();
+                            },
+                            child: const Text('Allow Exact Alarms'),
+                          ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               },
             ),
           ]),
