@@ -280,7 +280,6 @@ class NotificationService {
       audioAttributesUsage: AudioAttributesUsage.alarm,
       category: AndroidNotificationCategory.alarm,
       icon: '@mipmap/ic_launcher',
-      fullScreenIntent: true,
       ticker: 'Medication Test',
     );
 
@@ -317,17 +316,25 @@ class NotificationService {
       }
 
       final now = tz.TZDateTime.now(tz.local);
-      final tzDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
+      tz.TZDateTime tzDateTime = tz.TZDateTime.from(scheduledDate, tz.local);
 
-      // Verify notification time is in the future
-      if (tzDateTime.isBefore(now)) {
-        if (kDebugMode) {
-          log('Skipping notification $id ($title): $tzDateTime is in the past.');
+      // Verify notification time is in the future.
+      // If it is within 1 second of now (e.g. slight delay during 5-second test), push by 3 seconds.
+      if (tzDateTime.isBefore(now.add(const Duration(seconds: 1)))) {
+        final diff = scheduledDate.difference(DateTime.now());
+        if (diff.inSeconds >= -5 && diff.inSeconds <= 2) {
+          tzDateTime = now.add(const Duration(seconds: 3));
+        } else {
+          if (kDebugMode) {
+            log('Skipping notification $id ($title): $tzDateTime is in the past.');
+          }
+          return false;
         }
-        return false;
       }
 
-      const androidDetails = AndroidNotificationDetails(
+      final isTest = payload['type'] == 'test' || payload['type'] == 'test_instant';
+
+      final androidDetails = AndroidNotificationDetails(
         _channelId,
         _channelName,
         channelDescription: _channelDescription,
@@ -339,22 +346,23 @@ class NotificationService {
         audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
         icon: '@mipmap/ic_launcher',
-        fullScreenIntent: true,
         ticker: 'Medication Reminder',
-        actions: [
-          AndroidNotificationAction(
-            'TAKE_ACTION',
-            'Take',
-            showsUserInterface: false,
-            cancelNotification: true,
-          ),
-          AndroidNotificationAction(
-            'SKIP_ACTION',
-            'Skip',
-            showsUserInterface: false,
-            cancelNotification: true,
-          ),
-        ],
+        actions: isTest
+            ? null
+            : const [
+                AndroidNotificationAction(
+                  'TAKE_ACTION',
+                  'Take',
+                  showsUserInterface: false,
+                  cancelNotification: true,
+                ),
+                AndroidNotificationAction(
+                  'SKIP_ACTION',
+                  'Skip',
+                  showsUserInterface: false,
+                  cancelNotification: true,
+                ),
+              ],
       );
 
       const darwinDetails = DarwinNotificationDetails(
@@ -364,22 +372,23 @@ class NotificationService {
         interruptionLevel: InterruptionLevel.timeSensitive,
       );
 
-      const notificationDetails = NotificationDetails(
+      final notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: darwinDetails,
         macOS: darwinDetails,
       );
 
-      // Determine initial schedule mode
+      // Determine schedule mode: exactAllowWhileIdle is preferred when supported
       final canExact = preferredMode != null
           ? (preferredMode != AndroidScheduleMode.inexactAllowWhileIdle)
           : await canScheduleExactAlarms();
 
       AndroidScheduleMode mode = preferredMode ??
           (canExact
-              ? AndroidScheduleMode.alarmClock
+              ? AndroidScheduleMode.exactAllowWhileIdle
               : AndroidScheduleMode.inexactAllowWhileIdle);
 
+      // 1. Primary schedule attempt
       try {
         await _notificationsPlugin.zonedSchedule(
           id,
@@ -394,8 +403,12 @@ class NotificationService {
         );
         log('Scheduled notification ID $id for $tzDateTime (mode=$mode)');
         return true;
-      } catch (scheduleError) {
-        log('Schedule with $mode failed ($scheduleError), trying exactAllowWhileIdle...');
+      } catch (firstError) {
+        log('Schedule with $mode failed ($firstError), attempting fallback...');
+      }
+
+      // 2. Fallback attempt: if exact was requested, try alarmClock
+      if (canExact && mode != AndroidScheduleMode.alarmClock) {
         try {
           await _notificationsPlugin.zonedSchedule(
             id,
@@ -403,29 +416,36 @@ class NotificationService {
             body,
             tzDateTime,
             notificationDetails,
-            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            androidScheduleMode: AndroidScheduleMode.alarmClock,
             uiLocalNotificationDateInterpretation:
                 UILocalNotificationDateInterpretation.absoluteTime,
             payload: jsonEncode(payload),
           );
-          log('Fallback exactAllowWhileIdle schedule succeeded for notification ID $id');
+          log('Fallback alarmClock schedule succeeded for notification ID $id');
           return true;
-        } catch (exactError) {
-          log('Exact schedule failed ($exactError), retrying with inexactAllowWhileIdle...');
-          await _notificationsPlugin.zonedSchedule(
-            id,
-            title,
-            body,
-            tzDateTime,
-            notificationDetails,
-            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-            uiLocalNotificationDateInterpretation:
-                UILocalNotificationDateInterpretation.absoluteTime,
-            payload: jsonEncode(payload),
-          );
-          log('Fallback inexact schedule succeeded for notification ID $id');
-          return true;
+        } catch (alarmError) {
+          log('Fallback alarmClock failed ($alarmError), trying inexact...');
         }
+      }
+
+      // 3. Guaranteed safe fallback: inexactAllowWhileIdle
+      try {
+        await _notificationsPlugin.zonedSchedule(
+          id,
+          title,
+          body,
+          tzDateTime,
+          notificationDetails,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          payload: jsonEncode(payload),
+        );
+        log('Guaranteed inexact schedule succeeded for notification ID $id');
+        return true;
+      } catch (inexactError) {
+        log('All scheduling attempts failed for notification $id: $inexactError');
+        return false;
       }
     } catch (e, stack) {
       log('Failed to schedule notification $id: $e\n$stack');
@@ -463,7 +483,7 @@ class NotificationService {
       // Check exact alarm permission once up-front instead of on every iteration
       final canExact = await canScheduleExactAlarms();
       final scheduleMode = canExact
-          ? AndroidScheduleMode.alarmClock
+          ? AndroidScheduleMode.exactAllowWhileIdle
           : AndroidScheduleMode.inexactAllowWhileIdle;
 
       for (var med in medicines) {
@@ -528,7 +548,7 @@ class NotificationService {
               }
 
               // Yield to event loop on every dose to guarantee zero UI freezing / ANR
-              await Future.delayed(Duration.zero);
+              await Future.delayed(const Duration(milliseconds: 10));
             }
           }
         }

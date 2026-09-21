@@ -12,6 +12,7 @@ import 'package:medicine_app/screens/settings/all_medicine_log_view.dart';
 import 'package:medicine_app/screens/settings/my_profile_view.dart';
 import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
+import 'package:medicine_app/viewmodels/database_providers.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:medicine_app/widgets/user_avatar_widget.dart';
@@ -67,7 +68,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         toast('Please allow notification permissions in settings');
       }
 
-      final allMeds = await ref.read(allMedicinesProvider.future);
+      final allMeds = await ref.read(medicineRepositoryProvider).getAllMedicines();
       final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
       if (mounted) {
         toast('Medication reminders enabled ($count scheduled)');
@@ -96,7 +97,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         toast('⚠️ Exact alarms disabled: reminders will use best-effort delivery');
       }
 
-      final allMeds = await ref.read(allMedicinesProvider.future);
+      final allMeds = await ref.read(medicineRepositoryProvider).getAllMedicines();
       final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
 
       if (mounted) {
@@ -383,11 +384,6 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 if (!isSys) {
                   await NotificationService.requestPermissions();
                 }
-                final canExact = await NotificationService.canScheduleExactAlarms();
-                if (!canExact && mounted) {
-                  toast('⚠️ Exact alarms disabled. Opening system settings...');
-                  await NotificationService.requestExactAlarmsPermission();
-                }
 
                 final fireTime = DateTime.now().add(const Duration(seconds: 5));
                 final success = await NotificationService.scheduleNotification(
@@ -402,9 +398,9 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 );
                 if (mounted) {
                   if (success) {
-                    toast('⏰ Alarm scheduled for 5s from now! Watch top banner.');
+                    toast('⏰ Test alarm scheduled for 5s from now! Watch top banner.');
                   } else {
-                    toast('Could not schedule alarm. Check permissions.');
+                    toast('Could not schedule alarm. Check notification permissions.');
                   }
                   await _refreshPermissionStatus();
                 }

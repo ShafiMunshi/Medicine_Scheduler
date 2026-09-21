@@ -118,6 +118,46 @@ void main() {
 
       expect(isScheduled, isFalse);
     });
+
+    test('Correctly handles UTC start/end dates from SQLite/Drift across timezones', () {
+      // Local midnight on Sept 21 in UTC+6 is Sept 20 18:00 UTC
+      final localDate = DateTime(2026, 9, 21);
+      final utcDriftStart = localDate.toUtc();
+      final utcDriftEnd = localDate.add(const Duration(days: 30)).toUtc();
+
+      final isScheduledToday = ScheduleCalculator.isDateScheduled(
+        date: localDate,
+        startDate: utcDriftStart,
+        endDate: utcDriftEnd,
+        repeatVariation: RepeatVariation.day,
+        repeatDays: 1,
+      );
+      expect(isScheduledToday, isTrue);
+
+      final isScheduledTomorrow = ScheduleCalculator.isDateScheduled(
+        date: localDate.add(const Duration(days: 1)),
+        startDate: utcDriftStart,
+        endDate: utcDriftEnd,
+        repeatVariation: RepeatVariation.day,
+        repeatDays: 1,
+      );
+      expect(isScheduledTomorrow, isTrue);
+    });
+
+    test('Correctly handles single-day course with UTC timestamps', () {
+      final localDate = DateTime(2026, 9, 21);
+      final utcDriftStart = localDate.toUtc();
+      final utcDriftEnd = localDate.toUtc();
+
+      final isScheduled = ScheduleCalculator.isDateScheduled(
+        date: localDate,
+        startDate: utcDriftStart,
+        endDate: utcDriftEnd,
+        repeatVariation: RepeatVariation.day,
+        repeatDays: 1,
+      );
+      expect(isScheduled, isTrue);
+    });
   });
 
   group('ScheduleCalculator - Notification ID Precision', () {

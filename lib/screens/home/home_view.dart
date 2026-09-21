@@ -9,6 +9,7 @@ import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/screens/home/widget/monthly_adherence_chart.dart';
 import 'package:medicine_app/screens/my_medicine/widget/medicine_widget.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
+import 'package:medicine_app/viewmodels/database_providers.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:medicine_app/viewmodels/schedule_viewmodel.dart';
@@ -316,7 +317,7 @@ class HomeView extends ConsumerWidget {
                                     ),
                                     onPressed: () async {
                                       Navigator.pop(ctx);
-                                      final allMeds = await ref.read(allMedicinesProvider.future);
+                                      final allMeds = await ref.read(medicineRepositoryProvider).getAllMedicines();
                                       final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
                                       toast('Refreshed $count upcoming medication reminders');
                                     },
