@@ -318,7 +318,7 @@ class HomeView extends ConsumerWidget {
                                       Navigator.pop(ctx);
                                       final allMeds = await ref.read(allMedicinesProvider.future);
                                       final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
-                                      toast('Refreshed $count reminders for 30 days');
+                                      toast('Refreshed $count upcoming medication reminders');
                                     },
                                     child: const Text('Reschedule'),
                                   ),

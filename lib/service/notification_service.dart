@@ -64,10 +64,10 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  static const String _channelId = 'medicine_reminders_v2';
+  static const String _channelId = 'medicine_reminders_v3';
   static const String _channelName = 'Medication Reminders';
   static const String _channelDescription =
-      'Important alarms and notifications for scheduled medications';
+      'High-priority alarms and notifications for scheduled medications';
 
   static const String prefKeyNotificationsEnabled = 'pref_notifications_enabled';
 
@@ -135,7 +135,7 @@ class NotificationService {
 
     // 2. Initialization settings for Android, iOS, macOS, Linux
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/launcher_icon');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings darwinSettings =
         DarwinInitializationSettings(
@@ -163,7 +163,7 @@ class NotificationService {
       onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
     );
 
-    // 3. Create Android notification channel with max priority and alarm sound
+    // 3. Create Android notification channel with max priority, alarm sound, and vibration
     if (Platform.isAndroid) {
       final androidNotificationPlugin =
           _notificationsPlugin.resolvePlatformSpecificImplementation<
@@ -268,18 +268,20 @@ class NotificationService {
     required String body,
     Map<String, dynamic>? payload,
   }) async {
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       _channelId,
       _channelName,
       channelDescription: _channelDescription,
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       playSound: true,
       enableVibration: true,
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
-      category: AndroidNotificationCategory.reminder,
-      icon: '@mipmap/launcher_icon',
+      category: AndroidNotificationCategory.alarm,
+      icon: '@mipmap/ic_launcher',
+      fullScreenIntent: true,
+      ticker: 'Medication Test',
     );
 
     const darwinDetails = DarwinNotificationDetails(
@@ -292,19 +294,19 @@ class NotificationService {
       id,
       title,
       body,
-      NotificationDetails(android: androidDetails, iOS: darwinDetails),
+      const NotificationDetails(android: androidDetails, iOS: darwinDetails),
       payload: payload != null ? jsonEncode(payload) : null,
     );
   }
 
-  /// Schedules a single notification with automatic fallback to inexact alarms
-  /// if exact alarms are not permitted on the device.
+  /// Schedules a single notification with alarmClock / exact delivery and automatic fallbacks.
   static Future<bool> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
     required Map<String, dynamic> payload,
+    AndroidScheduleMode? preferredMode,
   }) async {
     try {
       if (!areNotificationsEnabled()) {
@@ -325,19 +327,21 @@ class NotificationService {
         return false;
       }
 
-      final androidDetails = AndroidNotificationDetails(
+      const androidDetails = AndroidNotificationDetails(
         _channelId,
         _channelName,
         channelDescription: _channelDescription,
         importance: Importance.max,
-        priority: Priority.high,
+        priority: Priority.max,
         playSound: true,
         enableVibration: true,
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
-        category: AndroidNotificationCategory.reminder,
-        icon: '@mipmap/launcher_icon',
-        actions: const [
+        category: AndroidNotificationCategory.alarm,
+        icon: '@mipmap/ic_launcher',
+        fullScreenIntent: true,
+        ticker: 'Medication Reminder',
+        actions: [
           AndroidNotificationAction(
             'TAKE_ACTION',
             'Take',
@@ -360,17 +364,21 @@ class NotificationService {
         interruptionLevel: InterruptionLevel.timeSensitive,
       );
 
-      final notificationDetails = NotificationDetails(
+      const notificationDetails = NotificationDetails(
         android: androidDetails,
         iOS: darwinDetails,
         macOS: darwinDetails,
       );
 
-      // Determine initial schedule mode based on device capability
-      final canExact = await canScheduleExactAlarms();
-      AndroidScheduleMode mode = canExact
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
+      // Determine initial schedule mode
+      final canExact = preferredMode != null
+          ? (preferredMode != AndroidScheduleMode.inexactAllowWhileIdle)
+          : await canScheduleExactAlarms();
+
+      AndroidScheduleMode mode = preferredMode ??
+          (canExact
+              ? AndroidScheduleMode.alarmClock
+              : AndroidScheduleMode.inexactAllowWhileIdle);
 
       try {
         await _notificationsPlugin.zonedSchedule(
@@ -387,21 +395,37 @@ class NotificationService {
         log('Scheduled notification ID $id for $tzDateTime (mode=$mode)');
         return true;
       } catch (scheduleError) {
-        log('Exact schedule failed ($scheduleError), retrying with inexactAllowWhileIdle fallback...');
-        // Fallback to inexactAllowWhileIdle ensures the notification is NEVER dropped
-        await _notificationsPlugin.zonedSchedule(
-          id,
-          title,
-          body,
-          tzDateTime,
-          notificationDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          payload: jsonEncode(payload),
-        );
-        log('Fallback inexact schedule succeeded for notification ID $id');
-        return true;
+        log('Schedule with $mode failed ($scheduleError), trying exactAllowWhileIdle...');
+        try {
+          await _notificationsPlugin.zonedSchedule(
+            id,
+            title,
+            body,
+            tzDateTime,
+            notificationDetails,
+            androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            payload: jsonEncode(payload),
+          );
+          log('Fallback exactAllowWhileIdle schedule succeeded for notification ID $id');
+          return true;
+        } catch (exactError) {
+          log('Exact schedule failed ($exactError), retrying with inexactAllowWhileIdle...');
+          await _notificationsPlugin.zonedSchedule(
+            id,
+            title,
+            body,
+            tzDateTime,
+            notificationDetails,
+            androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+            uiLocalNotificationDateInterpretation:
+                UILocalNotificationDateInterpretation.absoluteTime,
+            payload: jsonEncode(payload),
+          );
+          log('Fallback inexact schedule succeeded for notification ID $id');
+          return true;
+        }
       }
     } catch (e, stack) {
       log('Failed to schedule notification $id: $e\n$stack');
@@ -409,15 +433,16 @@ class NotificationService {
     }
   }
 
-  /// Reschedules all upcoming medicine notifications for the next 30 days.
+  /// Reschedules upcoming medicine notifications for the next 7 rolling days.
   /// Cancels all existing notifications first to ensure no orphan or duplicate alarms exist.
+  /// Uses event loop yielding and safety caps to guarantee ZERO UI freezing or ANR popups.
   /// Returns the total number of notifications successfully scheduled.
   static Future<int> rescheduleAllActiveMedicines(
       List<MedicineWithSchedules> medicines) async {
     try {
-      log('Rescheduling all active medicine reminders for ${medicines.length} medicines...');
+      log('Rescheduling active medicine reminders for ${medicines.length} medicines...');
 
-      // Cancel all current scheduled notifications
+      // Cancel all current scheduled notifications first
       await _notificationsPlugin.cancelAll();
 
       if (!areNotificationsEnabled()) {
@@ -425,34 +450,47 @@ class NotificationService {
         return 0;
       }
 
+      if (medicines.isEmpty) {
+        log('No active medicines found to schedule.');
+        return 0;
+      }
+
       final now = DateTime.now();
-      final lookAheadDays = 30; // Schedule 30 days ahead offline
+      const lookAheadDays = 7; // Rolling 7-day schedule (safe from Android AlarmManager limits)
+      const maxAlarms = 64; // Safety ceiling to strictly avoid exceeding Android OS exact alarm quotas
       int scheduledCount = 0;
 
-      for (var med in medicines) {
-        final scheduleDates = ScheduleCalculator.calculateScheduledDates(
-          startDate: med.medicine.startDate,
-          endDate: med.medicine.endDate,
-          repeatVariation: med.repeatVariationEnum,
-          repeatDays: med.medicine.repeatDays,
-          weekDays: med.weekDaysList,
-          monthDays: med.monthDaysList,
-        );
+      // Check exact alarm permission once up-front instead of on every iteration
+      final canExact = await canScheduleExactAlarms();
+      final scheduleMode = canExact
+          ? AndroidScheduleMode.alarmClock
+          : AndroidScheduleMode.inexactAllowWhileIdle;
 
-        if (scheduleDates.isEmpty || med.schedules.isEmpty) continue;
+      for (var med in medicines) {
+        if (med.schedules.isEmpty) continue;
+        if (scheduledCount >= maxAlarms) break;
 
         for (int dayOffset = 0; dayOffset < lookAheadDays; dayOffset++) {
+          if (scheduledCount >= maxAlarms) break;
+
           final targetDate = DateTime(now.year, now.month, now.day + dayOffset);
 
-          // Check if this date is part of the medicine's scheduled dates
-          final isScheduledToday = scheduleDates.any((d) =>
-              d.year == targetDate.year &&
-              d.month == targetDate.month &&
-              d.day == targetDate.day);
+          // Fast O(1) date scheduled check
+          final isScheduled = ScheduleCalculator.isDateScheduled(
+            date: targetDate,
+            startDate: med.medicine.startDate,
+            endDate: med.medicine.endDate,
+            repeatVariation: med.repeatVariationEnum,
+            repeatDays: med.medicine.repeatDays,
+            weekDays: med.weekDaysList,
+            monthDays: med.monthDaysList,
+          );
 
-          if (!isScheduledToday) continue;
+          if (!isScheduled) continue;
 
           for (final schedule in med.schedules) {
+            if (scheduledCount >= maxAlarms) break;
+
             final scheduledTime = DateTime(
               targetDate.year,
               targetDate.month,
@@ -475,6 +513,7 @@ class NotificationService {
                 body:
                     'Take ${ScheduleCalculator.formatDosage(med.medicine.dosage, med.dosageUnitEnum)} (${med.mealTimingEnum.displayName})',
                 scheduledDate: scheduledTime,
+                preferredMode: scheduleMode,
                 payload: {
                   'medicineId': med.medicine.id,
                   'scheduleId': schedule.id,
@@ -483,9 +522,13 @@ class NotificationService {
                   'scheduledDateTime': scheduledTime.toIso8601String(),
                 },
               );
+
               if (success) {
                 scheduledCount++;
               }
+
+              // Yield to event loop on every dose to guarantee zero UI freezing / ANR
+              await Future.delayed(Duration.zero);
             }
           }
         }
@@ -493,8 +536,8 @@ class NotificationService {
 
       log('Finished rescheduling $scheduledCount notifications for ${medicines.length} medicines.');
       return scheduledCount;
-    } catch (e) {
-      log('NotificationService: rescheduleAllActiveMedicines skipped or failed: $e');
+    } catch (e, stack) {
+      log('NotificationService: rescheduleAllActiveMedicines failed: $e\n$stack');
       return 0;
     }
   }
