@@ -40,7 +40,8 @@ class HomeView extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             topProfileSection(context, ref),
-            18.verticalSpace,
+            const NotificationStatusBanner(),
+            12.verticalSpace,
             topHorizontalProgressBar(todayMedicines.length, allMedicinesAsync.value?.length ?? 0),
             16.verticalSpace,
             const MonthlyAdherenceChart(),
@@ -351,6 +352,119 @@ class HomeView extends ConsumerWidget {
       },
       loading: () => const SizedBox(height: 50),
       error: (_, __) => const SizedBox(height: 50),
+    );
+  }
+}
+
+class NotificationStatusBanner extends StatefulWidget {
+  const NotificationStatusBanner({super.key});
+
+  @override
+  State<NotificationStatusBanner> createState() => _NotificationStatusBannerState();
+}
+
+class _NotificationStatusBannerState extends State<NotificationStatusBanner> with WidgetsBindingObserver {
+  bool _isSysEnabled = true;
+  bool _canExact = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _check();
+    }
+  }
+
+  Future<void> _check() async {
+    try {
+      final sys = await NotificationService.isSystemNotificationEnabled();
+      final exact = await NotificationService.canScheduleExactAlarms();
+      if (mounted) {
+        setState(() {
+          _isSysEnabled = sys;
+          _canExact = exact;
+        });
+      }
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isSysEnabled && _canExact) {
+      return const SizedBox.shrink();
+    }
+
+    final isNotifBlocked = !_isSysEnabled;
+    final message = isNotifBlocked
+        ? 'Notifications are blocked in system settings. Medicine alerts cannot pop up.'
+        : 'Alarms & Reminders permission is required to alert you before your medicine times.';
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFFCA5A5)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 22),
+          10.horizontalSpace,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isNotifBlocked ? 'Enable Notifications' : 'Enable Exact Alarms',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFFDC2626),
+                    fontSize: 13,
+                  ),
+                ),
+                2.verticalSpace,
+                Text(
+                  message,
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF7F1D1D)),
+                ),
+              ],
+            ),
+          ),
+          8.horizontalSpace,
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              if (isNotifBlocked) {
+                await NotificationService.requestPermissions();
+              } else {
+                await NotificationService.requestExactAlarmsPermission();
+              }
+              await _check();
+            },
+            child: const Text('Fix', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -3,8 +3,10 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/core/utils/schedule_calculator.dart';
 import 'package:medicine_app/data/database/app_database.dart';
 import 'package:medicine_app/data/repositories/medicine_log_repository.dart';
@@ -135,7 +137,7 @@ class NotificationService {
 
     // 2. Initialization settings for Android, iOS, macOS, Linux
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('ic_notification');
 
     const DarwinInitializationSettings darwinSettings =
         DarwinInitializationSettings(
@@ -261,6 +263,68 @@ class NotificationService {
     return true;
   }
 
+  static const String prefKeyExactAlarmPrompted = 'pref_exact_alarm_prompted';
+
+  /// Checks if exact alarm permission is missing on Android 12+, and if so, shows a polite prompt.
+  static Future<bool> checkAndPromptExactAlarms(BuildContext context, {bool forcePrompt = false}) async {
+    if (!Platform.isAndroid) return true;
+
+    final canExact = await canScheduleExactAlarms();
+    if (canExact) return true;
+
+    final alreadyPrompted = MySharedPref.getBool(prefKeyExactAlarmPrompted) ?? false;
+    if (alreadyPrompted && !forcePrompt) {
+      return false;
+    }
+
+    await MySharedPref.setBool(prefKeyExactAlarmPrompted, true);
+
+    if (!context.mounted) return false;
+
+    final shouldOpen = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.alarm_on_rounded, color: AppColors.primaryColor, size: 26),
+            SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                'Enable Exact Alarms',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'To ensure you receive on-time reminders before taking your medicine (even when your phone is locked or in battery saving mode), Dosey requires "Alarms & Reminders" permission.\n\nPlease toggle it ON in Settings.',
+          style: TextStyle(fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Not Now', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx, true);
+              await requestExactAlarmsPermission();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+
+    return shouldOpen ?? false;
+  }
+
   /// Immediately shows an instant notification (for testing & verification).
   static Future<void> showNotificationNow({
     required int id,
@@ -279,7 +343,7 @@ class NotificationService {
       visibility: NotificationVisibility.public,
       audioAttributesUsage: AudioAttributesUsage.alarm,
       category: AndroidNotificationCategory.alarm,
-      icon: '@mipmap/ic_launcher',
+      icon: 'ic_notification',
       ticker: 'Medication Test',
     );
 
@@ -345,7 +409,7 @@ class NotificationService {
         visibility: NotificationVisibility.public,
         audioAttributesUsage: AudioAttributesUsage.alarm,
         category: AndroidNotificationCategory.alarm,
-        icon: '@mipmap/ic_launcher',
+        icon: 'ic_notification',
         ticker: 'Medication Reminder',
         actions: isTest
             ? null
@@ -527,11 +591,15 @@ class NotificationService {
                 scheduledTime,
               );
 
+              final mealTimingText = med.mealTimingEnum == MealTiming.before
+                  ? 'Take before meal'
+                  : 'Take after meal';
+
               final success = await scheduleNotification(
                 id: notificationId,
-                title: 'Time for ${med.medicine.medicineName}',
+                title: 'Time for ${med.medicine.medicineName} 💊',
                 body:
-                    'Take ${ScheduleCalculator.formatDosage(med.medicine.dosage, med.dosageUnitEnum)} (${med.mealTimingEnum.displayName})',
+                    'Scheduled for ${schedule.timeString} ($mealTimingText) • Take ${ScheduleCalculator.formatDosage(med.medicine.dosage, med.dosageUnitEnum)}',
                 scheduledDate: scheduledTime,
                 preferredMode: scheduleMode,
                 payload: {
@@ -539,6 +607,7 @@ class NotificationService {
                   'scheduleId': schedule.id,
                   'medicineName': med.medicine.medicineName,
                   'dosage': med.medicine.dosage,
+                  'mealTiming': med.medicine.mealTiming,
                   'scheduledDateTime': scheduledTime.toIso8601String(),
                 },
               );

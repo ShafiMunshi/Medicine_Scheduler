@@ -1,2 +1,2 @@
 <resources xmlns:tools="http://schemas.android.com/tools"
-    tools:keep="@drawable/ic_notification,@drawable/launcher_icon,@mipmap/ic_launcher,@mipmap/launcher_icon" />
+    tools:keep="@drawable/*,@mipmap/*" />

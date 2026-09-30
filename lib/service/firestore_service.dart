@@ -187,4 +187,93 @@ class FirestoreService {
       return PatientDailyStatus.fromMap(snapshot.data()!);
     });
   }
+
+  /// Save or update a medicine document in Firestore under `users/{uid}/medicines`
+  Future<String> saveMedicine({
+    required String uid,
+    required String medicineName,
+    required double dosage,
+    required String dosageUnit,
+    required double availableQuantity,
+    required String mealTiming,
+    required String repeatVariation,
+    int? repeatDays,
+    List<String>? repeatWeekDays,
+    List<int>? repeatMonthDays,
+    required DateTime startDate,
+    required DateTime endDate,
+    int medicineTakenCount = 0,
+    String? imagePath,
+    required List<Map<String, dynamic>> schedules,
+  }) async {
+    try {
+      final col = _usersCol.doc(uid).collection('medicines');
+      final query = await col.where('medicineName', isEqualTo: medicineName).limit(1).get();
+
+      final data = <String, dynamic>{
+        'medicineName': medicineName,
+        'dosage': dosage,
+        'dosageUnit': dosageUnit,
+        'availableQuantity': availableQuantity,
+        'mealTiming': mealTiming,
+        'repeatVariation': repeatVariation,
+        'repeatDays': repeatDays,
+        'repeatWeekDays': repeatWeekDays,
+        'repeatMonthDays': repeatMonthDays,
+        'startDate': startDate.toIso8601String(),
+        'endDate': endDate.toIso8601String(),
+        'medicineTakenCount': medicineTakenCount,
+        'imagePath': imagePath,
+        'schedules': schedules,
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      String docId;
+      if (query.docs.isNotEmpty) {
+        docId = query.docs.first.id;
+        await col.doc(docId).set(data, SetOptions(merge: true));
+      } else {
+        data['createdAt'] = FieldValue.serverTimestamp();
+        final docRef = await col.add(data);
+        docId = docRef.id;
+      }
+      return docId;
+    } catch (e) {
+      debugPrint('Error saving medicine to Firestore: $e');
+      rethrow;
+    }
+  }
+
+  /// Fetch all user's medicines from Firestore
+  Future<List<Map<String, dynamic>>> fetchUserMedicines(String uid) async {
+    try {
+      final col = _usersCol.doc(uid).collection('medicines');
+      final snapshot = await col.get();
+      return snapshot.docs.map((doc) {
+        final data = Map<String, dynamic>.from(doc.data());
+        data['firestoreDocId'] = doc.id;
+        return data;
+      }).toList();
+    } catch (e) {
+      debugPrint('Error fetching user medicines from Firestore: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete a medicine from Firestore
+  Future<void> deleteMedicineFromFirestore({
+    required String uid,
+    required String medicineName,
+  }) async {
+    try {
+      final col = _usersCol.doc(uid).collection('medicines');
+      final query = await col.where('medicineName', isEqualTo: medicineName).get();
+      for (final doc in query.docs) {
+        await doc.reference.delete();
+      }
+    } catch (e) {
+      debugPrint('Error deleting medicine from Firestore: $e');
+    }
+  }
 }
+

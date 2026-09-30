@@ -14,6 +14,10 @@ abstract class MedicineRepository {
     required MedicinesCompanion medicine,
     required List<MedicineSchedulesCompanion> schedules,
   });
+  Future<int> upsertMedicine({
+    required MedicinesCompanion medicine,
+    required List<MedicineSchedulesCompanion> schedules,
+  });
   Future<void> updateMedicineStock({
     required int medicineId,
     required double availableQuantity,
@@ -131,6 +135,38 @@ class DriftMedicineRepository implements MedicineRepository {
         modifiedAt: Value(DateTime.now()),
       ),
     );
+  }
+
+  @override
+  Future<int> upsertMedicine({
+    required MedicinesCompanion medicine,
+    required List<MedicineSchedulesCompanion> schedules,
+  }) async {
+    return db.transaction(() async {
+      // Find if medicine with the same name already exists in local DB
+      final existing = await (db.select(db.medicines)
+            ..where((tbl) => tbl.medicineName.equals(medicine.medicineName.value)))
+          .getSingleOrNull();
+
+      int medId;
+      if (existing != null) {
+        medId = existing.id;
+        await (db.update(db.medicines)..where((tbl) => tbl.id.equals(medId))).write(
+          medicine.copyWith(id: Value(medId)),
+        );
+        // Replace existing schedules with incoming ones
+        await (db.delete(db.medicineSchedules)..where((tbl) => tbl.medicineId.equals(medId))).go();
+      } else {
+        medId = await db.into(db.medicines).insert(medicine);
+      }
+
+      for (final schedule in schedules) {
+        await db.into(db.medicineSchedules).insert(
+              schedule.copyWith(medicineId: Value(medId)),
+            );
+      }
+      return medId;
+    });
   }
 
   @override

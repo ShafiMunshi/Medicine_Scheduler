@@ -6,6 +6,7 @@ import 'package:medicine_app/constant/app_color.dart';
 import 'package:medicine_app/screens/auth/component/common_fn.dart';
 import 'package:medicine_app/screens/auth/sign_up_page.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
+import 'package:medicine_app/screens/sync/medicine_sync_screen.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
 import 'package:medicine_app/viewmodels/database_providers.dart';
@@ -46,15 +47,20 @@ class _SignWithEmailInScreenState extends ConsumerState<SignWithEmailInScreen> {
 
     if (!mounted) return;
 
-    if (!isCompleted) {
-      Navigator.pushReplacementNamed(
-        context,
-        UserProfileSetupView.routeName,
-      );
-    } else {
-      Navigator.pushReplacementNamed(context, TopScreenView.routeName);
-    }
+    final targetRoute = !isCompleted
+        ? UserProfileSetupView.routeName
+        : TopScreenView.routeName;
+
+    Navigator.pushReplacementNamed(
+      context,
+      MedicineSyncScreen.routeName,
+      arguments: {
+        'targetRoute': targetRoute,
+        'isFromSettings': false,
+      },
+    );
   }
+
 
   Future<void> _signInWithEmail() async {
     if (!_formKey.currentState!.validate()) return;

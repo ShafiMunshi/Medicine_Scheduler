@@ -10,6 +10,7 @@ import 'package:medicine_app/screens/caregiver/parent_linking_view.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/screens/settings/all_medicine_log_view.dart';
 import 'package:medicine_app/screens/settings/my_profile_view.dart';
+import 'package:medicine_app/screens/sync/medicine_sync_screen.dart';
 import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
 import 'package:medicine_app/viewmodels/database_providers.dart';
@@ -207,7 +208,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Sign Out'),
         content: const Text(
-          'Are you sure you want to sign out from your account? Your local schedules will remain safe.',
+          'Are you sure you want to sign out? Your local database data will be erased and scheduled notifications will be dismissed. You can restore your data from the cloud when you sign back in.',
         ),
         actions: [
           TextButton(
@@ -551,7 +552,24 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 );
               },
             ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.cloud_sync_rounded,
+              iconColor: Colors.teal,
+              title: 'Sync Medicines with Cloud',
+              subtitle: 'Fetch and upsert saved medicines from Firestore',
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  MedicineSyncScreen.routeName,
+                  arguments: {
+                    'isFromSettings': true,
+                  },
+                );
+              },
+            ),
           ]),
+
           20.verticalSpace,
 
           // 5. About & Support Section
