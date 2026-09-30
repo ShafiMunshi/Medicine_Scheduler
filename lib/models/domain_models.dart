@@ -106,3 +106,20 @@ class MedicineScheduleItem {
     );
   }
 }
+
+class MedicineSyncSummary {
+  final int totalFound;
+  final int totalUpserted;
+  final List<String> medicineNames;
+  final bool isSuccess;
+  final String? errorMessage;
+
+  const MedicineSyncSummary({
+    required this.totalFound,
+    required this.totalUpserted,
+    required this.medicineNames,
+    this.isSuccess = true,
+    this.errorMessage,
+  });
+}
+

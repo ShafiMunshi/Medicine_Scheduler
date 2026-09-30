@@ -148,4 +148,15 @@ class AppDatabase extends _$AppDatabase {
       },
     );
   }
+
+  /// Erases all data across all tables in the local database
+  Future<void> clearAllData() async {
+    await transaction(() async {
+      await delete(medicineLogs).go();
+      await delete(medicineSchedules).go();
+      await delete(medicines).go();
+      await delete(users).go();
+    });
+  }
 }
+

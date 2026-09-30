@@ -20,8 +20,10 @@ class ScheduleCalculator {
     List<String>? weekDays,
     List<int>? monthDays,
   }) {
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    final localStart = startDate.toLocal();
+    final localEnd = endDate.toLocal();
+    final start = DateTime(localStart.year, localStart.month, localStart.day);
+    final end = DateTime(localEnd.year, localEnd.month, localEnd.day);
 
     if (end.isBefore(start)) return [];
 
@@ -95,9 +97,13 @@ class ScheduleCalculator {
     List<String>? weekDays,
     List<int>? monthDays,
   }) {
-    final target = DateTime(date.year, date.month, date.day);
-    final start = DateTime(startDate.year, startDate.month, startDate.day);
-    final end = DateTime(endDate.year, endDate.month, endDate.day);
+    final localDate = date.toLocal();
+    final localStart = startDate.toLocal();
+    final localEnd = endDate.toLocal();
+
+    final target = DateTime(localDate.year, localDate.month, localDate.day);
+    final start = DateTime(localStart.year, localStart.month, localStart.day);
+    final end = DateTime(localEnd.year, localEnd.month, localEnd.day);
 
     if (target.isBefore(start) || target.isAfter(end)) {
       return false;
@@ -107,7 +113,9 @@ class ScheduleCalculator {
       case RepeatVariation.day:
       case RepeatVariation.timely:
         final interval = (repeatDays == null || repeatDays < 1) ? 1 : repeatDays;
-        final differenceInDays = target.difference(start).inDays;
+        // DST-safe calendar day offset calculation
+        final differenceInDays =
+            ((target.millisecondsSinceEpoch - start.millisecondsSinceEpoch) + 3600000) ~/ 86400000;
         return differenceInDays >= 0 && (differenceInDays % interval == 0);
 
       case RepeatVariation.weekly:

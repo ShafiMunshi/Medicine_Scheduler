@@ -10,8 +10,10 @@ import 'package:medicine_app/screens/caregiver/parent_linking_view.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/screens/settings/all_medicine_log_view.dart';
 import 'package:medicine_app/screens/settings/my_profile_view.dart';
+import 'package:medicine_app/screens/sync/medicine_sync_screen.dart';
 import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/viewmodels/auth_viewmodel.dart';
+import 'package:medicine_app/viewmodels/database_providers.dart';
 import 'package:medicine_app/viewmodels/medicine_viewmodel.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:medicine_app/widgets/user_avatar_widget.dart';
@@ -27,11 +29,31 @@ class SettingsView extends ConsumerStatefulWidget {
 
 class _SettingsViewState extends ConsumerState<SettingsView> {
   late bool _notificationsEnabled;
+  bool? _isSystemNotificationGranted;
+  bool? _isExactAlarmGranted;
+  int _pendingNotificationCount = 0;
+  bool _isRescheduling = false;
 
   @override
   void initState() {
     super.initState();
     _notificationsEnabled = NotificationService.areNotificationsEnabled();
+    _refreshPermissionStatus();
+  }
+
+  Future<void> _refreshPermissionStatus() async {
+    try {
+      final sys = await NotificationService.isSystemNotificationEnabled();
+      final exact = await NotificationService.canScheduleExactAlarms();
+      final pending = await NotificationService.getPendingNotifications();
+      if (mounted) {
+        setState(() {
+          _isSystemNotificationGranted = sys;
+          _isExactAlarmGranted = exact;
+          _pendingNotificationCount = pending.length;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _toggleNotifications(bool value) async {
@@ -47,11 +69,50 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         toast('Please allow notification permissions in settings');
       }
 
-      final allMeds = await ref.read(allMedicinesProvider.future);
-      await NotificationService.rescheduleAllActiveMedicines(allMeds);
-      toast('Medication reminders enabled');
+      final allMeds = await ref.read(medicineRepositoryProvider).getAllMedicines();
+      final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
+      if (mounted) {
+        toast('Medication reminders enabled ($count scheduled)');
+        await _refreshPermissionStatus();
+      }
     } else {
-      toast('Medication reminders disabled');
+      if (mounted) {
+        toast('Medication reminders disabled');
+        await _refreshPermissionStatus();
+      }
+    }
+  }
+
+  Future<void> _rescheduleAllNow() async {
+    if (_isRescheduling) return;
+    setState(() => _isRescheduling = true);
+
+    try {
+      final granted = await NotificationService.requestPermissions();
+      if (!granted && mounted) {
+        toast('Please grant notification permission in system settings');
+      }
+
+      final canExact = await NotificationService.canScheduleExactAlarms();
+      if (!canExact && mounted) {
+        toast('⚠️ Exact alarms disabled: reminders will use best-effort delivery');
+      }
+
+      final allMeds = await ref.read(medicineRepositoryProvider).getAllMedicines();
+      final count = await NotificationService.rescheduleAllActiveMedicines(allMeds);
+
+      if (mounted) {
+        toast('$count upcoming reminders scheduled successfully');
+        await _refreshPermissionStatus();
+      }
+    } catch (e) {
+      if (mounted) {
+        toast('Rescheduling finished');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRescheduling = false);
+      }
     }
   }
 
@@ -147,7 +208,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Sign Out'),
         content: const Text(
-          'Are you sure you want to sign out from your account? Your local schedules will remain safe.',
+          'Are you sure you want to sign out? Your local database data will be erased and scheduled notifications will be dismissed. You can restore your data from the cloud when you sign back in.',
         ),
         actions: [
           TextButton(
@@ -209,42 +270,201 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
 
           // 2. Notification Settings Section
           _buildSectionHeader('REMINDERS & NOTIFICATIONS'),
+          if (_isSystemNotificationGranted == false || _isExactAlarmGranted == false) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFF87171)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Action Required for Notifications',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFDC2626), fontSize: 13),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (_isSystemNotificationGranted == false) ...[
+                    const Text(
+                      '• Notification permission is disabled. Medication alerts cannot pop up until allowed.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D)),
+                    ),
+                    const SizedBox(height: 4),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(34),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () async {
+                        await NotificationService.requestPermissions();
+                        await _refreshPermissionStatus();
+                      },
+                      icon: const Icon(Icons.notifications_active, size: 16),
+                      label: const Text('Grant Notification Permission', style: TextStyle(fontSize: 12)),
+                    ),
+                    const SizedBox(height: 6),
+                  ],
+                  if (_isExactAlarmGranted == false) ...[
+                    const Text(
+                      '• "Alarms & reminders" permission is disabled. Android requires this for exact-time medication delivery.',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D)),
+                    ),
+                    const SizedBox(height: 4),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFEA580C),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size.fromHeight(34),
+                        padding: EdgeInsets.zero,
+                      ),
+                      onPressed: () async {
+                        await NotificationService.requestExactAlarmsPermission();
+                        await _refreshPermissionStatus();
+                      },
+                      icon: const Icon(Icons.access_alarm, size: 16),
+                      label: const Text('Enable Alarms & Reminders in Settings', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
           _buildCardGroup([
             _buildSwitchTile(
               icon: Icons.notifications_active_rounded,
               iconColor: Colors.deepPurple,
               title: 'Medication Reminders',
-              subtitle: 'Receive exact alarm alerts for scheduled doses',
+              subtitle: 'Receive alarm alerts for scheduled doses',
               value: _notificationsEnabled,
               onChanged: _toggleNotifications,
             ),
             _buildDivider(),
             _buildSettingsTile(
-              icon: Icons.access_alarm_rounded,
+              icon: Icons.notifications_active_outlined,
+              iconColor: Colors.purple,
+              title: 'Test Instant Notification (Now)',
+              subtitle: 'Trigger instant alarm sound, vibration & banner immediately',
+              onTap: () async {
+                final isSys = await NotificationService.isSystemNotificationEnabled();
+                if (!isSys) {
+                  final granted = await NotificationService.requestPermissions();
+                  if (!granted && mounted) {
+                    toast('⚠️ Notifications are blocked in system settings');
+                    return;
+                  }
+                }
+                await NotificationService.showNotificationNow(
+                  id: 99998,
+                  title: 'Medication Alert (Instant Test) 💊',
+                  body: 'Your sound, vibration, and banner alerts are working perfectly!',
+                  payload: {'type': 'test_instant'},
+                );
+                toast('Instant notification sent! Check top banner.');
+                await _refreshPermissionStatus();
+              },
+            ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.alarm,
+              iconColor: Colors.blue,
+              title: 'Test Scheduled Alarm (5 seconds)',
+              subtitle: 'Verify exact offline background alarm delivery',
+              onTap: () async {
+                final isSys = await NotificationService.isSystemNotificationEnabled();
+                if (!isSys) {
+                  await NotificationService.requestPermissions();
+                }
+
+                final fireTime = DateTime.now().add(const Duration(seconds: 5));
+                final success = await NotificationService.scheduleNotification(
+                  id: 99999,
+                  title: 'Scheduled Medicine Alarm 💊',
+                  body: 'Time for your scheduled dose (5-second test)!',
+                  scheduledDate: fireTime,
+                  payload: {
+                    'type': 'test',
+                    'scheduledDateTime': fireTime.toIso8601String(),
+                  },
+                );
+                if (mounted) {
+                  if (success) {
+                    toast('⏰ Test alarm scheduled for 5s from now! Watch top banner.');
+                  } else {
+                    toast('Could not schedule alarm. Check notification permissions.');
+                  }
+                  await _refreshPermissionStatus();
+                }
+              },
+            ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: _isRescheduling ? Icons.hourglass_top_rounded : Icons.refresh_rounded,
               iconColor: Colors.teal,
-              title: 'Exact Alarm Precision',
-              subtitle: 'Optimized for timely alerts even in Doze mode',
-              trailing: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: Text(
-                  'Enabled',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-              ),
+              title: _isRescheduling ? 'Rescheduling Reminders...' : 'Reschedule All Doses',
+              subtitle: _isRescheduling
+                  ? 'Optimizing and scheduling alarms without UI freeze...'
+                  : 'Refresh upcoming 7-day offline notification schedule ($_pendingNotificationCount active)',
+              onTap: _isRescheduling ? null : _rescheduleAllNow,
+            ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.access_alarm_rounded,
+              iconColor: Colors.amber.shade800,
+              title: 'Exact Alarm & Permission Status',
+              subtitle: 'Check system permissions & pending notifications',
               onTap: () async {
                 final canExact = await NotificationService.canScheduleExactAlarms();
-                toast(canExact
-                    ? 'Exact alarms are supported and permitted ✅'
-                    : 'Please grant exact alarm permissions in settings');
+                final isSysEnabled = await NotificationService.isSystemNotificationEnabled();
+                final pending = await NotificationService.getPendingNotifications();
+                if (context.mounted) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Notification Status'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('System Permission: ${isSysEnabled ? "Granted ✅" : "Blocked ❌ (Enable in Settings)"}'),
+                          const SizedBox(height: 8),
+                          Text('Exact Alarms: ${canExact ? "Enabled (alarmClock) ✅" : "Using battery-optimized fallback ⚠️"}'),
+                          const SizedBox(height: 8),
+                          Text('Active Pending Alarms: ${pending.length}'),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Alarms are scheduled offline for 7 rolling days and trigger even in Doze mode.',
+                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        if (!canExact)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              NotificationService.requestExactAlarmsPermission();
+                            },
+                            child: const Text('Allow Exact Alarms'),
+                          ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text('Close'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               },
             ),
           ]),
@@ -332,7 +552,24 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
                 );
               },
             ),
+            _buildDivider(),
+            _buildSettingsTile(
+              icon: Icons.cloud_sync_rounded,
+              iconColor: Colors.teal,
+              title: 'Sync Medicines with Cloud',
+              subtitle: 'Fetch and upsert saved medicines from Firestore',
+              onTap: () {
+                Navigator.pushNamed(
+                  context,
+                  MedicineSyncScreen.routeName,
+                  arguments: {
+                    'isFromSettings': true,
+                  },
+                );
+              },
+            ),
           ]),
+
           20.verticalSpace,
 
           // 5. About & Support Section

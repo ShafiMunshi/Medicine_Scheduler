@@ -8,6 +8,7 @@ import 'package:medicine_app/screens/home/home_view.dart';
 import 'package:medicine_app/screens/profile/user_profile_setup_view.dart';
 import 'package:medicine_app/screens/schedule/schedule_view.dart';
 import 'package:medicine_app/screens/settings/settings_view.dart';
+import 'package:medicine_app/screens/sync/medicine_sync_screen.dart';
 import 'package:medicine_app/screens/top_screen_view.dart';
 
 Map<String, WidgetBuilder> app_routes = {
@@ -17,8 +18,10 @@ Map<String, WidgetBuilder> app_routes = {
   ParentLinkingView.routeName: (context) => const ParentLinkingView(),
   CaregiverDashboardView.routeName: (context) => const CaregiverDashboardView(),
   AddNewMedicineScreen.routeName: (context) => const AddNewMedicineScreen(),
+  MedicineSyncScreen.routeName: (context) => const MedicineSyncScreen(),
   SettingsView.routeName: (context) => const SettingsView(),
   ScheduleView.routeName: (context) => const ScheduleView(),
   HomeView.routeName: (context) => const HomeView(),
   TopScreenView.routeName: (context) => const TopScreenView(),
 };
+

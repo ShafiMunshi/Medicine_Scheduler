@@ -7,6 +7,8 @@ import 'package:medicine_app/screens/home/home_view.dart';
 import 'package:medicine_app/screens/my_medicine/my_medicine_view.dart';
 import 'package:medicine_app/screens/schedule/schedule_view.dart';
 import 'package:medicine_app/screens/settings/settings_view.dart';
+import 'package:medicine_app/service/notification_service.dart';
+import 'package:medicine_app/viewmodels/database_providers.dart';
 import 'package:medicine_app/viewmodels/profile_viewmodel.dart';
 import 'package:nb_utils/nb_utils.dart';
 
@@ -19,7 +21,7 @@ class TopScreenView extends ConsumerStatefulWidget {
   ConsumerState<TopScreenView> createState() => _TopScreenViewState();
 }
 
-class _TopScreenViewState extends ConsumerState<TopScreenView> {
+class _TopScreenViewState extends ConsumerState<TopScreenView> with WidgetsBindingObserver {
   int _selectedIndex = 0;
 
   final allPages = const [
@@ -32,8 +34,41 @@ class _TopScreenViewState extends ConsumerState<TopScreenView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     // Eagerly load user profile
     Future.microtask(() => ref.read(userProfileProvider));
+
+    // Request runtime notification permission and ensure all active alarms are scheduled
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await NotificationService.requestPermissions();
+      if (mounted) {
+        await NotificationService.checkAndPromptExactAlarms(context);
+      }
+      await _rescheduleActiveMedicines();
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _rescheduleActiveMedicines();
+    }
+  }
+
+  Future<void> _rescheduleActiveMedicines() async {
+    try {
+      final repo = ref.read(medicineRepositoryProvider);
+      final medicines = await repo.getAllMedicines();
+      await NotificationService.rescheduleAllActiveMedicines(medicines);
+    } catch (e) {
+      log('Error rescheduling active medicines on launch: $e');
+    }
   }
 
   @override

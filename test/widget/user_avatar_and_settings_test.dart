@@ -113,6 +113,9 @@ void main() {
 
       expect(find.text('Settings'), findsOneWidget);
       expect(find.text('Medication Reminders'), findsOneWidget);
+      expect(find.text('Test Instant Notification (Now)'), findsOneWidget);
+      expect(find.text('Test Scheduled Alarm (5 seconds)'), findsOneWidget);
+      expect(find.text('Reschedule All Doses'), findsOneWidget);
       expect(find.text('Health Profile & Details'), findsOneWidget);
       expect(find.text('Caregiver & Family Supervision'), findsOneWidget);
       expect(find.text('All Medication Logs'), findsOneWidget);
@@ -121,6 +124,11 @@ void main() {
 
       // Verify switch is present
       expect(find.byType(Switch), findsOneWidget);
+    });
+
+    test('rescheduleAllActiveMedicines handles empty list without error', () async {
+      final count = await NotificationService.rescheduleAllActiveMedicines([]);
+      expect(count, equals(0));
     });
   });
 }

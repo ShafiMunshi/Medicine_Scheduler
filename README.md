@@ -1,5 +1,7 @@
 # 💊 Medicine Scheduler App
 
+cd android/fastlane android deploy
+
 A simple and efficient **Medicine Reminder & Scheduler** built with **Flutter**.  
 The application helps users manage their medicine schedules and receive reminders on time.
 

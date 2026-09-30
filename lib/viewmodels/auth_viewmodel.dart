@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:medicine_app/models/user_profile_model.dart';
 import 'package:medicine_app/service/auth_service.dart';
 import 'package:medicine_app/service/firestore_service.dart';
+import 'package:medicine_app/service/notification_service.dart';
 import 'package:medicine_app/viewmodels/database_providers.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -137,6 +138,14 @@ class AuthController extends StateNotifier<AsyncValue<fb.User?>> {
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
+      // 1. Dismiss and cancel all scheduled reminder notifications
+      await NotificationService.cancelAll();
+
+      // 2. Erase local database data across all tables
+      final db = ref.read(databaseProvider);
+      await db.clearAllData();
+
+      // 3. Complete Firebase sign out
       await _auth.signOut();
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -144,6 +153,7 @@ class AuthController extends StateNotifier<AsyncValue<fb.User?>> {
       state = AsyncValue.error(e, st);
     }
   }
+
 
   Future<void> _syncProfileOnAuthSuccess(
     fb.User user, {
